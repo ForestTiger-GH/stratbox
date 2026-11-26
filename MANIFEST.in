@@ -1,4 +1,3 @@
 recursive-include examples *.py *.md
 recursive-include tests *.py *.md *.csv *.html *.json
-recursive-include src/stratbox/operations/specifications *.yaml
-recursive-include src/stratbox/domains/registry *.yaml
+recursive-include src/stratbox *.csv *.json *.xlsx *.xml *.txt *.typed

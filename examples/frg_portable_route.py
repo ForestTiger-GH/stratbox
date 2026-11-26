@@ -1,22 +1,22 @@
-"""Run a byte-bound Frank RG route on an explicitly synthetic workbook.
+"""Run an exact-material Frank route on an explicitly synthetic workbook.
 
-This fixture is not evidence of any supplier layout. Actual workbooks require
-caller-reviewed cell bindings. Requires the excel extra; performs no effects.
+This fixture supplies no evidence of an actual publisher layout.
+Requires the excel extra; performs no network or filesystem effects.
 """
-from datetime import date
-from decimal import Decimal
 from io import BytesIO
 
 from openpyxl import Workbook
-from stratbox.domains import frank_rg as frg
-from stratbox.shared.data.observations import MetricRef, PeriodRef, SubjectRef
-from stratbox.shared.evidence import SourcePayload
+
+from stratbox.capabilities.model.targets import SeriesTarget
+from stratbox.domains.frank_rg.methods.tables import CellRule, TableRules
+from stratbox.sdk import StrategyBox
+from stratbox.shared.data.values import Material
 
 
-def admitted(result):
+def required(result, output):
     if result.outcome != "succeeded":
-        raise RuntimeError(tuple(item.code for item in result.diagnostics))
-    return result.value
+        raise RuntimeError(result.diagnostics)
+    return result.output(output)
 
 
 def main():
@@ -28,28 +28,29 @@ def main():
     sheet.append(("Synthetic bank", "100.1234567890123456789012345"))
     stream = BytesIO()
     book.save(stream)
-    original = admitted(frg.capture(frg.CaptureRequest(source_id, frg.ReportPeriod(date(2026, 5, 1)),
-        SourcePayload(stream.getvalue()), "xlsx")))
-    physical = admitted(frg.extract(frg.ExtractRequest(original)))
-    retained = admitted(frg.build_extract_snapshot(frg.ExtractSnapshotRequest(physical)))
-    physical = admitted(frg.read_extract(frg.ReadExtractRequest(retained)))
-    profile = frg.SemanticProfile(source_id, "synthetic.supplied_profile.v1", 1, original.payload.identity, (
-        frg.CellBinding("Synthetic layout", 2, 2, SubjectRef("bank", "synthetic-bank"),
-            MetricRef("synthetic.stock", "RUB", "stock", "synthetic.v1", Decimal(1)),
-            PeriodRef("as_of", as_of=date(2026, 4, 30)), "synthetic_reporting_population"),
-    ))
-    flake = admitted(frg.build_flake(frg.BuildFlakeRequest(physical, profile)))
-    flake_snapshot = admitted(frg.build_flake_snapshot(frg.FlakeSnapshotRequest(flake)))
-    restored = admitted(frg.read_flake(frg.ReadFlakeRequest(flake_snapshot)))
-    integrated = admitted(frg.integrate(frg.IntegrateRequest(restored, "frg.synthetic.observations", "synthetic-edition")))
-    snapshot = admitted(frg.build_observation_snapshot(frg.ObservationSnapshotRequest(integrated)))
-    integrated = admitted(frg.read_observations(frg.ReadObservationsRequest(snapshot)))
-    view = admitted(frg.prepare_view(frg.PrepareViewRequest(integrated, "synthetic-view")))
-    view_snapshot = admitted(frg.build_view_snapshot(frg.ViewSnapshotRequest(view)))
-    view = admitted(frg.read_view(frg.ReadViewRequest(view_snapshot)))
-    rendered = admitted(frg.render_view(frg.RenderViewRequest(view, "json")))
-    print(f"Synthetic supplied-profile route: {len(integrated.observations)} observations; {len(rendered.data)} rendered bytes.")
-    print(f"Independent snapshot identities: {retained.identity.sha256}, {flake_snapshot.identity.sha256}, {view_snapshot.identity.sha256}")
+    book.close()
+    material = Material(stream.getvalue(), source_id=source_id,
+        metadata={"issue_id": "2026-05-01", "format": "xlsx"})
+    rules = TableRules(source_id, (CellRule(
+        "Synthetic layout", 2, 2, "synthetic.stock", "synthetic-bank", "RUB", "stock",
+        "2026-04-30", "monthly", "synthetic_reporting_population", subject_namespace="bank"),
+    ), original_identity=material.identity)
+    target = SeriesTarget(source_id)
+
+    with StrategyBox() as box:
+        physical = required(box.invoke("command.workbook.decode", inputs={"material": material}), "physical")
+        encoded = required(box.invoke("command.value.encode", inputs={"value": physical}), "representation")
+        restored = required(box.invoke("command.value.decode", inputs={"representation": encoded}), "value")
+        dataset = required(box.invoke("operation.series.extract_workbook",
+            inputs={"physical": restored}, parameters={"table_rules": rules}, target=target), "dataset")
+        encoded_dataset = required(box.invoke("command.value.encode", inputs={"value": dataset}), "representation")
+        dataset = required(box.invoke("command.value.decode", inputs={"representation": encoded_dataset}), "value")
+        view = required(box.invoke("command.view.prepare", inputs={"dataset": dataset}), "view")
+        product = required(box.invoke("command.product.render",
+            inputs={"view": view}, parameters={"format": "json"}), "product")
+        assert dataset.rows[0]["raw_token"] == "100.1234567890123456789012345"
+        print({"synthetic_observations": len(dataset.rows), "dataset_identity": dataset.identity,
+            "physical_identity": physical.material.identity.sha256, "rendered_bytes": len(product.data)})
 
 
 if __name__ == "__main__":

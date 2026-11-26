@@ -1,48 +1,27 @@
-"""An additional publication family supplies methods without central dispatch edits."""
-from dataclasses import dataclass
-from datetime import date
+"""Compatible table families supply direct methods without dispatch-table edits."""
+from dataclasses import replace
 from types import SimpleNamespace
 import pytest
-from stratbox.core.execution import OperationFailure
-from stratbox.core.limits import BudgetMeter, ExecutionBudget
-from stratbox.domains.fns.operations.pipeline import FamilyMethods, FamilyOperations
-from stratbox.domains.fns.publications.contracts import ReleaseContext
-from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
+
+from stratbox.capabilities.model.domains import CommandSpec, DomainSpec, SeriesSpec
+from stratbox.capabilities.model.methods import MethodRef
+from stratbox.domains.fns.common.semantics import SME_RULES
+from stratbox.domains.fns.series.sme import SME
+from stratbox.shared.data.values import JsonEvidence, Material
 
 
-@dataclass(frozen=True)
-class FutureFlake:
-    context: ReleaseContext
-    lineage: tuple[UsedInputReceipt, ...]
-
-
-class Invocation:
-    def __init__(self):
-        self.budget = BudgetMeter(ExecutionBudget())
-        self.context = SimpleNamespace(profile="local")
-        self.receipts = []
-    def check_cancelled(self):
-        self.budget.checkpoint()
-    def use(self, receipt):
-        self.receipts.append(receipt)
-
-
-def test_family_methods_extend_the_source_boundary_without_a_series_dispatch_table():
-    calls = []
-    def extract(payload, release, *, invocation, rar_reader=None):
-        calls.append(release)
-        return FutureFlake(release, (UsedInputReceipt.for_payload(payload, "future_original"),))
-    def unused(*args, **kwargs):
-        raise AssertionError("Independent extraction cannot run a later stage")
-    methods = FamilyMethods("fns.fixture", FutureFlake, 1024, extract, unused, unused,
-        unused, unused, unused, unused, unused, lambda value: 0)
-    operations = FamilyOperations(methods)
-    context = ReleaseContext("fns.fixture", "issue-1", date(2026,11,23))
-    invocation = Invocation()
-    result = operations.extract(SimpleNamespace(payload=SourcePayload(b"original"), release=context), invocation)
-    assert result.context == context and calls == [context]
-    assert invocation.budget.used("input_bytes") == len(b"original")
-    with pytest.raises(OperationFailure, match="source_family_mismatch"):
-        operations.extract(SimpleNamespace(payload=SourcePayload(b"other"),
-            release=ReleaseContext("fns.other", "issue-1", date(2026,11,23))), invocation)
-    assert calls == [context]
+def test_explicit_future_family_reuses_a_command_method_without_a_builder():
+    rules = replace(SME_RULES, source_id="fns.fixture")
+    specification = CommandSpec(MethodRef("stratbox.domains.fns.methods.sme:select_records"), rules)
+    series = SeriesSpec("fns.fixture", SME.publication, SME.semantics,
+        {"command.table.extract": specification})
+    domain = DomainSpec("fns", {}, {series.id: series})
+    context = SimpleNamespace(parameters={}, checkpoint=lambda: None)
+    physical = JsonEvidence(Material(b'[{}]', source_id="fns.fixture"), ({},))
+    result = domain.series["fns.fixture"].commands["command.table.extract"].method.resolve()(
+        {"physical": physical}, rules, context)
+    assert result["tables"].source_id == "fns.fixture"
+    assert result["tables"].tables == ({},)
+    with pytest.raises(ValueError, match="source_mismatch"):
+        specification.method.resolve()({"physical": replace(physical,
+            material=Material(b'[{}]', source_id="fns.other"))}, rules, context)

@@ -18,13 +18,10 @@ def _identifier(value: str) -> None:
 @dataclass(frozen=True, slots=True)
 class CapabilityRequirement:
     role: str
-    version: int = 1
     guarantees: frozenset[str] = frozenset()
 
     def __post_init__(self):
         _identifier(self.role)
-        if type(self.version) is not int or self.version < 1:
-            raise ValueError("Invalid capability version")
         for name in self.guarantees:
             _identifier(name)
 
@@ -93,8 +90,6 @@ def select_provider(
     if len(candidates) != 1:
         raise BindingError("provider.binding_conflict")
     binding = candidates[0]
-    if binding.capability.version != requirement.version:
-        raise BindingError("provider.capability_incompatible")
     if binding.readiness not in {"ready", "degraded"}:
         raise BindingError(f"provider.{binding.readiness}")
     if not requirement.guarantees <= binding.capability.guarantees:

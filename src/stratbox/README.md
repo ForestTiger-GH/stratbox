@@ -1,12 +1,11 @@
 # Stratbox package
 
-The library provides its public entry point through `sdk`. `operations` owns
-the canonical operation catalog, `composition` compiles scenarios and cascades,
-and `core` owns execution and infrastructure. `shared` owns data identity,
-evidence, statistical semantics, references and calendar models. `domains`
-owns source interpretation and business methods; `domains.registry` holds
-source identities, profiles and source bindings to reusable templates.
+`capabilities` owns the standard action language and its preparation. `core`
+executes admitted commands and manages resources, values, effects and journals.
+`domains` provides direct method/settings records. `shared` owns scientific values
+and reference contents. `sdk.StrategyBox` joins discovery, preparation and one
+execution service.
 
-[Shared semantic contracts](../../docs/current-how/shared-semantic-contracts.md)
+[Definitions and execution](../../docs/architecture/capability-execution.md)
 
-[Operations and execution](../../docs/current-how/core-execution-and-admission.md)
+[Typed data stages](../../docs/current-how/standard-data-stages.md)

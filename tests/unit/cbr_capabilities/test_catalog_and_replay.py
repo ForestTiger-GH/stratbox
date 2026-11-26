@@ -9,9 +9,9 @@ from openpyxl import Workbook
 
 from stratbox.capabilities.catalog import CatalogSnapshot
 from stratbox.domains.cbr.capabilities import contribution, dispositions, stage_matrix
-from stratbox.domains.cbr.publications.contracts import IdentifiedOriginal
-from stratbox.domains.cbr.tables.reporting_forms.contracts import FormKey
-from stratbox.domains.cbr.tables.reporting_forms.field_observations import FormFieldBinding
+from stratbox.domains.cbr.methods.publications.contracts import IdentifiedOriginal
+from stratbox.domains.cbr.methods.tables.reporting_forms.contracts import FormKey
+from stratbox.domains.cbr.methods.tables.reporting_forms.field_observations import FormFieldBinding
 from stratbox.shared.data.observations import MetricRef, PeriodRef
 from stratbox.shared.evidence import SourcePayload
 from stratbox.shared.source_publications import SourceAssetIdentity
@@ -73,7 +73,7 @@ def test_original_extract_and_snapshot_replay_use_one_canonical_session(monkeypa
         saved = checked(box.invoke('cbr.tables.flake_snapshot', inputs={'flake': source}, timeout=15)).output('snapshot')
         def forbidden(*args, **kwargs):
             raise AssertionError('A retained source stage must not decode an original again')
-        monkeypatch.setattr('stratbox.domains.cbr.tables.statistics.extraction.read_workbook_cells', forbidden)
+        monkeypatch.setattr('stratbox.domains.cbr.methods.tables.statistics.extraction.read_workbook_cells', forbidden)
         replayed = checked(box.invoke('cbr.tables.read_flake_snapshot', inputs={'snapshot': saved}, timeout=15)).output('flake')
         assert replayed == source
         assert replayed.sheets[0].cell(3, 2).value == 'source footnote'
@@ -108,7 +108,7 @@ def test_all_member_form_fields_have_explicit_semantics_and_replay(code):
 
 def test_financial_model_scenario_accepts_retained_snapshots_without_originals():
     import pandas as pd
-    from stratbox.domains.cbr.tables.reporting_forms.contracts import FormSnapshot
+    from stratbox.domains.cbr.methods.tables.reporting_forms.contracts import FormSnapshot
     snapshot = FormSnapshot(FormKey('802', date(2026, 4, 1)),
         {'REGN': 'REGN_GKO', 'CODE': 'STR', 'total': 'VSEGO'},
         pd.DataFrame((('1000', '14', '1.2300'),), columns=('REGN', 'CODE', 'total'), dtype=object), ())
@@ -124,7 +124,7 @@ def test_financial_model_scenario_accepts_retained_snapshots_without_originals()
 
 def test_bounded_escrow_history_exposes_independent_source_interpretations():
     from stratbox.domains.cbr.operations.project_finance.contracts import ParseEscrowRequest
-    from stratbox.domains.cbr.tables.project_finance.profiles import required_indicators
+    from stratbox.domains.cbr.methods.tables.project_finance.profiles import required_indicators
     from stratbox.core.execution.session import ExecutionSettings
     def original(period, amount):
         book = Workbook(); sheet = book.active; sheet.title = 'Regions'
@@ -220,7 +220,7 @@ def test_statistical_extraction_and_source_readable_share_one_physical_decoder(m
     monkeypatch.setattr(physical, 'read_workbook_cells', count)
     def forbidden(*args, **options):
         raise AssertionError('CBR source attribution must consume decoded cells rather than decode again')
-    monkeypatch.setattr('stratbox.domains.cbr.tables.statistics.extraction.read_workbook_cells', forbidden)
+    monkeypatch.setattr('stratbox.domains.cbr.methods.tables.statistics.extraction.read_workbook_cells', forbidden)
     original = workbook()
     with StrategyBox(capabilities=snapshot) as box:
         result = checked(box.invoke(scenario.capability_id, inputs={'original': original}, timeout=30))

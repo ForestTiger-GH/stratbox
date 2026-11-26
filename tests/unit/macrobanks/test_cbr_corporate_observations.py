@@ -9,17 +9,34 @@ import openpyxl
 import pandas as pd
 import pytest
 
-from stratbox.domains.cbr.publications.contracts import IdentifiedOriginal
-from stratbox.domains.cbr.tables.statistics.extraction import extract_workbook_value
-from stratbox.domains.cbr.tables.corporate_lending.observations import extract_observations
-from stratbox.domains.cbr.operations.corporate_lending.source_definitions import (
-    CorporateObservationSnapshotRequest, ExtractCorporateObservationsRequest,
-    ReadCorporateObservationSnapshotRequest,
-)
-from stratbox.domains.cbr.operations.corporate_lending.source_operations import extract, build_snapshot, read_snapshot
-from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.common import source_records
+from stratbox.domains.cbr.methods.tables.corporate_lending.observations import extract_observations
+from stratbox.domains.cbr.calculations.sors.inputs.common import source_records
 from stratbox.shared.evidence import SourcePayload
-from stratbox.shared.source_publications import SourceAssetIdentity
+
+from types import SimpleNamespace
+from stratbox.core.formats.spreadsheets.cells import read_workbook_cells
+from stratbox.domains.cbr.methods.actions.statistics import SourceWorkbook
+from stratbox.domains.cbr.methods.actions.serialization import encode, decode
+from stratbox.domains.cbr.domain import DOMAIN
+from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.evidence import UsedInputReceipt
+
+_CONTEXT = SimpleNamespace(parameters={}, checkpoint=lambda: None)
+
+def _source_workbook(data, series, issue, asset="main"):
+    identity = ByteIdentity.of(data)
+    return SourceWorkbook(series, issue, identity, read_workbook_cells(data).sheets, asset,
+        (UsedInputReceipt("original", identity, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "inline", series),))
+
+def _extract(flake, periods=None):
+    settings = DOMAIN.series[flake.series_id].commands["command.table.interpret"].settings.corporate
+    return extract_observations(flake, settings, periods=periods)
+
+def _encode(value):
+    return encode({"value": value}, None, _CONTEXT)["representation"]
+
+def _decode(value):
+    return decode({"representation": value}, None, _CONTEXT)["value"]
 
 
 EXACT = "12345678901234567890.1234500"
@@ -50,13 +67,12 @@ def workbook_flake(*, missing=True, flow=False, asset_id="main"):
                 data = data.replace(b"<v>987654321</v>", ("<v>" + EXACT + "</v>").encode())
             target.writestr(name, data)
     series = "cbr.corporate_lending.corp_new_loans_c" if flow else "cbr.corporate_lending.corp_debt_c"
-    return extract_workbook_value(IdentifiedOriginal(
-        SourceAssetIdentity(series, "capture.2026-06-20", asset_id), SourcePayload(exact.getvalue()), "xlsx"))
+    return _source_workbook(exact.getvalue(), series, "capture.2026-06-20", asset_id)
 
 
 def test_all_source_periods_precision_missing_cells_and_replay():
     flake = workbook_flake()
-    value = checked(extract(ExtractCorporateObservationsRequest(flake)))
+    value = _extract(flake)
     assert value.available_periods == ("2026-05-01", "2026-06-01")
     assert value.selected_periods == value.available_periods
     assert len(value.observations) == 6
@@ -72,33 +88,32 @@ def test_all_source_periods_precision_missing_cells_and_replay():
     assert value.source_identity == flake.source_identity
     assert value.asset_id == "main"
     assert not {"published_lower", "published_upper", "geography_node_id"} & set(cells.columns)
-    encoded = checked(build_snapshot(CorporateObservationSnapshotRequest(value)))
-    restored = checked(read_snapshot(ReadCorporateObservationSnapshotRequest(encoded)))
+    encoded = _encode(value)
+    restored = _decode(encoded)
     pd.testing.assert_frame_equal(restored.observations, value.observations)
     assert restored.evidence == value.evidence
-    assert checked(build_snapshot(CorporateObservationSnapshotRequest(restored))).identity == encoded.identity
+    assert _encode(restored).identity == encoded.identity
 
 
 def test_source_asset_identity_survives_projection_and_snapshot_and_limits_model_scope():
     flake = workbook_flake(missing=False, asset_id="supplement")
-    value = checked(extract(ExtractCorporateObservationsRequest(flake)))
+    value = _extract(flake)
     assert value.asset_id == "supplement"
-    encoded = checked(build_snapshot(CorporateObservationSnapshotRequest(value)))
-    restored = checked(read_snapshot(ReadCorporateObservationSnapshotRequest(encoded)))
+    encoded = _encode(value)
+    restored = _decode(encoded)
     assert restored.asset_id == "supplement"
     assert restored.evidence == value.evidence
-    assert checked(build_snapshot(CorporateObservationSnapshotRequest(restored))).identity == encoded.identity
+    assert _encode(restored).identity == encoded.identity
     for source in (flake, restored):
         with pytest.raises(ValueError, match="source_asset_unsupported"):
             source_records(source, "2026-05-01", "01_02_C")
-    relabelled = build_snapshot(CorporateObservationSnapshotRequest(replace(restored, asset_id="main")))
-    assert relabelled.outcome == "failed"
-    assert relabelled.diagnostics[0].code == "cbr.corporate.observation_identity_mismatch"
+    with pytest.raises(ValueError, match="observation_identity_mismatch"):
+        _encode(replace(restored, asset_id="main"))
 
 
 def test_selection_is_explicit_and_flow_periods_are_reference_months():
     flake = workbook_flake(flow=True)
-    value = checked(extract(ExtractCorporateObservationsRequest(flake, ("2026-06",))))
+    value = _extract(flake, ("2026-06",))
     assert value.available_periods == ("2026-05", "2026-06")
     assert value.selected_periods == ("2026-06",)
     assert value.coverage.status == "partial"
@@ -106,7 +121,7 @@ def test_selection_is_explicit_and_flow_periods_are_reference_months():
     assert set(value.observations["period_basis"]) == {"reference_month"}
     assert set(value.observations["period_raw"]) == {"Июнь 2026"}
     with pytest.raises(ValueError, match="period_missing"):
-        extract_observations(flake, periods=("2025-06",))
+        _extract(flake, ("2025-06",))
 
 
 def test_district_flake_keeps_flow_and_stock_sheets_with_distinct_period_bases():
@@ -120,9 +135,8 @@ def test_district_flake_keeps_flow_and_stock_sheets_with_distinct_period_bases()
         sheet.append(["ЦЕНТРАЛЬНЫЙ ФЕДЕРАЛЬНЫЙ ОКРУГ", *range(16)])
     data = BytesIO()
     book.save(data)
-    original = IdentifiedOriginal(SourceAssetIdentity("cbr.corporate_lending.fd_okved2", "2026-06-01", "main"),
-                                  SourcePayload(data.getvalue()), "xlsx")
-    observations = checked(extract(ExtractCorporateObservationsRequest(extract_workbook_value(original))))
+    original = _source_workbook(data.getvalue(), "cbr.corporate_lending.fd_okved2", "2026-06-01")
+    observations = _extract(original)
     assert observations.diagnostics == ()
     assert len(observations.observations) == 32
     assert observations.available_periods == ("2026-05", "2026-06-01")
@@ -133,7 +147,7 @@ def test_district_flake_keeps_flow_and_stock_sheets_with_distinct_period_bases()
 
 
 def test_model_admission_selects_a_period_without_changing_the_source_value():
-    value = checked(extract(ExtractCorporateObservationsRequest(workbook_flake(missing=False))))
+    value = _extract(workbook_flake(missing=False))
     model = source_records(value, "2026-05-01", "01_02_C")
     assert len(model) == 3
     assert model.iloc[0]["source_value"] == Decimal(EXACT)
@@ -144,24 +158,12 @@ def test_model_admission_selects_a_period_without_changing_the_source_value():
 
 
 def test_tampering_and_raw_inputs_do_not_cross_prepared_boundaries(monkeypatch):
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.contracts import SorsSourceInputs
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.dependencies import DEPENDENCIES
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsRunConfig
-    from stratbox.domains.cbr.operations.corporate_lending.sors.definitions import PrepareSorsRequest, RestoreSorsRequest
-    from stratbox.domains.cbr.operations.corporate_lending.sors.api import prepare_inputs, restore
-    import stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.loader as loader
-
-    value = checked(extract(ExtractCorporateObservationsRequest(workbook_flake())))
+    from stratbox.domains.cbr.calculations.sors.inputs.common import source_dataset
+    value = _extract(workbook_flake())
     value.observations.loc[0, "value"] = Decimal("0")
-    encoded = build_snapshot(CorporateObservationSnapshotRequest(value))
-    assert encoded.outcome == "failed"
-    assert encoded.diagnostics[0].code == "cbr.corporate.observation_identity_mismatch"
-    sources = SorsSourceInputs(**{item.input_name: SourcePayload(b"fixture")
-                                 for item in DEPENDENCIES if item.required})
-    def forbidden(*args, **kwargs):
-        raise AssertionError("Source extraction is outside the prepared-input operation")
-    monkeypatch.setattr(loader, "parse_source_inputs", forbidden)
-    prepared = prepare_inputs(PrepareSorsRequest(sources, SorsRunConfig("2026-06-01")))
-    assert prepared.diagnostics[0].code == "sors.source_observations_required"
-    restored = restore(RestoreSorsRequest(sources, SorsRunConfig("2026-06-01")))
-    assert restored.diagnostics[0].code == "sors.prepared_bundle_required"
+    with pytest.raises(ValueError, match="observation_identity_mismatch"):
+        _encode(value)
+    with pytest.raises(ValueError, match="observation_identity_mismatch"):
+        source_records(value, "2026-05-01", "01_02_C")
+    with pytest.raises(ValueError, match="interpreted_workbook_required"):
+        source_dataset(SourcePayload(b"raw original"), "01_02_C")

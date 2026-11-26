@@ -5,7 +5,6 @@ from dataclasses import dataclass
 
 from typing import Literal
 
-from stratbox.shared.data.datasets import ComputationReceipt
 from stratbox.shared.data.source_context import SourceUse
 
 from typing import TYPE_CHECKING
@@ -67,7 +66,7 @@ class IndustryPivotSetResult:
     source_rows: int
     table_count: int
     is_partial: bool
-    evidence: ComputationReceipt | None = None
+    evidence: object | None = None
     source_uses: tuple[SourceUse, ...] = ()
 
     @property

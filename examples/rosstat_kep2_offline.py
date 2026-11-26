@@ -1,85 +1,65 @@
-"""Offline KEP2 route with separate original, physical, flake, dataset and view storage.
+"""Process a supplied KEP2 workbook through standard commands and retain values.
 
-Run:
-    python examples/rosstat_kep2_offline.py --source /path/2026-08.xlsx \
-        --issue 2026-08 --output-root /path/rosstat-output
-
-The explicit issue is publication identity. Observation periods are read from
-reviewed worksheet headers and source year rows. No HTTP or Git operation runs.
+Run with --source /path/2026-08.xlsx --issue 2026-08 --output-root /path/output.
+The publication issue is explicit; economic periods come from worksheet evidence.
 """
 from argparse import ArgumentParser
 from pathlib import Path
 
-from stratbox.core.operations.source.originals import save_original
-from stratbox.core.operations.source.original_definitions import SaveOriginalRequest,OriginalDestination
-from stratbox.core.operations.materials.operations import save_artifact
-from stratbox.core.operations.materials.definitions import SaveArtifactRequest,ArtifactDestination
+from stratbox.capabilities.model.targets import ProductTarget, SeriesTarget
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.core.storage.datasets.files import FileDatasetStore
-from stratbox.core.storage.datasets.operations import write_snapshot,read_snapshot
-from stratbox.core.storage.datasets.definitions import WriteSnapshotRequest,ReadSnapshotRequest
-from stratbox.shared.evidence import SourcePayload,UsedInputReceipt
-from stratbox.shared.materials import MaterialArtifact
-from stratbox.shared.data.processing import DataContract,DataRole
-from stratbox.shared.source_publications import SourceAssetIdentity
-from stratbox.domains.rosstat.operations import handlers as rosstat
-from stratbox.domains.rosstat.operations.contracts import (
-    PhysicalRequest,WorkbookRequest,SnapshotRequest,FlakeRequest,IntegrateRequest,DatasetRequest,ViewRequest,
-)
-from stratbox.domains.rosstat.tables.contracts import Kep2Request
+from stratbox.sdk import StrategyBox
+from stratbox.shared.data.values import Material
 
 
-def required(result):
-    if result.outcome!="succeeded":
-        raise RuntimeError((result.outcome,tuple(item.code for item in result.diagnostics)))
-    return result.value
+def required(result, output):
+    if result.outcome != "succeeded":
+        raise RuntimeError(result.diagnostics)
+    return result.output(output)
 
 
-def build(source: Path,issue: str,output_root: Path):
-    output_root.mkdir(parents=True,exist_ok=True)
-    files=LocalFileStore(str(output_root))
-    datasets=FileDatasetStore(files,"datasets",provider_id="rosstat.example",scope_id="local")
-    identity=SourceAssetIdentity("rosstat.short_term_indicators",issue,"main_workbook")
-    payload=SourcePayload(source.read_bytes(),"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",identity.source_id)
-    required(save_original(SaveOriginalRequest(payload,OriginalDestination("originals/"+issue+".xlsx")),store=files))
+def build(source: Path, issue: str, output_root: Path):
+    output_root.mkdir(parents=True, exist_ok=True)
+    source_id = "rosstat.short_term_indicators"
+    original = Material(source.read_bytes(),
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", source_id,
+        metadata={"issue_id": issue, "asset_id": "main_workbook", "format": "xlsx"})
+    with StrategyBox(providers={"filestore": LocalFileStore(str(output_root))}) as box:
+        def commit(material, destination):
+            return required(box.invoke("command.artifact.commit",
+                inputs={"material": material, "destination": destination}), "reference")
 
-    def retained(snapshot):
-        receipt=required(write_snapshot(WriteSnapshotRequest(snapshot),store=datasets))
-        if receipt.reference is None:
-            raise RuntimeError("dataset.confirmed_reference_required")
-        restored=required(read_snapshot(ReadSnapshotRequest(receipt.reference),store=datasets))
-        if restored.identity!=snapshot.identity:
-            raise RuntimeError("dataset.replay_identity_mismatch")
-        return restored
+        def retained(value, destination):
+            encoded = required(box.invoke("command.value.encode", inputs={"value": value}), "representation")
+            reference = commit(encoded, destination)
+            read = required(box.invoke("command.material.read", inputs={"location": reference}), "material")
+            return required(box.invoke("command.value.decode", inputs={"representation": read}), "value")
 
-    workbook=required(rosstat.extract_workbook(PhysicalRequest(payload,identity.series_id,identity.issue_id,identity.asset_id)))
-    workbook=required(rosstat.read_workbook(SnapshotRequest(retained(required(rosstat.workbook_snapshot(WorkbookRequest(workbook)))))))
-    flake=required(rosstat.extract_kep2(Kep2Request(workbook)))
-    required(rosstat.validate_flake(FlakeRequest(flake)))
-    flake=required(rosstat.read_flake(SnapshotRequest(retained(required(rosstat.flake_snapshot(FlakeRequest(flake)))))))
-    dataset=required(rosstat.integrate(IntegrateRequest((flake,),"rosstat.kep2.integrated",issue)))
-    dataset=required(rosstat.read_dataset(SnapshotRequest(retained(required(rosstat.dataset_snapshot(DatasetRequest(dataset)))))))
-    view=required(rosstat.prepare_kep2_monthly(DatasetRequest(dataset)))
-    view=required(rosstat.read_view(SnapshotRequest(retained(required(rosstat.view_snapshot(ViewRequest(view)))))))
-    rendered=rosstat.render_kep2_xlsx(ViewRequest(view))
-    representation=required(rendered)
-    artifact=MaterialArtifact(DataContract("rosstat.kep2.monthly.xlsx",1,DataRole.PRODUCTS),representation,
-        (*view.batch.lineage,UsedInputReceipt("prepared_view",view.identity,"application/vnd.stratbox.dataset","inline")),
-        identity.series_id,identity,rendered.computation)
-    published=required(save_artifact(SaveArtifactRequest(artifact,ArtifactDestination("products/"+issue+"-monthly.xlsx")),store=files))
-    return {"source_sha256":payload.identity.sha256,"physical_sheets":len(workbook.sheets),
-        "selected_source_values":len(flake.values),"monthly_values":len(view.batch.observations),
-        "artifact":published.artifact}
+        commit(original, "originals")
+        physical = required(box.invoke("command.workbook.decode", inputs={"material": original}), "physical")
+        physical = retained(physical, "physical")
+        dataset = required(box.invoke("operation.series.extract_workbook", inputs={"physical": physical},
+            target=SeriesTarget(source_id)), "dataset")
+        dataset = retained(dataset, "observations")
+        product_target = ProductTarget("rosstat.kep2.monthly.xlsx")
+        view = required(box.invoke("command.view.prepare", inputs={"dataset": dataset},
+            target=product_target), "view")
+        view = retained(view, "views")
+        product = required(box.invoke("command.product.render", inputs={"view": view},
+            target=product_target), "product")
+        reference = commit(product, "products")
+        return {"source_sha256": original.identity.sha256, "physical_sheets": len(physical.workbook.sheets),
+            "selected_values": len(dataset.rows), "monthly_values": len(view.value.rows), "artifact": reference.location}
 
 
 def main():
-    parser=ArgumentParser(description=__doc__)
-    parser.add_argument("--source",type=Path,required=True)
-    parser.add_argument("--issue",required=True)
-    parser.add_argument("--output-root",type=Path,required=True)
-    args=parser.parse_args()
-    print(build(args.source,args.issue,args.output_root))
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument("--source", type=Path, required=True)
+    parser.add_argument("--issue", required=True)
+    parser.add_argument("--output-root", type=Path, required=True)
+    args = parser.parse_args()
+    print(build(args.source, args.issue, args.output_root))
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()

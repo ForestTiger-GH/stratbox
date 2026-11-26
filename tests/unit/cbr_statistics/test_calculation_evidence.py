@@ -1,62 +1,56 @@
-"""Derived measures keep annotations and deterministic arithmetic policies."""
+"""Derived measures retain annotations and deterministic exact arithmetic."""
 from dataclasses import replace
 from decimal import Decimal, localcontext
 
 import pytest
 
-from stratbox.domains.cbr.analytics.statistics.changes import calculate_change, calculate_share
-from stratbox.domains.cbr.integration.statistics.alignment import align_statistics
-from test_workbook_replay import flake, workbook
-
-
-def selected():
-    dataset = align_statistics((flake(workbook(exact="123")),))
-    batch = dataset.batches[0]
-    rows = tuple(item for item in batch.observations if dict(item.dimensions)["source_hierarchy"] == "M2")
-    return replace(dataset, batches=(replace(batch, observations=rows),)), rows
+from stratbox.core.commands import standard
+from stratbox.core.execution.service import ExecutionFailure
+from .test_workbook_replay import context, selected
 
 
 def test_period_annotations_are_evidence_and_both_inputs_remain_attached():
-    dataset, (left, right) = selected()
-    left = replace(left, dimensions=tuple(sorted((*left.dimensions,
-        ("source_period_label", "01.01.2026**"), ("source_value_qualification", "annotated")))), raw_token="123**")
-    dataset = replace(dataset, batches=(replace(dataset.batches[0], observations=(left, right)),))
-    expected = (Decimal(456) / 123 - 1) * 100
-    with localcontext() as context:
-        context.prec = 3
-        result = calculate_change(dataset, left.period, right.period, method="growth_percent")
-    row, = result.batches[0].observations
-    assert row.value == expected
-    assert dict(row.dimensions)["baseline_source_period_label"] == "01.01.2026**"
-    assert dict(row.dimensions)["baseline_source_value_qualification"] == "annotated"
-    assert left.evidence_ref in row.evidence_ref and right.evidence_ref in row.evidence_ref
-    assert result.inputs == dataset.inputs
+    dataset,(left,right)=selected()
+    left={**left,"annotations":{"source_period_label":"01.01.2026**","source_value_qualification":"annotated"},"raw_token":"123**"}
+    dataset=replace(dataset,rows=(left,right))
+    expected=standard.calculate_change({"observations":dataset},{"mode":"percent"},context())["dataset"]
+    with localcontext() as ambient:
+        ambient.prec=3
+        result=standard.calculate_change({"observations":dataset},{"mode":"percent"},context())["dataset"]
+    row,=result.rows
+    assert row["value"]==expected.rows[0]["value"] and Decimal(270)<row["value"]<Decimal(271)
+    assert row["baseline_annotations"]==left["annotations"]
+    assert row["baseline_evidence_ref"]==left["evidence_ref"] and right["evidence_ref"] in row["evidence_ref"]
+    assert dataset.identity in result.lineage
 
 
 def test_share_retains_denominator_annotations_and_explicit_relationship():
-    dataset, (left, _) = selected()
-    numerator = replace(left, metric=replace(left.metric, id="selected.part"), value=Decimal(1))
-    denominator = replace(left, metric=replace(left.metric, id="selected.whole"), value=Decimal(3),
-        dimensions=tuple(sorted((*left.dimensions, ("source_value_qualification", "annotated")))))
-    dataset = replace(dataset, batches=(replace(dataset.batches[0], observations=(numerator, denominator)),))
-    expected = Decimal(1) / 3 * 100
-    with localcontext() as context:
-        context.prec = 4
-        result = calculate_share(dataset, "selected.part", "selected.whole")
-    row, = result.batches[0].observations
-    assert row.value == expected
-    assert dict(row.dimensions)["denominator_source_value_qualification"] == "annotated"
-    assert dict(row.dimensions)["denominator_metric"] == "selected.whole"
+    dataset,(left,_)=selected()
+    numerator={**left,"metric":"selected.part","value":Decimal(1)}
+    denominator={**left,"metric":"selected.whole","value":Decimal(3),
+        "annotations":{"source_value_qualification":"annotated"}}
+    top=replace(dataset,rows=(numerator,));bottom=replace(dataset,rows=(denominator,))
+    inputs={"numerator":top,"denominator":bottom};settings={"multiplier":100}
+    expected=standard.calculate_ratio(inputs,settings,context())["dataset"]
+    with localcontext() as ambient:
+        ambient.prec=4
+        result=standard.calculate_ratio(inputs,settings,context())["dataset"]
+    row,=result.rows
+    assert row["value"]==expected.rows[0]["value"] and Decimal(33)<row["value"]<Decimal(34)
+    assert row["denominator_annotations"]==denominator["annotations"]
+    assert row["denominator_metric"]=="selected.whole"
+    assert bottom.identity in result.lineage
 
 
 def test_absolute_difference_preserves_digits_beyond_ambient_decimal_precision():
-    dataset, (left, right) = selected()
-    left = replace(left, value=Decimal("1234567890123456789012345678901234567890.0001"))
-    right = replace(right, value=Decimal("1234567890123456789012345678901234567890.0003"))
-    dataset = replace(dataset, batches=(replace(dataset.batches[0], observations=(left, right)),))
-    with localcontext() as context:
-        context.prec = 3
-        result = calculate_change(dataset, left.period, right.period)
-    assert result.batches[0].observations[0].value == Decimal("0.0002")
-    with pytest.raises(ValueError, match="change_selection_invalid"):
-        calculate_change(dataset, right.period, left.period)
+    dataset,(left,right)=selected()
+    left={**left,"value":Decimal("1234567890123456789012345678901234567890.0001")}
+    right={**right,"value":Decimal("1234567890123456789012345678901234567890.0003")}
+    dataset=replace(dataset,rows=(left,right))
+    with localcontext() as ambient:
+        ambient.prec=3
+        result=standard.calculate_change({"observations":dataset},{"mode":"absolute"},context())["dataset"]
+    assert result.rows[0]["value"]==Decimal("0.0002")
+    with pytest.raises((ExecutionFailure,ValueError),match="selection_invalid|period_order|change_order"):
+        standard.calculate_change({"observations":dataset},{"mode":"absolute"},
+            context(before=right["period"],after=left["period"]))

@@ -1,8 +1,8 @@
-from stratbox.domains.cbr.analytics.corporate_lending.sors.metrics import source_metric
-from stratbox.domains.cbr.analytics.corporate_lending.sors.registries.okved2 import read_okved2_classes
-from stratbox.domains.cbr.analytics.corporate_lending.sors.registries.publication_categories import PUBLISHED_OTHER_CLASSES
-from stratbox.domains.cbr.analytics.corporate_lending.sors.registries.publication_categories import enrich_okved2_classes
-from stratbox.domains.cbr.analytics.corporate_lending.sors.registries.publication_categories import build_publication_categories
+from stratbox.domains.cbr.calculations.sors.metrics import source_metric
+from stratbox.domains.cbr.calculations.sors.registries.okved2 import read_okved2_classes
+from stratbox.domains.cbr.calculations.sors.registries.publication_categories import PUBLISHED_OTHER_CLASSES
+from stratbox.domains.cbr.calculations.sors.registries.publication_categories import enrich_okved2_classes
+from stratbox.domains.cbr.calculations.sors.registries.publication_categories import build_publication_categories
 
 
 def test_metrics_cover_all_six_publications() -> None:

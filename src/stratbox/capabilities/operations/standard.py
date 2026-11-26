@@ -1,5 +1,6 @@
 """Source-neutral operation graphs with independently callable entrances."""
 from ..model import *
+from dataclasses import replace
 from ..commands.standard import BY_ID, P, DATASET, MATERIAL, PHYSICAL
 
 
@@ -23,7 +24,7 @@ SOURCE_CHECK = op('operation.source.check',
      Call('assess', 'command.source.assess', {'evidence': OutputRef('scan','listing'), 'baseline': InputRef('baseline')})),
     {'assessment': OutputRef('assess','assessment'), 'evidence': OutputRef('fetch','material'), 'selection': OutputRef('select','selection')})
 
-ACQUIRE = op('operation.series.acquire', {'locator': P('locator', required=False), 'query': P('query', required=False)},
+ACQUIRE = op('operation.material.acquire', {'locator': P('locator', required=False), 'query': P('query', required=False)},
     (Call('request', 'command.request.prepare', {'locator': InputRef('locator'), 'query': InputRef('query')}, {'mode': 'asset'}),
      Call('fetch', 'command.material.fetch', {'request': OutputRef('request','request')}),
      Call('identify', 'command.material.identify', {'material': OutputRef('fetch','material')})),
@@ -36,7 +37,7 @@ def extraction(identifier, decoder):
              Call('interpret','command.table.interpret',{'tables':OutputRef('select','tables'),'issue':InputRef('issue')}),
              Call('validate','command.observations.validate',{'dataset':OutputRef('interpret','dataset')}))
     return op(identifier, {'material': PortContract('material', MATERIAL.value_type, required=False),
-        'physical': PortContract('physical', PHYSICAL.value_type, required=False),
+        'physical': PortContract('physical', BY_ID[decoder].outputs['physical'].value_type, required=False),
         'tables': PortContract('tables', required=False), 'issue': P('issue', required=False)}, steps,
         {'dataset': OutputRef('validate','dataset'), 'assessment': OutputRef('validate','assessment')}, checks=('validate',),
         entrances={'physical':OutputRef('decode','physical'),'tables':OutputRef('select','tables')})
@@ -56,7 +57,7 @@ ADJUST = op('operation.timeseries.adjust', {'series': BY_ID['command.timeseries.
 TABLE_CALCULATION = op('operation.calculation.apply_table', {'table': DATASET},
     (Call('partition','command.timeseries.partition',{'dataset':InputRef('table')}),
      MapCall('apply','operation.timeseries.adjust',OutputRef('partition','items'),item_input='series',output_port='adjustment')),
-    {'results':OutputRef('apply','items')}, contracts={'results':P('calculation_batch',tuple)})
+    {'results':OutputRef('apply','items'),'outcomes':OutputRef('apply','outcomes')}, contracts={'results':P('calculation_batch',tuple),'outcomes':P('unit_outcomes',tuple)})
 
 _CLOSURE = GraphBody((
     Call('propagate','command.bounds.propagate',{'graph':InputRef('graph'),'state':InputRef('state')}),
@@ -91,4 +92,27 @@ RELEASE = op('operation.release.publish', {'members':P('accepted_members',tuple)
      Call('publish','command.release.publish',{'manifest':OutputRef('assemble','manifest'),'expected_token':InputRef('expected_token')})),
     {'manifest':OutputRef('assemble','manifest'),'receipt':OutputRef('publish','receipt')},effects=('publish',))
 
-OPERATIONS = (SOURCE_CHECK,ACQUIRE,EXTRACT_WORKBOOK,EXTRACT_DOCUMENT,EXTRACT_JSON,EXTRACT_CSV,EXTRACT_DBF,ADJUST,TABLE_CALCULATION,RESTORE,PUBLISH_PRODUCT,RELEASE)
+SERIES_ACQUIRE=OperationDefinition('operation.series.acquire',inputs={
+    'selection':PortContract('selection',BY_ID['command.issue.select'].outputs['selection'].value_type, required=False,
+        predicates=(SemanticPredicate('entries','nonempty',code='source.selection_empty'),
+                    SemanticPredicate('assessment.complete','equals',True,'source.selection_incomplete'))),
+    'locator':P('locator',required=False),'query':P('query',required=False)},outputs={'materials':P('materials',tuple)})
+EXTRACT_ANY=OperationDefinition('operation.series.extract_any',inputs={'material':PortContract('material',MATERIAL.value_type,required=False),'physical':PortContract('physical',PHYSICAL.value_type,required=False),'tables':P('tables',required=False),'issue':P('issue',required=False)},outputs={'dataset':DATASET})
+EXTRACT_ARCHIVE=replace(EXTRACT_ANY,id='operation.series.extract_archive')
+EXTRACT_STRUCTURED=replace(EXTRACT_ANY,id='operation.series.extract_structured')
+MERGE=op('operation.observations.merge',{'datasets':BY_ID['command.observations.merge'].inputs['datasets']},(Call('merge','command.observations.merge',{'datasets':InputRef('datasets')}),),{'dataset':OutputRef('merge','dataset')})
+VALIDATE=op('operation.observations.validate',{'dataset':DATASET},(Call('validate','command.observations.validate',{'dataset':InputRef('dataset')}),),{'dataset':OutputRef('validate','dataset')},checks=('validate',))
+ALIGN=op('operation.observations.align',{'dataset':DATASET},(Call('align','command.observations.align',{'dataset':InputRef('dataset')}),),{'dataset':OutputRef('align','dataset')})
+RETAIN=op('operation.dataset.retain',{'dataset':DATASET,'destination':P('destination',required=False)},(
+    Call('encode','command.value.encode',{'value':InputRef('dataset')}),
+    Call('save','command.artifact.commit',{'material':OutputRef('encode','representation'),'destination':InputRef('destination')})),
+    {'reference':OutputRef('save','reference')},effects=('save',))
+INGEST=op('operation.dataset.ingest',{'dataset':DATASET,'destination':P('destination',required=False)},(
+    Call('write','command.dataset.ingest',{'dataset':InputRef('dataset'),'destination':InputRef('destination')}),),
+    {'reference':OutputRef('write','reference')},effects=('write',))
+CHANGE=op('operation.calculate.change',{'observations':DATASET},(Call('calculate','command.calculate.change',{'observations':InputRef('observations')}),),{'dataset':OutputRef('calculate','dataset')})
+RATIO=op('operation.calculate.ratio',{'numerator':DATASET,'denominator':DATASET},(Call('calculate','command.calculate.ratio',{'numerator':InputRef('numerator'),'denominator':InputRef('denominator')}),),{'dataset':OutputRef('calculate','dataset')})
+FORMULA=op('operation.calculate.formula',{'dataset':DATASET},(Call('calculate','command.calculate.formula',{'dataset':InputRef('dataset')}),),{'dataset':OutputRef('calculate','dataset')})
+INDEX=op('operation.calculate.index',{'observations':DATASET},(Call('calculate','command.calculate.index',{'observations':InputRef('observations')}),),{'dataset':OutputRef('calculate','dataset')})
+FLOW=op('operation.calculate.flow',{'observations':DATASET},(Call('calculate','command.calculate.flow',{'observations':InputRef('observations')}),),{'dataset':OutputRef('calculate','dataset')})
+OPERATIONS = (SERIES_ACQUIRE,EXTRACT_ANY,EXTRACT_ARCHIVE,EXTRACT_STRUCTURED,MERGE,VALIDATE,ALIGN,RETAIN,INGEST,CHANGE,RATIO,FORMULA,INDEX,FLOW,SOURCE_CHECK,ACQUIRE,EXTRACT_WORKBOOK,EXTRACT_DOCUMENT,EXTRACT_JSON,EXTRACT_CSV,EXTRACT_DBF,ADJUST,TABLE_CALCULATION,RESTORE,PUBLISH_PRODUCT,RELEASE)

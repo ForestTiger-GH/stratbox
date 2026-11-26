@@ -9,13 +9,62 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment
 
 from stratbox.shared.data.observations import MetricRef, PeriodRef, SubjectRef
-from stratbox.shared.evidence import SourcePayload
-from stratbox.shared.source_publications import SourceAssetIdentity
-from stratbox.domains.cbr.publications.contracts import IdentifiedOriginal
-from stratbox.domains.cbr.tables.statistics.extraction import extract_workbook_value
-from stratbox.domains.cbr.integration.statistics.alignment import align_statistics, _unit
-from stratbox.domains.cbr.integration.statistics.contracts import ColumnPeriodBinding, RowBinding
-from stratbox.domains.cbr.integration.statistics.snapshots import dataset_snapshot, dataset_from_snapshot
+from dataclasses import dataclass, asdict
+from types import SimpleNamespace
+from stratbox.core.formats.spreadsheets.cells import read_workbook_cells
+from stratbox.shared.data.values import Assessment, Material, SourceDataset, WorkbookEvidence
+from stratbox.domains.cbr.domain import DOMAIN
+from stratbox.domains.cbr.methods.actions.statistics import (
+    _interpret, _unit, extract, SourceWorkbook, observation_row,
+)
+from stratbox.domains.cbr.common.semantics import ColumnPeriodBinding, RowBinding, TableDiagnostic
+
+
+@dataclass(frozen=True)
+class _Batch:
+    observations: tuple
+
+
+@dataclass(frozen=True)
+class _Result:
+    batches: tuple
+    diagnostics: tuple
+
+
+def align_statistics(values, *, row_bindings=(), period_bindings=(), strict=False):
+    batches, findings = [], []
+    for value in values:
+        settings = DOMAIN.series[value.series_id].commands["command.table.interpret"].settings
+        rows, diagnostics = _interpret((value,), settings,
+            row_bindings=tuple(item for item in row_bindings if item.series_id == value.series_id),
+            period_bindings=tuple(item for item in period_bindings if item.series_id == value.series_id), strict=strict)
+        batches.append(_Batch(rows)); findings.extend(diagnostics)
+    return _Result(tuple(batches), tuple(findings))
+
+
+def dataset_snapshot(value):
+    from stratbox.core.commands.standard import value_encode
+    rows = tuple(observation_row(item) for batch in value.batches for item in batch.observations)
+    dataset = SourceDataset("cbr.test", rows,
+        {"diagnostics": tuple(asdict(item) for item in value.diagnostics)})
+    return value_encode({"value": dataset}, None, SimpleNamespace())["representation"]
+
+
+def dataset_from_snapshot(value):
+    from stratbox.core.commands.standard import value_decode
+    from stratbox.shared.data.observations import Observation
+    dataset = value_decode({"representation": value}, None, SimpleNamespace())["value"]
+    rows=[]
+    for item in dataset.rows:
+        period = (PeriodRef("interval", start=date.fromisoformat(item["period"][0]),
+            end=date.fromisoformat(item["period"][1])) if item["period_kind"] == "interval"
+            else PeriodRef(item["period_kind"], as_of=date.fromisoformat(item["period"])))
+        rows.append(Observation(SubjectRef(item["subject_namespace"], item["subject"]),
+            MetricRef(item["metric"], item["unit"], item["measure_kind"], None, item["scale"]),
+            period, tuple(item["dimensions"]), item["perimeter"], item["value"], item["value_status"],
+            item["evidence_ref"], item["raw_token"]))
+    diagnostics = tuple(TableDiagnostic(**item) for item in dataset.semantics["diagnostics"])
+    return _Result((_Batch(tuple(rows)),), diagnostics)
 
 
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -35,8 +84,11 @@ def flake(series, sheets, configure=None):
         configure(book)
     buffer = BytesIO()
     book.save(buffer)
-    return extract_workbook_value(IdentifiedOriginal(
-        SourceAssetIdentity(series, "capture-1", "main"), SourcePayload(buffer.getvalue(), XLSX, series), "xlsx"))
+    material = Material(buffer.getvalue(), XLSX, series)
+    context = SimpleNamespace(parameters={"issue_id": "capture-1"}, checkpoint=lambda: None)
+    settings = DOMAIN.series[series].commands["command.table.extract"].settings
+    tables = extract({"physical": WorkbookEvidence(material, read_workbook_cells(material.data))}, settings, context)["tables"]
+    return SourceWorkbook(series, tables.issue_id, material.identity, tables.tables)
 
 
 def observations(dataset):

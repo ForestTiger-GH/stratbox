@@ -23,11 +23,11 @@ def test_lexical_normalization_requires_no_packaged_dictionary():
 
 
 def test_bank_resolution_reports_explicit_alias():
-    decision = resolve_bank_name("СБЕРБАНК", aliases={"СБЕРБАНК": "СБЕР"}, policy_edition_id="fixture")
+    decision = resolve_bank_name("СБЕРБАНК", aliases={"СБЕРБАНК": "СБЕР"}, policy_content_id="fixture")
     assert decision.match_kind == "alias"
     assert decision.display_name == "СБЕР"
     assert decision.raw_name == "СБЕРБАНК"
-    assert decision.policy_edition_id == "fixture"
+    assert decision.policy_content_id == "fixture"
     assert resolve_bank_name("UNKNOWN", aliases={"СБЕРБАНК": "СБЕР"}).match_kind == "unmatched"
     assert resolve_bank_name("СБЕР", aliases={"СБЕРБАНК": "СБЕР"}).match_kind == "exact"
 
@@ -48,7 +48,7 @@ def test_bank_registry_preserves_expected_columns_and_four_inputs():
     assert {"regn", "bank_name", "bank_name_norm", "is_canonical",
             "replacements_list", "replacements_json", "is_legacy"}.issubset(frame.columns)
     assert {r.role for r in inputs} == {"official_xlsx", "aliases", "default_selection", "legacy_selection"}
-    assert len({r.version for r in inputs}) == 1
+    assert len({r.content_basis for r in inputs}) == 1
     first = frame.iloc[0]
     assert registry.lookup(first["regn"]) is not None
 
@@ -65,8 +65,8 @@ def test_conflicting_bank_alias_is_rejected():
 def test_bank_reference_asset_provenance_and_traceable_name_policy():
     from stratbox.shared.reference.assets import load_reference
     bundle = load_reference("stratbox.shared.reference.banks")
-    assert bundle.edition.publisher is None
-    assert bundle.edition.curator == "Strategy Box"
+    assert bundle.reference.publisher is None
+    assert bundle.reference.curator == "Strategy Box"
     assert bundle.asset("official_xlsx").publisher == "Bank of Russia"
     assert bundle.asset("official_xlsx").origin_kind == "published_source"
     assert bundle.asset("aliases").origin_kind == "curated_policy"
@@ -74,7 +74,7 @@ def test_bank_reference_asset_provenance_and_traceable_name_policy():
     receipts = []
     assert registry.normalize_registered_bank("СБЕРБАНК", inputs=receipts) == "СБЕР"
     assert [r.role for r in receipts] == ["aliases"]
-    assert receipts[0].version == bundle.snapshot_identity
+    assert receipts[0].content_basis == bundle.snapshot_identity
     decision = registry.resolve_registered_bank("СБЕРБАНК", inputs=[])
     assert decision.reference_id == "reference.banks"
     assert decision.policy_snapshot_identity == bundle.snapshot_identity

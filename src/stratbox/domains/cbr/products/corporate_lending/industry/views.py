@@ -12,8 +12,8 @@ from stratbox.domains.cbr.products.corporate_lending.industry.contracts import I
 from stratbox.domains.cbr.products.corporate_lending.industry.contracts import IndustryPivotRequest as Cbr0105ADebtCorpPivotRequest
 from stratbox.domains.cbr.products.corporate_lending.industry.contracts import IndustryPivotSetResult as Cbr0105ADebtCorpPivotSetResult
 from stratbox.domains.cbr.products.corporate_lending.industry.contracts import IndustryPivotTable as Cbr0105ADebtCorpPivotTable
-from stratbox.domains.cbr.integration.corporate_lending.debt.contracts import Cbr0105ADebtCorpStreamResult
-from stratbox.domains.cbr.tables.corporate_lending.industry.sources import industry_source_uses, merge_source_uses
+from stratbox.domains.cbr.methods.alignment.corporate_lending.debt.contracts import Cbr0105ADebtCorpStreamResult
+from stratbox.domains.cbr.methods.tables.corporate_lending.industry.sources import industry_source_uses, merge_source_uses
 
 
 CBR_0105A_DEBT_CORP_PIVOT_DIMENSIONS: tuple[Cbr0105ADebtCorpPivotDimension, ...] = (

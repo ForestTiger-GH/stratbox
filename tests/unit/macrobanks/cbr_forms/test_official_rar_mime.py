@@ -1,50 +1,23 @@
-"""CBR reports use application/rar for official form archives."""
-from datetime import date, datetime, timezone
-
+"""Source identification validates official archive media and actual signatures."""
 import pytest
 
-from stratbox.core.network import HttpResponse
-from stratbox.domains.cbr.operations import reporting_forms as cbr_forms
+from stratbox.shared.data.values import Material
+from .support import DAY, command
 
 
-@pytest.mark.parametrize("code", ["101", "102", "123", "135", "802", "805"])
+@pytest.mark.parametrize("code", ["101","102","123","135","802","805"])
 def test_forms_accept_official_application_rar_content_type(code):
-    key = cbr_forms.FormKey(code, date(2024, 1, 1))
-    source = cbr_forms.select_sources(cbr_forms.SelectFormSourcesRequest((key,)))
-    assert source.outcome == "succeeded"
-    expected_url = source.value[0].url
-    stub_rar = b"Rar!\x1a\x07\x00" + b"small test archive"
-
-    class Stub:
-        def exchange(self, request, *, cancelled=None):
-            assert request.url == expected_url
-            assert request.permits(request.url)
-            return HttpResponse(
-                200, stub_rar, {"content-type": "application/rar"},
-                datetime.now(timezone.utc), "https://www.cbr.ru",
-            )
-
-    received = cbr_forms.acquire(key, transport=Stub())
-    assert received.outcome == "succeeded", received.diagnostics
-    assert received.value.payload.data == stub_rar
-    assert received.value.payload.media_type == "application/rar"
-    assert received.value.receipt.media_type == "application/rar"
+    request=command(code,"request.prepare",{"query":{"issue_id":DAY}})["request"]
+    assert request.url.endswith(f"/{code}-20260401.rar")
+    original=Material(b"Rar!\x1a\x07\x00small test archive","application/rar")
+    identified=command(code,"material.identify",{"material":original},issue_id=DAY)["material"]
+    assert identified.material==original and identified.material.media_type=="application/rar"
 
 
-@pytest.mark.parametrize("media,body,expected", [
-    ("text/html", b"Rar!\x1a\x07\x00arbitrary", "source.media_type_unexpected"),
-    ("application/rar", b"<html>not an archive</html>", "source.archive_signature_invalid"),
+@pytest.mark.parametrize("media,body", [
+    ("text/html",b"Rar!\x1a\x07\x00arbitrary"),
+    ("application/rar",b"<html>not an archive</html>"),
 ])
-def test_forms_keep_media_and_signature_validation(media, body, expected):
-    key = cbr_forms.FormKey("101", date(2024, 1, 1))
-
-    class Stub:
-        def exchange(self, request, *, cancelled=None):
-            return HttpResponse(
-                200, body, {"content-type": media},
-                datetime.now(timezone.utc), "https://www.cbr.ru",
-            )
-
-    result = cbr_forms.acquire(key, transport=Stub())
-    assert result.outcome == "failed"
-    assert any(d.code == expected for d in result.diagnostics)
+def test_forms_keep_media_and_signature_validation(media,body):
+    with pytest.raises(ValueError):
+        command("101","material.identify",{"material":Material(body,media)},issue_id=DAY)

@@ -1,19 +1,9 @@
-from __future__ import annotations
-
+"""Maintained runnable examples follow the final public owners."""
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT=Path(__file__).resolve().parents[2]
 
-def test_examples_exist() -> None:
-    expected = [
-        'examples/cbr_file_collector_example.py',
-        'examples/cbr_industries_0105a_debt_corp_example.py',
-        'examples/cbr_sors_restoration_colab.py',
-        'examples/cbr_sors_restoration_crosswalk.py',
-        'examples/escrow_example.py',
-        'examples/frg_cleanup_example.py',
-        'examples/frg_scan_example.py',
-        'examples/universal_storage_flow.py',
-    ]
-    for rel in expected:
-        assert (ROOT / rel).is_file(), rel
+
+def test_examples_exist():
+    for name in ('source_route.py','capability_session.py','universal_storage_flow.py','cbr_sors_restoration.py'):
+        assert (ROOT/'examples'/name).is_file()

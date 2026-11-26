@@ -3,18 +3,18 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsCrosswalkConfig
-from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.contracts import SorsSourceBundle
-import stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.operations as operations
-from stratbox.domains.cbr.analytics.corporate_lending.sors.linear.highs import SolveResult
-from stratbox.domains.cbr.analytics.corporate_lending.sors.metrics import METRIC_NAMES_RU
-from stratbox.domains.cbr.analytics.corporate_lending.sors.metrics import METRIC_ORDER
-from stratbox.domains.cbr.analytics.corporate_lending.sors.registries.okved2 import read_okved2_classes
-from stratbox.domains.cbr.analytics.corporate_lending.sors.registries.publication_categories import build_publication_categories
-from stratbox.domains.cbr.analytics.corporate_lending.sors.registries.publication_categories import enrich_okved2_classes
-from stratbox.domains.cbr.analytics.corporate_lending.sors.results import SorsRestorationResult
-from stratbox.domains.cbr.analytics.corporate_lending.sors.results import SorsRunSummary
-from stratbox.domains.cbr.analytics.corporate_lending.sors.schema import TARGET_METRICS
+from stratbox.domains.cbr.calculations.sors.contracts import SorsCrosswalkConfig
+from stratbox.domains.cbr.calculations.sors.inputs.contracts import SorsSourceBundle
+import stratbox.domains.cbr.calculations.sors.crosswalk.analysis as operations
+from stratbox.domains.cbr.calculations.sors.linear.highs import SolveResult
+from stratbox.domains.cbr.calculations.sors.metrics import METRIC_NAMES_RU
+from stratbox.domains.cbr.calculations.sors.metrics import METRIC_ORDER
+from stratbox.domains.cbr.calculations.sors.registries.okved2 import read_okved2_classes
+from stratbox.domains.cbr.calculations.sors.registries.publication_categories import build_publication_categories
+from stratbox.domains.cbr.calculations.sors.registries.publication_categories import enrich_okved2_classes
+from stratbox.domains.cbr.calculations.sors.results import SorsRestorationResult
+from stratbox.domains.cbr.calculations.sors.results import SorsRunSummary
+from stratbox.domains.cbr.calculations.sors.schema import TARGET_METRICS
 
 
 def _published_row(
@@ -131,7 +131,7 @@ def _strict_with_bundle() -> SorsRestorationResult:
                     'closure_pass': None,
                     'lower_solve_id': None,
                     'upper_solve_id': None,
-                    'rules_version': 'test',
+                    'rules_fingerprint': 'test',
                     'solver_backend': 'test',
                     'solver_version': 'test',
                 }
@@ -210,54 +210,30 @@ class _FeasibilitySession:
         )
 
 
-def test_full_crosswalk_orchestration_accepts_only_equation_identified_values(
-    monkeypatch,
-) -> None:
-    monkeypatch.setattr(operations, 'HighsSession', _FeasibilitySession)
-    from stratbox.domains.cbr.operations.corporate_lending.sors.definitions import CrosswalkSorsRequest
-    from stratbox.domains.cbr.operations.corporate_lending.sors.api import run_crosswalk
+def test_full_crosswalk_commands_accept_only_equation_identified_values(monkeypatch):
     from dataclasses import replace
-    from stratbox.core.execution import OperationDefinition, run
-    from stratbox.domains.cbr.operations.corporate_lending.sors.api import _seal_grids
-
+    from stratbox.domains.cbr.calculations.sors.identity import seal_content
+    from stratbox.domains.cbr.calculations.sors.crosswalk.mapping import capture_mapping_inputs, mapping_content_fingerprint
+    from support import execute_model_methods
+    monkeypatch.setattr(operations, 'HighsSession', _FeasibilitySession)
     strict = _strict_with_bundle()
-    snapshot = run(
-        OperationDefinition("test.sors.snapshot", "test-1", SorsSourceBundle, SorsSourceBundle),
-        strict.source_bundle,
-        lambda value, invocation: _seal_grids(invocation, value),
-    )
-    assert snapshot.outcome == "succeeded", snapshot.diagnostics
-    strict = replace(strict, source_bundle=snapshot.value)
-
-    execution = run_crosswalk(CrosswalkSorsRequest(
-        strict,
-        SorsCrosswalkConfig(
-            mode='feasibility',
-            scenario_ids=('core',),
-            scenario_policy='single',
-        ),
-    ))
-    assert execution.outcome == "succeeded", execution.diagnostics
-    result = execution.value
-    assert {item.source_id for item in execution.used_inputs if item.role == "sors_crosswalk_resource"} == {
-        "legacy_atoms.csv", "legacy_node_membership.csv", "atom_class_edges.csv", "crosswalk_manifest.json",
-    }
-
+    strict = seal_content(replace(strict, source_bundle=seal_content(strict.source_bundle)))
+    used = []
+    with capture_mapping_inputs(used.append):
+        result = execute_model_methods(strict, SorsCrosswalkConfig(
+            mode='feasibility', scenario_ids=('core',), scenario_policy='single'), crosswalk=True)
+    assert {item.source_id for item in used} == {
+        "legacy_atoms.csv", "legacy_node_membership.csv", "atom_class_edges.csv", "crosswalk_manifest.json"}
     assert result.status == 'OPTIMAL'
     facts = result.crosswalk_facts_grid.set_index(['class_code', 'metric'])
     assert facts.loc[('01', 'overdue_rub'), 'value'] == 90.0
     assert facts.loc[('02', 'overdue_rub'), 'value'] == 10.0
     assert facts['value'].notna().all()
     assert not facts['is_benchmark_estimate'].astype(bool).any()
-    assert facts['mapping_version'].eq(
-        'cbr-legacy-okved2-crosswalk-2026.3'
-    ).all()
+    assert facts['mapping_fingerprint'].eq(mapping_content_fingerprint()).all()
     assert facts['scenario_coverage_complete'].astype(bool).all()
     assert facts['supporting_relation_ids'].map(bool).all()
-
-    unresolved = result.crosswalk_bounds_grid[
-        ~result.crosswalk_bounds_grid['is_final_accepted'].astype(bool)
-    ]
+    unresolved = result.crosswalk_bounds_grid[~result.crosswalk_bounds_grid['is_final_accepted'].astype(bool)]
     assert unresolved['value'].isna().all()
 
 
@@ -273,35 +249,20 @@ def test_overall_crosswalk_status_treats_proven_infeasible_scenario_as_resolved(
     ) == 'INFEASIBLE'
 
 
-def test_restore_rejects_changed_source_parameters_and_grids(monkeypatch):
+def test_restore_rejects_changed_source_parameters_and_grids():
     from dataclasses import replace
-    from io import BytesIO
-    from openpyxl import Workbook
-
-    from stratbox.shared.evidence import SourcePayload
-    from stratbox.domains.cbr.operations.corporate_lending.sors.definitions import PrepareSorsOriginalsRequest
-    from stratbox.domains.cbr.operations.corporate_lending.sors.definitions import RestoreSorsRequest
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsRunConfig
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.contracts import SorsSourceInputs
-    from stratbox.domains.cbr.operations.corporate_lending.sors.api import prepare_from_originals
-    from stratbox.domains.cbr.operations.corporate_lending.sors.api import restore
-    import stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.loader as loader
-
+    from types import SimpleNamespace
+    import pytest
+    from stratbox.domains.cbr.calculations.sors.contracts import SorsRunConfig
+    from stratbox.domains.cbr.calculations.sors.stages import model_inputs
+    from stratbox.domains.cbr.calculations.sors.identity import seal_content, validate_content
     config = SorsRunConfig(as_of_date="2026-06-01")
-    fixture = replace(_strict_with_bundle().source_bundle,
-                      as_of_date=config.as_of_date, publication_step=config.publication_step)
-    monkeypatch.setattr(loader, "parse_source_inputs", lambda *args, **kwargs: fixture)
-    book = Workbook()
-    book.active.append(["Fixture", 1])
-    buffer = BytesIO()
-    book.save(buffer)
-    book.close()
-    sources = SorsSourceInputs(*([SourcePayload(buffer.getvalue())] * 10))
-    loaded = prepare_from_originals(PrepareSorsOriginalsRequest(sources, config))
-    assert loaded.outcome == "succeeded", loaded.diagnostics
-    changed = restore(RestoreSorsRequest(loaded.value, replace(config, publication_step=0.5)))
-    assert changed.diagnostics[0].code == "sors.source_publication_step_mismatch"
-    changed = restore(RestoreSorsRequest(loaded.value, replace(config, as_of_date="2026-07-01")))
-    assert changed.diagnostics[0].code == "sors.source_period_mismatch"
-    loaded.value.atomic_regions_grid.loc[0, "region_order"] = 2
-    assert restore(RestoreSorsRequest(loaded.value, config)).diagnostics[0].code == "input.identity_mismatch"
+    fixture = seal_content(replace(_strict_with_bundle().source_bundle,
+        as_of_date=config.as_of_date, publication_step=config.publication_step))
+    with pytest.raises(ValueError, match="publication_step_mismatch"):
+        model_inputs({'datasets': fixture}, None, SimpleNamespace(parameters={'config': replace(config, publication_step=.5)}))
+    with pytest.raises(ValueError, match="report_date_mismatch"):
+        model_inputs({'datasets': fixture}, None, SimpleNamespace(parameters={'config': replace(config, as_of_date='2026-07-01')}))
+    fixture.atomic_regions_grid.loc[0, 'region_order'] = 2
+    with pytest.raises(ValueError, match="content_identity_mismatch"):
+        validate_content(fixture)

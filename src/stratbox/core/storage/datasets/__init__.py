@@ -1,9 +1,4 @@
-"""Portable logical snapshots with independent memory and file adapters."""
+"""Content addressed canonical dataset retention and typed selection."""
+from .stores import FileDatasetStore, MemoryDatasetStore
 
-from .ports import DatasetCatalog, DatasetReader, DatasetVersionWriter, DatasetResolver, DatasetWriteResult
-from .memory import MemoryDatasetStore
-from .files import FileDatasetStore
-from .resolver import DatasetProviders
-
-__all__ = ["DatasetCatalog", "DatasetReader", "DatasetVersionWriter", "DatasetResolver", "DatasetWriteResult",
-           "MemoryDatasetStore", "FileDatasetStore", "DatasetProviders"]
+__all__ = ("FileDatasetStore", "MemoryDatasetStore")

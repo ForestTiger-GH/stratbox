@@ -164,7 +164,7 @@ def test_context_adapter_unknown_table_column_fails_static_validation(monkeypatc
 
 def test_new_metadata_edition_does_not_reuse_an_older_context_adapter():
     from stratbox.core.execution import HandoffError, prepare_input
-    from stratbox.domains.cbr.tables.statistics.snapshots import _META
+    from stratbox.domains.cbr.methods.tables.statistics.snapshots import _META
     from stratbox.shared.data.snapshots import TypedTable
     from stratbox.shared.identity import ByteIdentity
     schema = replace(_META, contract=replace(_META.contract, version=_META.contract.version + 1))

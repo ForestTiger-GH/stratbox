@@ -1,1 +1,1 @@
-"""Stable semantic references and versioned packaged assets."""
+"""Stable semantic references and integrity-checked packaged assets."""

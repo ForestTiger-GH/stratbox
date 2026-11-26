@@ -1,28 +1,20 @@
 # Rosstat
 
-One `rosstat` operation owner covers four publisher families. Canonical source,
-operation and profile resources live under `stratbox/registry/rosstat`; domain
-metadata discovery stays independent of optional document and spreadsheet engines.
+The immutable [DOMAIN](domain.py) declares four publication channels separately
+from actual reviewed table series. The continuing KEP2 set contains eleven
+indicators with annual, quarterly and monthly observations. Population and
+regional industrial indices retain exact source-native territories, periods,
+comparison bases, numeric tokens, notes and selected-row evidence.
 
-| Package | Responsibility |
-| --- | --- |
-| `publications/` | Publisher pages, explicit issue/asset selection, update assessment, original acquisition and regional archive membership |
-| `tables/` | Full physical evidence, reviewed KEP2 selection, exact-original cell/document profiles, source-flake validation, comparison and replay |
-| `integration/` | Explicit statistical meanings, dated territorial identities, collision checks and portable datasets |
-| `analytics/` | Scoped observation revisions and explicitly requested index-to-growth derivation |
-| `products/` | Prepared views and monthly KEP2 XLSX rendering |
-| `operations/` | Typed requests, execution boundaries, definitions and source-catalog bindings |
+- [common](common/) owns publication facts and reusable semantic rules.
+- [series](series/) directly specializes standard commands for actual tables.
+- [methods](methods/) consumes supplied physical evidence and returns shared
+  datasets. Its explicit document-region settings preserve bounded text-table
+  interpretation without claiming built-in national PDF mappings.
 
-The KEP2 route implements the supplied eleven-indicator notebook with annual,
-quarterly and monthly source values, source row decisions, units and footnotes.
-The monthly presentation is downstream of the integrated dataset. Original
-bytes, full workbook evidence, selected source flakes and products have separate
-identities and storage routes.
-
-Other table families use reviewed mappings pinned to the original digest.
-PDF page text requires reviewed table structure before statistical cell mapping;
-municipal population requires explicit stock dates and a supplied dated
-territory edition. Publisher-page completeness remains independently qualified.
-
-See the [full processing route](../../../../docs/current-how/rosstat-data-route.md)
-and [publication lifecycle](../../../../docs/current-how/rosstat-publications.md).
+Standard commands own HTTP, archive members, physical decoding, numerical
+calculations, codecs, storage, resource admission and journals. KEP2 monthly
+product preparation preserves reported index values and exact evidence.
+Publisher inventory completeness, unsupported historical layouts, the remaining
+regional tables and national PDF numerical mappings remain explicit scientific
+obligations in `DOMAIN.common`.

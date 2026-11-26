@@ -1,43 +1,16 @@
-"""DBF source semantics and continuation through an independently opened store."""
-
+"""Source evidence survives independent physical decoding and retained-value replay."""
 from dataclasses import replace
-from datetime import date
 from io import BytesIO
 from struct import pack
 
-import pandas as pd
 import pytest
 from openpyxl import load_workbook
 
-from stratbox.core.execution.handoff import bind_request, project_output
+from stratbox.core.commands import standard
 from stratbox.core.formats.archives.members import zip_bytes
 from stratbox.core.formats.dbf_lossless import DBFDecodeError, decode_dbf
-from stratbox.core.storage.datasets import operations as datasets
-from stratbox.core.storage.datasets.files import FileDatasetStore
-from stratbox.core.storage.filestore.local import LocalFileStore
-from stratbox.core.operations.materials.archive import archive_materials
-from stratbox.core.operations.materials.archive_definitions import ArchiveMember, ArchiveRequest
-from stratbox.core.operations.source.original_definitions import OriginalDestination
-from stratbox.shared.material_collections import decode_collection, encode_collection
-from stratbox.shared.evidence import SourcePayload
-from stratbox.domains.cbr.operations import reporting_forms as forms
-from stratbox.domains.cbr.operations.reporting_forms import source_definitions as D
-from stratbox.domains.cbr.operations.reporting_forms.definitions import BUILD, VIEWS, RENDER
-
-
-def dbf(fields, records, *, version=3):
-    width = 1 + sum(field[2] for field in fields)
-    header = pack("<BBBBIHH20x", version, 126, 4, 1, len(records), 33 + 32 * len(fields), width)
-    columns = b"".join(pack("<11sc4xBB14x", name.encode("ascii"), kind.encode("ascii"), size, decimals)
-                       for name, kind, size, decimals in fields)
-    rows = b"".join(flag + b"".join(value.ljust(field[2]) for field, value in zip(fields, values))
-                    for flag, values in records)
-    return header + columns + b"\r" + rows + b"\x1a"
-
-
-def accepted(result):
-    assert result.outcome == "succeeded", result.diagnostics
-    return result
+from stratbox.shared.data.values import Material
+from .support import DAY, calculate, command, context, dbf, physical, render, reopen, series, tables, view
 
 
 def test_source_lexemes_deleted_records_and_schema_remain_explicit():
@@ -73,121 +46,92 @@ def test_strict_decoder_rejects_unverified_geometry_and_dialects(mutate, code):
         decode_dbf(mutate(data))
 
 
-def test_source_only_forms_and_unknown_models_are_separate():
-    payload = SourcePayload(dbf((("CODE", "C", 4, 0),), ((b" ", (b"0012",)),)))
-    for code in ("134", "803"):
-        key = forms.FormKey(code, date(2026, 4, 1))
-        assert accepted(forms.select_sources(forms.SelectFormSourcesRequest((key,)))).value[0].key == key
-        flakes = accepted(forms.extract_forms(forms.ExtractFormRequest(key, payload)))
-        assert flakes.value.members[0].table.records[0].values == ("0012",)
-        refused = forms.normalize_form(forms.NormalizeFormRequest(flakes.value))
-        assert refused.diagnostics[0].code == "source.form_layout_unsupported"
+
+@pytest.mark.parametrize("code,fields,values,parameters", (
+    ("134", (("REGN","N",4,0),("C1","C",15,0),("C3","N",16,0)),
+        (b"1000",b"0012",b"1.2300"), {"period": DAY,"unit":"RUB","scale":1000}),
+    ("803", (("REGN_GKO","N",4,0),("RAZDEL","C",3,0),("STR","C",5,0),
+        ("KORR_P","N",16,0),("KORR_M","N",16,0),("VSEGO","N",16,0)),
+        (b"1000",b"1",b"0012",b"",b"",b"1.2300"),
+        {"period": ("2026-01-01","2026-03-31"),"unit":"RUB","scale":1000}),
+))
+def test_published_fields_are_available_separately_from_unreviewed_financial_models(code, fields, values, parameters):
+    source = tables(code, dbf(fields, ((b" ",values),)))
+    normalized = command(code,"table.interpret",{"tables":source},issue_id=DAY,**parameters)["dataset"]
+    assert normalized.rows[-1]["value"] == __import__("decimal").Decimal("1.2300")
+    assert normalized.assessment.qualifications == frozenset({"published_fields_only"})
+    with pytest.raises(ValueError, match="requires_publisher_evidence"):
+        calculate(code, normalized)
 
 
 def test_index_selects_actual_published_dates_and_accepts_offline_html():
-    payload = SourcePayload(b'<a href="/vfs/credit/forms/803-20260401.rar">form</a>'
+    material = Material(b'<a href="/vfs/credit/forms/803-20260401.rar">form</a>'
         b'<a href="/vfs/credit/forms/134-20160101.rar">old</a>'
         b'<a href="/vfs/credit/forms/803-20260401.rar">duplicate</a>', "text/html")
-    result = accepted(forms.discover_sources(forms.DiscoverFormsRequest(payload, date(2023, 1, 1), date(2028, 1, 1))))
-    assert [(x.key.code, x.key.as_of) for x in result.value.sources] == [("803", date(2026, 4, 1))]
-    assert result.value.index_identity == payload.identity
+    listing = command("803", "publication.scan", {"index":material})["listing"]
+    assert [(x.source_id,x.issue_id) for x in listing.entries] == [(series("803").id,DAY)]
+    assert listing.lineage == (material.identity,)
+    assert "observed_index_only" in listing.assessment.qualifications
 
 
-def _roundtrip(tmp_path, snapshot):
-    store = FileDatasetStore(LocalFileStore(str(tmp_path)), "datasets", provider_id="files", scope_id="test")
-    written = accepted(datasets.write_snapshot(datasets.WriteSnapshotRequest(snapshot), store=store))
-    reopened = FileDatasetStore(LocalFileStore(str(tmp_path)), "datasets", provider_id="files", scope_id="test")
-    return accepted(datasets.read_snapshot(datasets.ReadSnapshotRequest(written.value.reference), store=reopened))
-
-
-def test_full_flakes_history_calculation_and_views_replay_after_file_read(tmp_path):
-    data = dbf((("REGN_GKO", "C", 12, 0), ("STR", "C", 12, 0), ("VSEGO", "N", 20, 4)), (
-        (b" ", (b"1000", b"14", b"000001.2300")),
-        (b"*", (b"1000", b"14", b"999.9")),
-    ))
-    dictionary = dbf((("FIELD", "C", 8, 0),), ((b" ", (b"0012",)),))
-    original = SourcePayload(zip_bytes({"PK802.dbf": data, "metadata.dbf": dictionary, "readme.txt": b"companion"}))
-    extracted = accepted(forms.extract_forms(forms.ExtractFormRequest(forms.FormKey("802", date(2026, 4, 1)), original)))
-    assert len(extracted.value.members) == 3
-    encoded = accepted(forms.flake_snapshot(forms.FormFlakeSnapshotRequest(extracted.value, "cbr.form.802", "raw-1")))
-    read = _roundtrip(tmp_path, encoded.value)
-    restored = accepted(bind_request(D.RESTORE_FLAKES, {"snapshot": project_output(read, "snapshot")}).invoke(forms.restore_flakes))
-    assert restored.value == extracted.value
-    assert restored.value.members[2].data == b"companion"
-    normalized = accepted(bind_request(D.NORMALIZE, {"flakes": project_output(restored, "flakes")}).invoke(forms.normalize_form))
-    assert len(normalized.value.rows) == 1
-    assert normalized.value.rows.iloc[0]["total"] == "000001.2300"
-    history = accepted(forms.build_source_history(forms.FormHistoryRequest((normalized.value,), "cbr.form.802", "history-1")))
-    read_history = _roundtrip(tmp_path, history.value)
-    released = accepted(bind_request(D.RESTORE_HISTORY, {"snapshot": project_output(read_history, "snapshot")}).invoke(forms.restore_history))
-    data_result = accepted(bind_request(BUILD, {"snapshots": project_output(released, "snapshots")},
-        parameters={"banks": (forms.BankSelection("1000", "Bank"),)}).invoke(forms.build_form_data))
-    saved_data = accepted(forms.snapshot_result(forms.FormResultSnapshotRequest(data_result.value, "cbr.form.802", "data-1")))
-    reopened_data = _roundtrip(tmp_path, saved_data.value)
-    replayed_data = accepted(bind_request(D.RESTORE_DATA, {"snapshot": project_output(reopened_data, "snapshot")}).invoke(forms.restore_data))
-    pd.testing.assert_frame_equal(replayed_data.value.long, data_result.value.long)
-    assert replayed_data.value.evidence == data_result.value.evidence
-    views = accepted(bind_request(VIEWS, {"data": project_output(replayed_data, "result")}).invoke(forms.build_form_views))
-    saved_views = accepted(forms.snapshot_result(forms.FormResultSnapshotRequest(views.value, "cbr.form.802", "views-1")))
-    reopened_views = _roundtrip(tmp_path, saved_views.value)
-    replayed_views = accepted(bind_request(D.RESTORE_VIEWS, {"snapshot": project_output(reopened_views, "snapshot")}).invoke(forms.restore_views))
-    rendered = accepted(bind_request(RENDER, {"views": project_output(replayed_views, "result")}).invoke(forms.render_workbook))
-    workbook = load_workbook(BytesIO(rendered.value.data), data_only=True)
-    assert set(workbook.sheetnames) == {"Обзор", "Полная форма", "Данные"}
-    rows = list(workbook["Данные"].values)
-    header = list(rows[0])
-    values = {row[header.index("Код")]: row[header.index("Значение")] for row in rows[1:]}
-    assert values["14"] == 1.23
+def test_full_members_history_calculation_and_views_replay_after_file_read(tmp_path):
+    data = dbf((("REGN_GKO","C",12,0),("STR","C",12,0),("VSEGO","N",20,4)), (
+        (b" ",(b"1000",b"14",b"000001.2300")),(b"*",(b"1000",b"14",b"999.9"))))
+    dictionary = dbf((("FIELD","C",8,0),),((b" ",(b"0012",)),))
+    original = Material(zip_bytes({"PK802.dbf":data,"metadata.dbf":dictionary,"readme.txt":b"companion"}),
+        source_id=series("802").id)
+    members = standard.archive_unpack({"material":original},None,context())["members"]
+    retained = reopen(tmp_path,members)
+    assert retained == members and retained[2].data == b"companion"
+    decoded = tuple(physical("802",member.data,**member.metadata) for member in retained[:2])
+    extracted = command("802","table.extract",{"physical":decoded},issue_id=DAY)["tables"]
+    assert len(extracted.metadata["all_members"]) == 2
+    restored = reopen(tmp_path,extracted)
+    assert restored == extracted and restored.tables[0].records[1].deleted
+    normalized = command("802","table.interpret",{"tables":restored},issue_id=DAY)["dataset"]
+    assert len(normalized.rows)==1 and normalized.rows[0]["raw_token"]=="000001.2300"
+    restored_data = reopen(tmp_path,calculate("802",reopen(tmp_path,normalized)))
+    prepared = reopen(tmp_path,view(restored_data))
+    product = render(prepared)
+    workbook = load_workbook(BytesIO(product.data),data_only=True)
+    assert workbook.sheetnames == ["Обзор","Полная форма","Данные"]
+    rows=list(workbook["Данные"].values);header=list(rows[0])
+    values={row[header.index("Код")]:row[header.index("Значение")] for row in rows[1:]}
+    assert values["14"]==1.23
     workbook.close()
 
 
-def test_unsupported_member_is_preserved_but_prevents_complete_normalization(tmp_path):
-    valid = dbf((("CODE", "C", 4, 0),), ((b" ", (b"0012",)),))
-    unsupported = bytes((0x30,)) + valid[1:]
-    result = forms.extract_forms(forms.ExtractFormRequest(forms.FormKey("803", date(2026, 4, 1)),
-        SourcePayload(zip_bytes({"valid.dbf": valid, "unsupported.dbf": unsupported})), strict=False))
-    assert result.outcome == "partial"
-    assert result.value.members[1].status == "unsupported"
-    encoded = accepted(forms.flake_snapshot(forms.FormFlakeSnapshotRequest(result.value, "cbr.form.803", "partial-1")))
-    read = _roundtrip(tmp_path, encoded.value)
-    replayed = forms.restore_flakes(read.value)
-    assert replayed.outcome == "partial"
-    assert replayed.value == result.value
-    assert replayed.value.members[1].data == unsupported
+def test_unsupported_member_remains_retained_and_cannot_be_decoded_as_supported(tmp_path):
+    valid=dbf((("CODE","C",4,0),),((b" ",(b"0012",)),))
+    unsupported=bytes((0x30,))+valid[1:]
+    original=Material(zip_bytes({"valid.dbf":valid,"unsupported.dbf":unsupported}))
+    members=standard.archive_unpack({"material":original},None,context())["members"]
+    replayed=reopen(tmp_path,members)
+    assert replayed[1].data==unsupported
+    with pytest.raises(DBFDecodeError,match="dialect_unsupported"):
+        standard.dbf_decode({"material":replayed[1]},None,context())
 
 
-def test_incomplete_dataset_cannot_be_relabelled_as_restored_flakes(tmp_path):
-    valid = dbf((("CODE", "C", 4, 0),), ((b" ", (b"0012",)),))
-    flakes = accepted(forms.extract_forms(forms.ExtractFormRequest(forms.FormKey("134", date(2012, 1, 1)), SourcePayload(valid))))
-    snapshot = accepted(forms.flake_snapshot(forms.FormFlakeSnapshotRequest(flakes.value, "form.134", "one"))).value
-    partial = replace(snapshot, tables=snapshot.tables[:1])
-    result = forms.restore_flakes(partial)
-    assert result.outcome == "failed"
-    assert result.diagnostics[0].code == "cbr.forms.flake_snapshot_invalid"
+def test_lossless_dbf_replay_keeps_schema_lexemes_deleted_flag_without_reparse(tmp_path,monkeypatch):
+    original=dbf((("CODE","C",8,0),("VALUE","N",16,4)), (
+        (b" ",(b"0012",b"000001.2300")),(b"*",(b"0013",b""))))
+    evidence=physical("803",original)
+    import stratbox.core.formats.dbf_lossless as parser
+    monkeypatch.setattr(parser,"decode_dbf",lambda *a,**kw:pytest.fail("DBF parsed during value replay"))
+    restored=reopen(tmp_path,evidence)
+    assert restored==evidence
+    assert restored.records[0].values==("0012","000001.2300")
+    assert restored.records[1].deleted and restored.records[1].values==("0013","")
+    assert restored.fields[1].decimals==4
 
 
-def test_csv_package_uses_common_manifest_and_restores_without_dbf_parsing(tmp_path, monkeypatch):
+def test_unknown_or_truncated_value_envelope_is_rejected(tmp_path):
+    from stratbox.shared.data.values import canonical_tree
     import json
-    from zipfile import ZipFile
-    from stratbox.domains.cbr.tables.reporting_forms import flakes as flake_module
-    original = dbf((("CODE", "C", 8, 0), ("VALUE", "N", 16, 4)), (
-        (b" ", (b"0012", b"000001.2300")), (b"*", (b"0013", b"")),
-    ))
-    extracted = accepted(forms.extract_forms(forms.ExtractFormRequest(forms.FormKey("803", date(2026, 4, 1)),
-        SourcePayload(zip_bytes({"nested/A.dbf": original, "readme.txt": b"notes"})))))
-    rendered = accepted(forms.render_flakes(forms.RenderFormFlakesRequest(extracted.value,
-        "regulatory-reporting/2026/2026-04-01/form-0409803")))
-    exports = rendered.value
-    fields = tuple((name, SourcePayload(rep.data, rep.media_type)) for name, rep in exports.files)
-    manifest = decode_collection(encode_collection(exports.manifest))
-    monkeypatch.setattr(flake_module, "decode_dbf", lambda *args, **kwargs: pytest.fail("DBF was parsed during CSV replay"))
-    restored = accepted(forms.read_flake_export(forms.ReadFormFlakeExportRequest(fields, manifest)))
-    assert restored.value == extracted.value
-    stored = accepted(archive_materials(ArchiveRequest(
-        tuple(ArchiveMember(name, payload) for name, payload in fields),
-        OriginalDestination("forms.zip"), manifest=manifest), output_store=LocalFileStore(str(tmp_path))))
-    with ZipFile(tmp_path / "forms.zip") as archive:
-        csv_name = next(name for name in archive.namelist() if name.endswith("A.csv"))
-        assert archive.read(csv_name).decode("utf-8") == "CODE,VALUE\n0012,000001.2300\n0013,\n"
-        assert json.loads(archive.read("manifest.json"))["schema"] == "stratbox.material-collection.v1"
-    assert stored.value.manifest == manifest
+    evidence=physical("803",dbf((("CODE","C",4,0),),((b" ",(b"0012",)),)))
+    encoded=standard.value_encode({"value":evidence},None,context())["representation"]
+    with pytest.raises((ValueError,TypeError)):
+        standard.value_decode({"representation":encoded.data[:-1]},None,context())
+    forged=canonical_tree(evidence);forged["type"]="caller.supplied:Arbitrary"
+    with pytest.raises(ValueError,match="type_not_admitted"):
+        standard.value_decode({"representation":json.dumps(forged).encode()},None,context())

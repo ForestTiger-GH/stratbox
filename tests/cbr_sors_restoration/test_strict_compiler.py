@@ -5,12 +5,12 @@ from types import SimpleNamespace
 import numpy as np
 import pandas as pd
 
-from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import solver_lower_bound
-from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import solver_upper_bound
-from stratbox.domains.cbr.analytics.corporate_lending.sors.schema import COMPONENTS
-from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.compiler import compile_strict_problem
-from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.quantities import SorsQuantityGraph
-from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.quantities import component_quantity_id
+from stratbox.domains.cbr.calculations.sors.publication import solver_lower_bound
+from stratbox.domains.cbr.calculations.sors.publication import solver_upper_bound
+from stratbox.domains.cbr.calculations.sors.schema import COMPONENTS
+from stratbox.domains.cbr.calculations.sors.strict.compiler import compile_strict_problem
+from stratbox.domains.cbr.calculations.sors.strict.quantities import SorsQuantityGraph
+from stratbox.domains.cbr.calculations.sors.strict.quantities import component_quantity_id
 
 
 def test_initial_strict_problem_uses_solver_safe_open_column_bounds() -> None:
@@ -119,8 +119,8 @@ def test_initial_strict_problem_uses_solver_safe_open_column_bounds() -> None:
 
 
 def test_refresh_updates_dynamic_metric_row_after_publication_fact() -> None:
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.compiler import refresh_strict_problem_bounds
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.quantities import metric_quantity_id
+    from stratbox.domains.cbr.calculations.sors.strict.compiler import refresh_strict_problem_bounds
+    from stratbox.domains.cbr.calculations.sors.strict.quantities import metric_quantity_id
 
     region_code = 'r1'
     class_code = '01'
@@ -226,7 +226,7 @@ def test_refresh_updates_dynamic_metric_row_after_publication_fact() -> None:
         int(variable_lookup.loc[component_quantity_id('CORPORATE_TOTAL', region_code, class_code, c)].solver_column)
         for c in debt_components
     }
-    assert set(dynamic.expression_indices.tolist()) == expected_columns
+    assert set(dynamic.expression_indices) == expected_columns
     assert refreshed.row_lower[solver_row] == 5.5
     assert refreshed.row_upper[solver_row] == solver_upper_bound(
         6.5, False, open_margin=1e-9
@@ -234,8 +234,8 @@ def test_refresh_updates_dynamic_metric_row_after_publication_fact() -> None:
 
 
 def test_refresh_updates_official_aggregate_row_after_deterministic_tightening() -> None:
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.compiler import refresh_strict_problem_bounds
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.quantities import metric_quantity_id
+    from stratbox.domains.cbr.calculations.sors.strict.compiler import refresh_strict_problem_bounds
+    from stratbox.domains.cbr.calculations.sors.strict.quantities import metric_quantity_id
 
     region_code = 'r1'
     class_code = '01'

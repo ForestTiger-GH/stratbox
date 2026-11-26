@@ -1,33 +1,18 @@
 # Frank RG
 
-The domain owns fourteen report series in four source families. Canonical
-source, operation and profile resources live under `stratbox/registry/frank_rg`;
-typed Python profiles own source
-recognition and naming. One `frank_rg` operation owner exposes the `frg.*` route.
+The immutable `DOMAIN` in [domain.py](domain.py) owns fourteen continuing report
+identities and their direct specializations of standard actions.
 
-| Owner | Responsibility |
-| --- | --- |
-| [publications](publications/) | File discovery, issue recognition, acquisition, naming and maintenance plans |
-| [tables](tables/) | Physical workbook evidence and explicitly bound semantic flakes |
-| [integration](integration/) | Qualified observations, strict alignment and revision-preserving history |
-| [analytics](analytics/) | Exact same-period revision calculations with comparability checks |
-| [products](products/) | Prepared selections, replay and CSV/JSON/JSONL rendering |
-| [operations](operations/) | Runtime admission, evidence, provider composition and source cards |
+- [common](common/) owns exact name conventions and the delivered-file channel.
+- [series](series/) declares each report's action settings explicitly.
+- [methods](methods/) recognizes supplied inventories and interprets provided
+  workbook evidence under exact coordinate semantics.
 
-Physical extraction supports XLSX/XLSM and qualified XLS/XLSB decoding. Every
-source's semantic route requires a typed caller-supplied profile bound to the
-exact original bytes. Coordinates, economic periods, units, scale, subjects and
-perimeters are explicit. Supplier names and period labels supply no implicit
-economic mapping. Reviewed business layouts remain undeclared until supported
-by retained publisher workbook fixtures.
+The acquisition route consumes caller-delivered files or supplied material.
+Standard commands own listing, reading, decoding, calculations, retention,
+archive/maintenance effects and journal-based notifications. Publication names
+and Q/week labels do not establish numerical period, units or perimeter.
 
-- [Complete data route and supplied-profile example](../../../../docs/current-how/frank-rg-data-route.md)
-- [Executable synthetic route](../../../../examples/frg_portable_route.py)
-- [Directory scan example](../../../../examples/frg_scan_example.py)
-- [Source cards](operations/source_catalog.py) and [profile availability](tables/profiles.py)
-- [Cleanup effects](../../../../docs/current-how/frg-cleanup-effects.md)
-- [Streaming selected originals](../../../../docs/current-how/frg-streaming-archive.md)
-
-Originals, physical extracts, semantic flakes, integrated data, history,
-calculations and prepared views are independently retainable through the common
-storage operations. Cleanup is maintenance and adds no publishing capability.
+Reviewed built-in publisher cell maps remain a scientific obligation. Explicit
+typed `TableRules` can interpret supplied exact material without a separate
+profile registry or an independent domain execution path.

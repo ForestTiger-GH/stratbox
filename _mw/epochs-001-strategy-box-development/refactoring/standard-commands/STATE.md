@@ -1,28 +1,23 @@
-# Standard commands implementation
+# Standard command implementation
 
-The implementation is in progress on main. The public target is one standard
-capability catalog, direct command execution and static domain records.
-The implementation remains incomplete until the shared integration, scientific
-scope checks, package admission and final regression suite pass.
+Implementation is in progress on main. Standard capability definitions, prepared
+plans, one execution service and five direct domain catalogs are integrated.
+Scientific source methods, numerical restoration and products have explicit
+semantic boundaries and content evidence.
 
-## Work boundaries
+## Checked boundaries
 
-- Capability authoring, preparation and PlanIR: `capabilities`.
-- Technical execution, effects, resources and observation services: `core`.
-- Explicit series/method/settings declarations: five domain owners.
-- Numerical SORS model: the CBR calculation owner.
-- Public facade, architecture checks and distribution: shared integration.
+Structural release admission, strict internal ownership/import admission and
+maintained documentation link checks pass. The focused FNS, Minfin, statistical
+workbook and reporting-form scientific suite passes 221 cases. The independent
+SDK, shared-data, source-lifecycle, journal and architecture checks are being
+integrated with the final runtime fault and packaging checks.
 
-## Validation
+## Completion conditions
 
-The bounded machine projection checks pass (three cases). Full integration,
-retired-owner removal, domain regression and installed-distribution validation
-are pending. These facts do not establish scientific completeness of unknown
-publisher layouts or unreviewed financial formulas.
-
-## Remaining completion conditions
-
-Finish executable source recipes, numerical and product purposes, integrate all
-domain records, preserve mathematical and source semantics in migrated tests,
-remove retired runtime owners, update maintained documentation, run the full
-local checks and validate an installed wheel and source distribution.
+Finish the final runtime regression migration and bounded causal journal checks,
+verify local effect reconciliation after restart, run the complete suite, and
+validate exact wheel/source archives plus isolated installed and ZIP imports.
+Scientific coverage still distinguishes reviewed source rules from unavailable
+publisher layouts and unreviewed financial equations. Structural success does
+not establish missing scientific evidence.

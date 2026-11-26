@@ -1,250 +1,76 @@
+"""Admit final declarations, domain records and package resources locally."""
 from __future__ import annotations
 
-import subprocess
-import sys
+import ast
+from importlib import resources
 from pathlib import Path
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
-
-from stratbox.operations.declarations import owner_ids, owner_registration  # noqa: E402
-from stratbox.operations import operation_catalog  # noqa: E402
-
-REQUIRED_FILES = [
-    # Knowledge consolidation bootstrap and content-preserved legacy sources.
-    'docs/README.md',
-    'docs/science/README.md',
-    'docs/what/README.md',
-    'docs/current-how/README.md',
-    'docs/how/README.md',
-    'docs/architecture/README.md',
-    'docs/ldd/README.md',
-    'docs_old/README.md',
-    '_mw/epochs-001-strategy-box-development/consolidation/README.md',
-    '_mw/epochs-001-strategy-box-development/consolidation/CYCLE.md',
-    '_mw/epochs-001-strategy-box-development/consolidation/STATE.md',
-    '_mw/epochs-001-strategy-box-development/consolidation/BASELINE.md',
-    '_mw/epochs-001-strategy-box-development/consolidation/ARCHITECTURE.md',
-    '_mw/epochs-001-strategy-box-development/consolidation/sources/SEED.md',
-    'docs_old/cbr_sors_restoration/crosswalk.md',
-    'docs_old/cbr_sors_restoration/diagnostics.md',
-    'docs_old/cbr_sors_restoration/execution_modes.md',
-    'docs_old/cbr_sors_restoration/implementation_report_2026-08-07.md',
-    'docs_old/cbr_sors_restoration/methodology.md',
-    'docs_old/cbr_sors_restoration/pivot_and_export.md',
-    'docs_old/cbr_sors_restoration/result_grids.md',
-    'docs_old/cbr_sors_restoration/source_contracts.md',
-    'docs_old/files_catalog_methods.md',
-    'docs_old/frg_stage1.md',
-    'docs/current-how/universal-business-core.md',
-    'docs/current-how/core-execution-and-admission.md',
-    'docs/architecture/core-operation-boundaries.md',
-    'docs/how/install-and-run-core.md',
-    'src/stratbox/shared/README.md',
-    'src/stratbox/shared/reference/README.md',
-    'docs/architecture/shared-ownership.md',
-    'docs/current-how/shared-semantic-contracts.md',
-    'docs/current-how/reference-snapshots-and-update.md',
-    'docs/current-how/geography-name-resolution.md',
-    'tests/unit/shared/test_identity_evidence.py',
-    'tests/unit/shared/test_reference_assets.py',
-    'tests/unit/shared/test_bank_names.py',
-    'tests/unit/shared/test_geography.py',
-    'tests/unit/shared/test_periods.py',
-    'scripts/reference_editions.py',
-    'scripts/inspect_reference_wheel.py',
-    'scripts/local_release_check.py',
-    'scripts/check_readme_links.py',
-    'tests/cbr_sors_restoration/test_identity_provenance.py',
-    'src/stratbox/shared/identity.py',
-    'src/stratbox/shared/evidence.py',
-    'src/stratbox/shared/data/datasets.py',
-    'src/stratbox/shared/reference/assets.py',
-    'src/stratbox/shared/reference/banks/_resources/manifest.json',
-    'src/stratbox/shared/reference/okved2/_resources/manifest.json',
-    'src/stratbox/shared/reference/geography/_resources/manifest.json',
-    'src/stratbox/shared/reference/geography/_resources/aliases.csv',
-    'src/stratbox/py.typed',
-    'src/stratbox/domains/cbr/__init__.py',
-    'src/stratbox/domains/cbr/publications/access.py',
-    'src/stratbox/domains/cbr/tables/statistics/profiles.py',
-    'src/stratbox/domains/cbr/operations/service_network/__init__.py',
-    'src/stratbox/domains/fns/__init__.py',
-    'docs/current-how/independent-domain-data-routes.md',
-    'docs/current-how/fns-data-pipeline.md',
-    'docs/current-how/rosstat-data-route.md',
-    'docs/current-how/minfin-data-route.md',
-    'docs/current-how/frank-rg-data-route.md',
-    'src/stratbox/domains/frank_rg/__init__.py',
-    'src/stratbox/operations/catalog.py',
-    'src/stratbox/domains/registry/catalog.py',
-    'src/stratbox/operations/declarations.py',
-    'src/stratbox/domains/registry/declarations.py',
-    'src/stratbox/core/resources/__init__.py',
-    'src/stratbox/operations/discovery.py',
-    'src/stratbox/domains/registry/__init__.py',
-    'src/stratbox/core/execution/runner.py',
-    'src/stratbox/core/execution/contracts.py',
-    'src/stratbox/core/execution/calls.py',
-    'src/stratbox/core/execution/effects.py',
-    'src/stratbox/core/execution/resolution.py',
-    'src/stratbox/core/observability/records/effect_refs.py',
-    'tests/unit/observability/test_effect_identity.py',
-    'tests/unit/execution/test_output_accounting.py',
-    'tests/unit/execution/test_capability_declarations.py',
-    'tests/unit/execution/test_terminal_resilience.py',
-    'tests/unit/observability/test_result_summary_bounds.py',
-    'docs/architecture/execution-finalization.md',
-    'tests/unit/execution/test_finalization.py',
-    'tests/integration/universal_core/test_execution_effect_pipeline.py',
-    'src/stratbox/core/__init__.py',
-    'src/stratbox/operations/__init__.py',
-    'src/stratbox/core/runtime/providers.py',
-    'src/stratbox/core/storage/filestore/ports.py',
-    'src/stratbox/core/observability/journal/file_reader.py',
-    'src/stratbox/core/notifications/state/transactions.py',
-    'tests/fixtures/universal_core/README.md',
-    'examples/parse_offices_from_bytes.py',
-    'README.md',
-    'pyproject.toml',
-    'src/stratbox/__init__.py',
-    'src/stratbox/README.md',
-    'docs_old/architecture.md',
-    'docs_old/development.md',
-    'docs_old/plugin-integration.md',
-    'docs_old/examples.md',
-    'examples/cbr_file_collector_example.py',
-    'tests/smoke/test_core_imports.py',
-    'tests/unit/test_runtime_providers.py',
-    'src/stratbox/domains/cbr/analytics/corporate_lending/README.md',
-    'docs/current-how/cbr-data-pipeline.md',
-    'docs/current-how/cbr-statistical-workbooks.md',
-    'examples/cbr_statistics_flow.py',
-    'docs_old/cbr_sors_restoration/architecture.md',
-    'docs_old/cbr_sors_restoration/acceptance.md',
-    'docs_old/cbr_sors_restoration/implementation_report_2026-08-05.md',
-    'docs_old/cbr_sors_restoration/implementation_report_2026-08-06.md',
-    'examples/cbr_sors_restoration_colab.py',
-    'tests/cbr_sors_restoration/test_publication.py',
-]
-
-FORBIDDEN_PATHS = [
-    'src/stratbox/domains/cbr/corporate_lending',
-    'src/stratbox/domains/cbr/reporting_forms',
-    'src/stratbox/domains/cbr/service_network',
-    'src/stratbox/domains/cbr/escrow',
-    'src/stratbox/domains/cbr/file_collection',
-    'src/stratbox/domains/_cbr.py',
-    'src/stratbox/domains/cbr_file_collector',
-    'src/stratbox/domains/cbr_forms',
-    'src/stratbox/domains/cbr_industries',
-    'src/stratbox/domains/cbr_offices',
-    'src/stratbox/domains/cbr_offices_reg',
-    'src/stratbox/domains/cbr_sors_restoration',
-    'src/stratbox/domains/escrow',
-    'src/stratbox/domains/fns_1yur',
-    'src/stratbox/domains/fns_sme',
-    'src/stratbox/domains/fns/legal_entities_1yur',
-    'src/stratbox/domains/fns/sme_register',
-    'src/stratbox/domains/rosstat/_source.py',
-    'src/stratbox/domains/frg',
-    'src/stratbox/shared/registries',
-    'src/stratbox/shared/text',
-    'src/stratbox/shared/data/evidence.py',
-    'src/stratbox/shared/data/identity.py',
-    'src/stratbox/system',
-    'src/stratbox/core/base',
-    'src/stratbox/core/ioapi',
-    'src/stratbox/core/registry.py',
-    'src/stratbox/core/execution/catalog.py',
-    'src/stratbox/core/execution/source_catalog.py',
-    'src/app',
-    'appdock',
-    '.tmp',
-]
-
-CHECK_IGNORE_PATHS = [
-    '.tmp',
-    '.venv',
-    '.venv-build',
-]
+SRC = ROOT / 'src'
+sys.path.insert(0, str(SRC))
+RETIRED = (
+    'src/stratbox/operations', 'src/stratbox/composition',
+    'src/stratbox/domains/registry', 'src/stratbox/core/operations',
+    'src/stratbox/core/capabilities',
+)
+REQUIRED = (
+    'README.md', 'pyproject.toml', 'src/stratbox/py.typed',
+    'src/stratbox/capabilities/model/domains.py',
+    'src/stratbox/capabilities/model/methods.py',
+    'src/stratbox/capabilities/preparation/__init__.py',
+    'src/stratbox/core/execution/service.py',
+    'src/stratbox/shared/data/values.py', 'src/stratbox/sdk/client.py',
+)
+COMPONENT_COUNTERS = {'schema_version', 'profile_version', 'method_version', 'rules_version', 'definition_revision', 'contract_version'}
 
 
 def main() -> int:
-    failures: list[str] = []
-
-    domains_root = SRC / "stratbox" / "domains"
-    try:
-        owners = owner_ids()
-        if not owners:
-            failures.append("no canonical operation owners discovered")
-        for owner in owners:
-            owner_registration(owner)
-        sources = operation_catalog().source_catalog()
-        if not sources.sources:
-            failures.append("no canonical source declarations discovered")
-    except (ValueError, OSError) as error:
-        failures.append(f"invalid canonical registry: {error}")
-
-    for rel in REQUIRED_FILES:
-        if not (ROOT / rel).exists():
-            failures.append(f'missing required path: {rel}')
-        else:
-            print(f'OK required {rel}')
-
-    for rel in FORBIDDEN_PATHS:
-        if (ROOT / rel).exists():
-            failures.append(f'forbidden path still exists: {rel}')
-        else:
-            print(f'OK absent {rel}')
-
-    declarations = tuple((SRC / 'stratbox' / 'operations' / 'specifications').rglob('*.yaml')) + tuple((SRC / 'stratbox' / 'domains' / 'registry').rglob('*.yaml'))
-    for prefix in ('SOURCE_', 'OPERATION_', 'PROFILE_', 'TEMPLATE_', 'FAMILY_'):
-        if not any(path.name.startswith(prefix) for path in declarations):
-            failures.append(f'canonical registry has no {prefix} declarations')
-    obsolete_registries = tuple(domains_root.rglob('REGISTRY_*.yaml'))
-    if obsolete_registries:
-        failures.append('domain-local source registry declarations remain: ' +
-                        ', '.join(str(path.relative_to(ROOT)) for path in obsolete_registries))
-    else:
-        print('OK canonical registry declarations own all source and operation metadata')
-
-    if (ROOT / '.git').exists():
-        for rel in CHECK_IGNORE_PATHS:
-            ignored_path = rel.rstrip('/') + '/'
-            result = subprocess.run(
-                ['git', 'check-ignore', '-v', '--no-index', ignored_path],
-                cwd=ROOT,
-                text=True,
-                capture_output=True,
-            )
-            if result.returncode != 0:
-                failures.append(f'gitignore does not hide path: {rel}')
-            else:
-                print(f'OK ignored {rel}')
-
-    generated = [
-        path.relative_to(ROOT).as_posix()
-        for path in ROOT.rglob('*')
-        if path.is_file()
-        and (path.suffix == '.pyc' or '__pycache__' in path.parts)
-        and not any(ignored in path.parts for ignored in CHECK_IGNORE_PATHS)
-    ]
-    if generated:
-        failures.append(
-            'generated Python bytecode is present: ' + ', '.join(generated[:20])
-        )
-    else:
-        print('OK no generated Python bytecode')
-
-    if failures:
-        print('\nRelease integrity failed:')
-        for failure in failures:
-            print(f'  - {failure}')
-        return 1
-    return 0
+    errors = []
+    errors.extend('Retired path remains: ' + name for name in RETIRED if (ROOT / name).exists())
+    errors.extend('Required path missing: ' + name for name in REQUIRED if not (ROOT / name).is_file())
+    for domain in (SRC / 'stratbox/domains').iterdir():
+        if domain.is_dir():
+            errors.extend('Retired domain layer remains: '+str((domain/name).relative_to(ROOT))
+                for name in ('operations','capabilities','publications','tables','integration','analytics') if (domain/name).exists())
+    for path in (SRC / 'stratbox').rglob('profiles.py'):
+        errors.append('Retired profile owner remains: ' + str(path.relative_to(ROOT)))
+    for path in (SRC / 'stratbox').rglob('*.py'):
+        try:
+            tree = ast.parse(path.read_text(encoding='utf-8'))
+        except SyntaxError as error:
+            errors.append(f'{path.relative_to(ROOT)}: {error}')
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.target.id in COMPONENT_COUNTERS:
+                errors.append(f'{path.relative_to(ROOT)}:{node.lineno}: component counter {node.target.id}')
+    if not errors:
+        try:
+            from stratbox.capabilities.catalog import standard_catalog
+            from stratbox.capabilities.catalog.domains import load_domains
+            catalog = standard_catalog()
+            domains = load_domains()
+            if not catalog.definitions or not domains.domains:
+                errors.append('Empty canonical declarations')
+            for domain_id, domain in domains.domains.items():
+                if domain.id != domain_id or not domain.series:
+                    errors.append(f'Domain identity/scope invalid: {domain_id}')
+                for series_id, series in domain.series.items():
+                    if series.id != series_id:
+                        errors.append(f'Series identity mismatch: {series_id}')
+                    for command_id in series.commands:
+                        definition = catalog.definitions.get(command_id)
+                        if definition is None or definition.kind != 'command':
+                            errors.append(f'Unknown standard command: {series_id}: {command_id}')
+            from stratbox.shared.reference.assets import load_reference
+            for name in ('banks', 'geography', 'okved2'):
+                load_reference('stratbox.shared.reference.' + name).validate_all()
+        except Exception as error:
+            errors.append(f'Declaration/resource admission: {type(error).__name__}: {error}')
+    for error in errors:
+        print(error)
+    print(f'Release integrity: {len(errors)} failure(s)')
+    return bool(errors)
 
 
 if __name__ == '__main__':

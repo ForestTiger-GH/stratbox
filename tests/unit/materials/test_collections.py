@@ -1,112 +1,56 @@
-from dataclasses import replace
 from io import BytesIO
-import json
-from zipfile import ZipFile
+from zipfile import ZipFile, ZIP_DEFLATED
 
 import pytest
-
-from stratbox.core.execution.handoff import project_output
-from stratbox.core.execution import ExecutionContext
-from stratbox.core.limits import ExecutionBudget
-from stratbox.core.formats.archives.store import ArchiveWriteLimits
-from stratbox.core.operations.materials.archive import archive_materials
-from stratbox.core.operations.materials.archive_definitions import ArchiveMember, ArchiveRequest
-from stratbox.core.operations.materials.collections import read_collection, serialize_collection
-from stratbox.core.operations.materials.definitions import ReadLocationRequest
-from stratbox.core.operations.materials.operations import read_location
-from stratbox.core.operations.source.original_definitions import OriginalDestination
-from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.shared.data.processing import DataContract, DataRole
-from stratbox.shared.data.snapshots import SnapshotCoverage
-from stratbox.shared.evidence import SourcePayload
-from stratbox.shared.identity import canonical_manifest_bytes
-from stratbox.shared.material_collections import (
-    CollectionDisposition, CollectionManifest, CollectionMember, decode_collection, encode_collection,
-)
+from stratbox.sdk import StrategyBox
+from stratbox.shared.data.values import Material, Assessment
+from stratbox.shared.data.coverage import SnapshotCoverage, CoverageDimension
+from stratbox.shared.identity import ByteIdentity
 
 
-def test_manifest_preserves_partial_selection_and_all_semantic_roles(tmp_path):
-    raw = SourcePayload(b"original")
-    product = SourcePayload(b"workbook", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    members = (
-        CollectionMember("source", "2026/101/source.dbf", DataContract("cbr.forms.dbf", 1, DataRole.ORIGINALS), raw.identity),
-        CollectionMember("view", "views/escrow.xlsx", DataContract("cbr.escrow.workbook", 1, DataRole.PRODUCTS),
-                         product.identity, product.media_type),
-    )
-    manifest = CollectionManifest("example.collection", "v1", members, (
-        CollectionDisposition("source", "completed"), CollectionDisposition("missing", "failed", "source.unavailable"),
-        CollectionDisposition("view", "completed")), SnapshotCoverage("unknown", "Selected material only."))
-    encoded = serialize_collection(manifest)
-    assert encoded.outcome == "succeeded", encoded.diagnostics
-    replay = read_collection(encoded.value)
-    assert replay.outcome == "succeeded" and replay.value == manifest
-    assert not replay.value.complete
-    out = LocalFileStore(str(tmp_path))
-    result = archive_materials(ArchiveRequest((ArchiveMember(members[0].name, raw), ArchiveMember(members[1].name, product)),
-                              OriginalDestination("bundle.zip"), manifest=manifest), output_store=out)
-    assert result.outcome == "succeeded", result.diagnostics
-    with ZipFile(BytesIO(out.read_bytes("bundle.zip"))) as archive:
-        assert decode_collection(archive.read("manifest.json")) == manifest
-        assert set(archive.namelist()) == {members[0].name, members[1].name, "manifest.json"}
-    assert result.value.manifest.identity == manifest.identity
+def good(result, port):
+    assert result.outcome == 'succeeded',result.diagnostics
+    return result.output(port)
 
 
-def test_archive_rejects_material_missing_from_manifest_before_writing(tmp_path):
-    raw = SourcePayload(b"data")
-    member = CollectionMember("a", "data.csv", DataContract("example.flake", 1, DataRole.EXTRACTS), raw.identity)
-    manifest = CollectionManifest("example", "v1", (member,), (CollectionDisposition("a", "completed"),),
-                                  SnapshotCoverage("unknown"))
-    store = LocalFileStore(str(tmp_path))
-    result = archive_materials(ArchiveRequest((ArchiveMember("partial.csv", raw),),
-                              OriginalDestination("bad.zip"), manifest=manifest), output_store=store)
-    assert result.outcome == "failed" and result.diagnostics[0].code == "archive.manifest_mismatch"
-    assert not result.effects and not store.exists("bad.zip")
+def test_explicit_partial_collection_metadata_and_content_identities_replay():
+    value = {'members':({'name':'source.csv','role':'source','identity':ByteIdentity.of(b'original')},
+                        {'name':'view.xlsx','role':'product','identity':ByteIdentity.of(b'workbook')}),
+        'assessment':Assessment('partial',expected=('source','missing','view'),observed=('source','view'),
+            coverage=SnapshotCoverage('partial','Selected publications',(
+                CoverageDimension('source',requested=('source','missing','view'),output=('source','view'),missing=('missing',)),)))}
+    with StrategyBox() as box:
+        encoded = good(box.invoke('command.value.encode',inputs={'value':value}),'representation')
+        replayed = good(box.invoke('command.value.decode',inputs={'representation':encoded}),'value')
+    assert replayed == value
+    assert not replayed['assessment'].complete
+    assert replayed['members'][0]['identity'] != replayed['members'][1]['identity']
 
 
-def test_archive_nested_paths_and_caller_bound_support_more_than_500_members(tmp_path):
-    store = LocalFileStore(str(tmp_path))
-    members = tuple(ArchiveMember(f"2026/101/table-{i}.csv", SourcePayload(str(i).encode())) for i in range(501))
-    result = archive_materials(ArchiveRequest(members, OriginalDestination("many.zip"),
-                              limits=ArchiveWriteLimits(members=502)), output_store=store)
-    assert result.outcome == "succeeded", result.diagnostics
-    with ZipFile(BytesIO(store.read_bytes("many.zip"))) as archive:
-        assert len(archive.namelist()) == 502
-        assert archive.read("2026/101/table-500.csv") == b"500"
+def test_nested_archive_supports_more_than_five_hundred_explicit_members():
+    members = tuple(Material(str(i).encode(),metadata={'member':f'2026/101/table-{i}.csv'}) for i in range(501))
+    with StrategyBox() as box:
+        packed = good(box.invoke('command.archive.pack',inputs={'members':members},parameters={'max_members':501}),'material')
+        unpacked = good(box.invoke('command.archive.unpack',inputs={'material':packed},parameters={'max_members':501}),'members')
+    assert len(unpacked) == 501 and unpacked[-1].data == b'500'
+    assert unpacked[-1].metadata['member'] == '2026/101/table-500.csv'
 
 
-@pytest.mark.parametrize("names", [("file", "file/child"), ("a/b", "a/B"), ("dir\\file",), ("dir/../file",)])
-def test_archive_rejects_path_aliases_and_file_parent_conflicts(tmp_path, names):
-    store = LocalFileStore(str(tmp_path))
-    result = archive_materials(ArchiveRequest(tuple(ArchiveMember(name, SourcePayload(b"x")) for name in names),
-                              OriginalDestination("invalid.zip")), output_store=store)
-    assert result.outcome == "failed" and not store.exists("invalid.zip")
+@pytest.mark.parametrize('parameters', [{'max_members':1},{'max_unpacked_bytes':3}])
+def test_archive_member_and_expansion_limits_apply_before_selection(parameters):
+    stream = BytesIO()
+    with ZipFile(stream,'w',ZIP_DEFLATED) as archive:
+        archive.writestr('first',b'a'*10000)
+        archive.writestr('second',b'b'*10000)
+    with StrategyBox() as box:
+        result = box.invoke('command.archive.unpack',inputs={'material':Material(stream.getvalue())},
+            parameters={**parameters,'names':('first',)})
+    assert result.outcome == 'failed'
+    assert 'members' not in result.outputs
 
 
-def test_reading_an_unclassified_file_does_not_assert_original_role(tmp_path):
-    store = LocalFileStore(str(tmp_path))
-    store.write_bytes("product.xlsx", b"some retained representation")
-    result = read_location(ReadLocationRequest("product.xlsx"), store=store)
-    assert result.outcome == "succeeded"
-    assert project_output(result, "source").contract == DataContract("material.payload")
-    assert project_output(result, "material").contract == DataContract("material.reference")
-
-
-def test_manifest_rejects_boolean_identity_size():
-    payload = SourcePayload(b"x")
-    member = CollectionMember("source", "original.bin", DataContract("source.original", 1, DataRole.ORIGINALS), payload.identity)
-    manifest = CollectionManifest("example", "v1", (member,),
-        (CollectionDisposition("source", "completed"),), SnapshotCoverage("unknown"))
-    encoded = json.loads(encode_collection(manifest))
-    encoded["members"][0]["identity"]["size"] = True
-    with pytest.raises(ValueError, match="collection.identity_invalid"):
-        decode_collection(canonical_manifest_bytes(encoded))
-
-
-def test_manifest_serialization_accounts_exact_output_once():
-    manifest = CollectionManifest("example", "v1", (),
-        (CollectionDisposition("missing", "not_attempted"),), SnapshotCoverage("unknown"))
-    required = len(encode_collection(manifest))
-    accepted = serialize_collection(manifest, context=ExecutionContext(budget=ExecutionBudget(output_bytes=required)))
-    assert accepted.outcome == "succeeded", accepted.diagnostics
-    rejected = serialize_collection(manifest, context=ExecutionContext(budget=ExecutionBudget(output_bytes=required - 1)))
-    assert rejected.outcome == "failed" and rejected.diagnostics[0].code == "budget.output_bytes"
+def test_archive_packing_has_an_exact_output_byte_limit():
+    members = (Material(b'payload',metadata={'member':'a'}),)
+    with StrategyBox() as box:
+        result = box.invoke('command.archive.pack',inputs={'members':members},parameters={'max_bytes':1})
+    assert result.outcome == 'failed' and 'material' not in result.outputs

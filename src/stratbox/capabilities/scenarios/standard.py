@@ -5,7 +5,7 @@ from ..commands.standard import P, DATASET
 
 REFRESH = ScenarioDefinition('scenario.series.refresh', inputs={
     'material':P('material',required=False),'physical':P('physical',required=False),'issue':P('issue',required=False)},
-    outputs=EXTRACT_WORKBOOK.outputs,
+    outputs={**EXTRACT_WORKBOOK.outputs,'reference':P('artifact',required=False),'product':P('product',required=False),'product_reference':P('artifact',required=False)},
     body=GraphBody((Call('extract','operation.series.extract_workbook',
         {'material':InputRef('material'),'physical':InputRef('physical'),'issue':InputRef('issue')}),),
         {'dataset':OutputRef('extract','dataset'),'assessment':OutputRef('extract','assessment')}))

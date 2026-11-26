@@ -3,10 +3,10 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from stratbox.domains.cbr.analytics.corporate_lending.sors.linear.contracts import CsrMatrixData
-from stratbox.domains.cbr.analytics.corporate_lending.sors.linear.contracts import SorsLinearProblem
-from stratbox.domains.cbr.analytics.corporate_lending.sors.optimization.distortion import build_rounding_distortion_problem
-from stratbox.domains.cbr.analytics.corporate_lending.sors.optimization.distortion import distortion_linf_from_values
+from stratbox.domains.cbr.calculations.sors.linear.contracts import CsrMatrixData
+from stratbox.domains.cbr.calculations.sors.linear.contracts import SorsLinearProblem
+from stratbox.domains.cbr.calculations.sors.optimization.distortion import build_rounding_distortion_problem
+from stratbox.domains.cbr.calculations.sors.optimization.distortion import distortion_linf_from_values
 
 
 def _csr(rows: list[list[tuple[int, float]]], n_columns: int) -> CsrMatrixData:

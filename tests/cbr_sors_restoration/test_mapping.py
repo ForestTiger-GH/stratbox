@@ -1,29 +1,29 @@
 import pytest
 
-from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.mapping import read_atom_class_edges
-from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.mapping import read_crosswalk_manifest
-from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.mapping import read_crosswalk_scenarios
-from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.mapping import read_legacy_atoms
-from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.mapping import validate_mapping_version
-from stratbox.domains.cbr.analytics.corporate_lending.sors.registries.okved2 import read_okved2_classes
+from stratbox.domains.cbr.calculations.sors.crosswalk.mapping import read_atom_class_edges
+from stratbox.domains.cbr.calculations.sors.crosswalk.mapping import read_crosswalk_manifest
+from stratbox.domains.cbr.calculations.sors.crosswalk.mapping import read_crosswalk_scenarios
+from stratbox.domains.cbr.calculations.sors.crosswalk.mapping import read_legacy_atoms
+from stratbox.domains.cbr.calculations.sors.crosswalk.mapping import validate_mapping_fingerprint
+from stratbox.domains.cbr.calculations.sors.registries.okved2 import read_okved2_classes
 
 
-MAPPING_VERSION = 'cbr-legacy-okved2-crosswalk-2026.3'
+MAPPING_FINGERPRINT = read_crosswalk_manifest()['mapping_fingerprint']
 
 
-def test_crosswalk_resources_are_packaged_and_versioned() -> None:
+def test_crosswalk_resources_are_packaged_and_content_identified() -> None:
     manifest = read_crosswalk_manifest()
-    assert manifest['mapping_version'] == MAPPING_VERSION
-    assert read_crosswalk_scenarios(MAPPING_VERSION) == ('core', 'broad')
-    validate_mapping_version(MAPPING_VERSION)
-    with pytest.raises(ValueError, match='crosswalk version mismatch'):
-        validate_mapping_version('invented')
+    assert manifest['mapping_fingerprint'] == MAPPING_FINGERPRINT
+    assert read_crosswalk_scenarios(MAPPING_FINGERPRINT) == ('core', 'broad')
+    validate_mapping_fingerprint(MAPPING_FINGERPRINT)
+    with pytest.raises(ValueError, match='content fingerprint mismatch'):
+        validate_mapping_fingerprint('invented')
 
 
 def test_core_crosswalk_is_complete_and_contains_no_economic_universal_fallback() -> None:
     classes = read_okved2_classes()
     atoms = read_legacy_atoms()
-    edges = read_atom_class_edges(classes, MAPPING_VERSION, 'core')
+    edges = read_atom_class_edges(classes, MAPPING_FINGERPRINT, 'core')
     assert edges['atom_code'].nunique() == len(atoms)
     assert edges['class_code'].nunique() == len(classes)
     economic = edges[~edges['atom_type'].eq('technical_use_category')]
@@ -32,7 +32,7 @@ def test_core_crosswalk_is_complete_and_contains_no_economic_universal_fallback(
 
 def test_core_crosswalk_derives_residual_atoms_instead_of_intersecting_parent_sets() -> None:
     edges = read_atom_class_edges(
-        read_okved2_classes(), MAPPING_VERSION, 'core'
+        read_okved2_classes(), MAPPING_FINGERPRINT, 'core'
     )
 
     def targets(atom: str) -> set[str]:
@@ -51,7 +51,7 @@ def test_core_crosswalk_derives_residual_atoms_instead_of_intersecting_parent_se
 
 def test_publishing_class_is_not_lost_through_manufacturing_parent_intersection() -> None:
     edges = read_atom_class_edges(
-        read_okved2_classes(), MAPPING_VERSION, 'core'
+        read_okved2_classes(), MAPPING_FINGERPRINT, 'core'
     )
     targets = set(
         edges.loc[
@@ -66,7 +66,7 @@ def test_publishing_class_is_not_lost_through_manufacturing_parent_intersection(
 
 def test_technical_category_is_explicitly_visible_as_uncertainty() -> None:
     classes = read_okved2_classes()
-    edges = read_atom_class_edges(classes, MAPPING_VERSION, 'core')
+    edges = read_atom_class_edges(classes, MAPPING_FINGERPRINT, 'core')
     technical = edges[
         edges['atom_code'].eq('completion_of_settlements')
     ]
@@ -77,11 +77,11 @@ def test_technical_category_is_explicitly_visible_as_uncertainty() -> None:
 
 
 def test_relation_ids_are_scenario_scoped() -> None:
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.mapping import build_crosswalk_relations_grid
+    from stratbox.domains.cbr.calculations.sors.crosswalk.mapping import build_crosswalk_relations_grid
 
     edges = read_atom_class_edges(
         read_okved2_classes(),
-        MAPPING_VERSION,
+        MAPPING_FINGERPRINT,
         'core',
     )
     relations = build_crosswalk_relations_grid(edges)

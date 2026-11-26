@@ -19,11 +19,11 @@ from stratbox.shared.reference.assets import ReferenceError, load_reference
 ])
 def test_complete_packaged_reference_and_deterministic_snapshot(package, count):
     bundle = load_reference(package)
-    assert len(bundle.edition.assets) == count
-    assert bundle.snapshot_identity == load_reference(package, edition_id=bundle.edition.edition_id).snapshot_identity
-    assert bundle.edition.published_at is None
+    assert len(bundle.reference.assets) == count
+    assert bundle.snapshot_identity == load_reference(package).snapshot_identity
+    assert bundle.reference.published_at is None
     bundle.validate_all()
-    for asset in bundle.edition.assets:
+    for asset in bundle.reference.assets:
         data = bundle.read(asset.role)
         assert len(data) == asset.identity.size
         assert sha256(data).hexdigest() == asset.identity.sha256
@@ -35,7 +35,7 @@ def test_used_reference_asset_receipt_includes_edition_identity():
     bundle.read("aliases", inputs=inputs)
     assert len(inputs) == 1
     assert inputs[0].role == "aliases"
-    assert inputs[0].version == bundle.snapshot_identity
+    assert inputs[0].content_basis == bundle.snapshot_identity
     assert inputs[0].identity == bundle.asset("aliases").identity
     assert inputs[0].source_id.startswith("reference.banks:")
 
@@ -44,9 +44,9 @@ def test_reference_corruption_is_not_silently_swallowed():
     bundle = load_reference("stratbox.shared.reference.banks")
     original = bundle.asset("aliases")
     bogus = replace(original, identity=ByteIdentity("0" * 64, original.identity.size))
-    corrupted_edition = replace(bundle.edition, assets=tuple(
-        bogus if asset.role == "aliases" else asset for asset in bundle.edition.assets))
-    corrupted = replace(bundle, edition=corrupted_edition)
+    corrupted_edition = replace(bundle.reference, assets=tuple(
+        bogus if asset.role == "aliases" else asset for asset in bundle.reference.assets))
+    corrupted = replace(bundle, reference=corrupted_edition)
     with pytest.raises(ReferenceError, match="integrity mismatch"):
         corrupted.read("aliases")
     with pytest.raises(ReferenceError, match="Undeclared"):
@@ -54,7 +54,7 @@ def test_reference_corruption_is_not_silently_swallowed():
 
 
 def test_invalid_explicit_edition_is_rejected():
-    with pytest.raises(ReferenceError, match="edition"):
+    with pytest.raises(TypeError, match="edition_id"):
         load_reference("stratbox.shared.reference.okved2", edition_id="unknown-edition")
 
 
@@ -66,7 +66,7 @@ def test_reference_root_does_not_resolve_external_package():
 def test_reference_snapshot_includes_semantically_relevant_edition_metadata():
     from stratbox.shared.identity import canonical_manifest_bytes
     bundle = load_reference("stratbox.shared.reference.banks")
-    manifest = bundle.edition
+    manifest = bundle.reference
     assert manifest.source_url is None
     assert manifest.effective_from is None
     assert bundle.snapshot_identity == load_reference("stratbox.shared.reference.banks").snapshot_identity
@@ -92,8 +92,7 @@ def test_independently_pinned_historical_reference_bytes():
         },
     }
     for family, roles in golden.items():
-        bundle = load_reference("stratbox.shared.reference." + family,
-                                edition_id="bundled-original-2026-11")
+        bundle = load_reference("stratbox.shared.reference." + family)
         for role, (digest, size) in roles.items():
             data = bundle.read(role)
             assert sha256(data).hexdigest() == digest
@@ -107,17 +106,17 @@ def test_pure_manifest_validation_rejects_duplicate_and_missing_roles():
     package = "stratbox.shared.reference.banks"
     original = resources.files(package).joinpath("_resources", "manifest.json").read_bytes()
     data = json.loads(original)
-    active, editions = parse_reference_manifest(package, original)
-    assert active == editions[0].edition_id
+    reference = parse_reference_manifest(package, original)
+    assert reference.reference_id == "reference.banks"
     duplicate = deepcopy(data)
-    duplicate["editions"].append(deepcopy(duplicate["editions"][0]))
-    with pytest.raises(ReferenceError, match="duplicate"):
+    duplicate["assets"].append(deepcopy(duplicate["assets"][0]))
+    with pytest.raises(ReferenceError, match="Duplicate"):
         parse_reference_manifest(package, duplicate)
     incomplete = deepcopy(data)
-    incomplete["editions"][0]["assets"] = incomplete["editions"][0]["assets"][:1]
+    incomplete["assets"] = incomplete["assets"][:1]
     with pytest.raises(ReferenceError, match="Incomplete"):
         parse_reference_manifest(package, incomplete)
     collision = deepcopy(data)
-    collision["editions"][0]["assets"][1]["path"] = collision["editions"][0]["assets"][0]["path"]
+    collision["assets"][1]["path"] = collision["assets"][0]["path"]
     with pytest.raises(ReferenceError, match="Duplicate"):
         parse_reference_manifest(package, collision)

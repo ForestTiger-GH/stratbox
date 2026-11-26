@@ -1,10 +1,6 @@
-from stratbox.core.storage.filestore.ports import AtomicCreateStore, FileMutation, FileStore, GuardedDirectoryStore, RevisionStore, SourceStore, ScopedMutationStore, ScopedStagedWrite, StagedWrite, StagedWriter, WriteMode
-from stratbox.core.storage.filestore.local import LocalFileStore
-from stratbox.core.storage.filestore.types import FileStat, FileVersion, MutationRejected
-from stratbox.core.storage.temporary import make_workdir, workdir
+"""Immutable content storage and conditional publication provider."""
+from .local import LocalFileStore
+from .ports import FileStore, SourceStore, WriteMode, AtomicCreateStore, RevisionStore, FileMutation, StagedWrite, StagedWriter, ScopedMutationStore, ScopedStagedWrite, GuardedDirectoryStore
+from .types import FileStat, FileVersion, MutationRejected
 
-__all__ = [
-    "AtomicCreateStore", "FileMutation", "FileStat", "FileStore", "FileVersion", "GuardedDirectoryStore",
-    "LocalFileStore", "MutationRejected", "RevisionStore", "ScopedMutationStore", "ScopedStagedWrite", "SourceStore", "StagedWrite",
-    "StagedWriter", "WriteMode", "make_workdir", "workdir",
-]
+__all__ = ("LocalFileStore", "FileStore", "SourceStore", "WriteMode", "AtomicCreateStore", "RevisionStore", "FileMutation", "StagedWrite", "StagedWriter", "ScopedMutationStore", "ScopedStagedWrite", "GuardedDirectoryStore", "FileStat", "FileVersion", "MutationRejected")

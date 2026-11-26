@@ -1,11 +1,11 @@
 import pytest
 
-from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsCrosswalkConfig
-from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsDeterministicConfig
-from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsOptimizationConfig
+from stratbox.domains.cbr.calculations.sors.contracts import SorsCrosswalkConfig
+from stratbox.domains.cbr.calculations.sors.contracts import SorsDeterministicConfig
+from stratbox.domains.cbr.calculations.sors.contracts import SorsOptimizationConfig
 from stratbox.domains.cbr.products.corporate_lending.sors.contracts import SorsPivotRequest
-from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsSelectionPolicy
-from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsTargetScope
+from stratbox.domains.cbr.calculations.sors.contracts import SorsSelectionPolicy
+from stratbox.domains.cbr.calculations.sors.contracts import SorsTargetScope
 
 
 def test_crosswalk_is_disabled_by_default() -> None:

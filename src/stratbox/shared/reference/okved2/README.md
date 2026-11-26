@@ -8,4 +8,4 @@ from stratbox.shared.reference.okved2 import registry
 codes = registry.read()  # Requires pandas.
 ```
 
-The classifier edition alone does not establish a domain-specific industry selection, aggregation or published economic perimeter.
+The classifier material alone does not establish a domain-specific industry selection, aggregation or published economic perimeter.

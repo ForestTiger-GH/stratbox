@@ -1,17 +1,15 @@
-"""Actual value assessments and pinned analytical calculation evidence.
+"""Exact observation coverage and scoped processing findings.
 
 These records describe observed values. Port guarantees remain requirements
 and cannot create an assessment or establish analytical coverage.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, fields, replace
-from decimal import Decimal
+from dataclasses import dataclass, fields
 from datetime import date
 
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.shared.identifiers import safe_token
-from stratbox.shared.data.source_context import SourceUse, source_use_from, source_use_value
 
 
 @dataclass(frozen=True, slots=True)
@@ -128,161 +126,35 @@ class CoverageAssessment:
             *(("source.selected",) if self.selection is not None else ())})
 
 
-@dataclass(frozen=True, slots=True)
-class CalculationEvidence:
-    rule_id: str
-    rule_revision: str
-    rule_fingerprint: str
-    inputs: tuple[tuple[str, ByteIdentity, str], ...]
-    period_policy: str
-    origin_policy: str
-    release_policy: str
-    rationale: str
-    source_uses: tuple[tuple[str, SourceUse], ...] = ()
-
-    def __post_init__(self):
-        safe_token(self.rule_id)
-        if (not self.rule_revision or not self.rule_fingerprint or not self.rationale
-                or not isinstance(self.inputs, tuple) or not self.inputs
-                or any(not isinstance(item, tuple) or len(item) != 3 or not isinstance(item[0], str)
-                       or not isinstance(item[1], ByteIdentity) or not isinstance(item[2], str) for item in self.inputs)):
-            raise ValueError("assessment.calculation_evidence_invalid")
-        roles = {role for role, _, _ in self.inputs}
-        if (not isinstance(self.source_uses, tuple)
-                or any(not isinstance(item, tuple) or len(item) != 2 or item[0] not in roles
-                    or not isinstance(item[1], SourceUse) for item in self.source_uses)):
-            raise ValueError("assessment.calculation_source_evidence_invalid")
-
-
-@dataclass(frozen=True, slots=True)
-class ValueEvidence:
-    qualifications: frozenset[str] = frozenset()
-    coverage: CoverageAssessment | None = None
-    findings: tuple[ProcessingFinding, ...] = ()
-    calculations: tuple[CalculationEvidence, ...] = ()
-    method_fingerprints: tuple[str, ...] = ()
-    profile_fingerprints: tuple[str, ...] = ()
-    reference_fingerprints: tuple[str, ...] = ()
-
-    def __post_init__(self):
-        if not isinstance(self.qualifications, frozenset):
-            raise ValueError("assessment.qualifications_invalid")
-        for item in self.qualifications:
-            safe_token(item)
-        if self.coverage is not None and not isinstance(self.coverage, CoverageAssessment):
-            raise ValueError("assessment.coverage_invalid")
-        for values, kind in ((self.findings, ProcessingFinding), (self.calculations, CalculationEvidence)):
-            if not isinstance(values, tuple) or any(not isinstance(value, kind) for value in values):
-                raise ValueError("assessment.evidence_invalid")
-        for values in (self.method_fingerprints, self.profile_fingerprints, self.reference_fingerprints):
-            if not isinstance(values, tuple) or any(not isinstance(value, str) or not value for value in values):
-                raise ValueError("assessment.fingerprint_invalid")
-
-
-def value_evidence(value) -> ValueEvidence:
-    """Read actual evidence; absent assessments never inherit port claims."""
-    evidence = getattr(value, "evidence", None)
-    if isinstance(evidence, ValueEvidence):
-        return evidence
-    if isinstance(value, CoverageAssessment):
-        return ValueEvidence(coverage=value)
-    batch = getattr(value, "batch", None)
-    evidence = getattr(batch, "evidence", None)
-    if isinstance(evidence, ValueEvidence):
-        return evidence
-    observations = getattr(value, "observations", ())
-    if isinstance(observations, tuple):
-        # A published value status is evidence about that value. It establishes
-        # neither validation nor completeness of a caller-supplied collection.
-        statuses = frozenset(getattr(item, "value_status", "") for item in observations)
-        statuses = frozenset(value for value in statuses if value)
-        return ValueEvidence(statuses)
-    return ValueEvidence()
-
-
-def observation_scope(observations):
-    """Describe the exact observed membership without inferring expectations."""
-    observed, members = set(), []
-    for item in observations:
-        period = item.period.as_of.isoformat() if item.period.as_of else f"{item.period.start}/{item.period.end}"
-        observed.update((f"subject:{item.subject.namespace}:{item.subject.id}", f"metric:{item.metric.id}", f"period:{period}"))
-        members.append(observation_coordinate(item).identity)
-    return tuple(members), tuple(sorted(observed))
-
-
-def selected_evidence(evidence, observations):
-    """Keep the original required scope while recording the selected members."""
-    coverage = evidence.coverage
-    if coverage is not None:
-        members, observed = observation_scope(observations)
-        selection_id = ByteIdentity.of(canonical_manifest_bytes({"members": members})).sha256[:16]
-        coverage = replace(coverage, scope_id=coverage.scope_id + ".view." + selection_id,
-            members=members, observed=observed)
-    return replace(evidence, qualifications=evidence.qualifications | {"view.selected"}, coverage=coverage)
-
-
 def assessment_value(value):
     if isinstance(value, ByteIdentity):
         return {"sha256": value.sha256, "size": value.size}
-    if isinstance(value, SourceUse):
-        return source_use_value(value)
-    if isinstance(value, (ProcessingFinding, CoverageCoordinate, CoverageAssessment, CalculationEvidence, ValueEvidence)):
+    if isinstance(value, (ProcessingFinding, CoverageCoordinate, CoverageAssessment)):
         return {field.name: assessment_value(getattr(value, field.name)) for field in fields(value)}
     if isinstance(value, (tuple, frozenset)):
-        values = sorted(value) if isinstance(value, frozenset) else value
-        return [assessment_value(item) for item in values]
+        return [assessment_value(item) for item in value]
     if value is None or type(value) in {str, int, bool}:
         return value
     raise ValueError("assessment.encoding_invalid")
 
 
 def assessment_from(kind, value):
-    """Restore one fixed assessment vocabulary, never an import path."""
-    classes = {item.__name__: item for item in (ProcessingFinding, CoverageCoordinate, CoverageAssessment, CalculationEvidence, ValueEvidence)}
+    classes = {item.__name__: item for item in (ProcessingFinding, CoverageCoordinate, CoverageAssessment)}
     if kind not in classes or not isinstance(value, dict) or set(value) != {field.name for field in fields(classes[kind])}:
         raise ValueError("assessment.encoding_invalid")
-    if kind == "ValueEvidence":
-        return evidence_from(value)
     if kind == "ProcessingFinding":
-        if not isinstance(value["examples"], list):
-            raise ValueError("assessment.encoding_invalid")
+        if not isinstance(value["examples"], list): raise ValueError("assessment.encoding_invalid")
         return ProcessingFinding(**{**value, "examples": tuple(value["examples"])})
     if kind == "CoverageCoordinate":
-        if not isinstance(value["dimensions"], list):
-            raise ValueError("assessment.encoding_invalid")
+        if not isinstance(value["dimensions"], list): raise ValueError("assessment.encoding_invalid")
         return CoverageCoordinate(**{**value, "dimensions": tuple(tuple(pair) for pair in value["dimensions"])})
-    if kind == "CoverageAssessment":
-        data = dict(value)
-        if (any(not isinstance(data[key], list) for key in ("members", "observed"))
-                or data["expected"] is not None and not isinstance(data["expected"], list)
-                or data["selection"] is not None and not isinstance(data["selection"], list)):
-            raise ValueError("assessment.encoding_invalid")
-        data["members"], data["observed"] = tuple(data["members"]), tuple(data["observed"])
-        data["expected"] = None if data["expected"] is None else tuple(data["expected"])
-        data["selection"] = None if data["selection"] is None else tuple(data["selection"])
-        data["source_identity"] = None if data["source_identity"] is None else ByteIdentity(**data["source_identity"])
-        if data["expected_coordinates"] is not None:
-            if not isinstance(data["expected_coordinates"], list):
-                raise ValueError("assessment.encoding_invalid")
-            data["expected_coordinates"] = tuple(assessment_from("CoverageCoordinate", item) for item in data["expected_coordinates"])
-        return CoverageAssessment(**data)
-    if kind == "CalculationEvidence":
-        if not isinstance(value["inputs"], list) or not isinstance(value["source_uses"], list):
-            raise ValueError("assessment.encoding_invalid")
-        return CalculationEvidence(**{**value,
-            "inputs": tuple((role, ByteIdentity(**identity), release) for role, identity, release in value["inputs"]),
-            "source_uses": tuple((role, source_use_from(use)) for role, use in value["source_uses"])})
-    raise ValueError("assessment.kind_unsupported")
-
-
-def evidence_from(value):
-    if not isinstance(value, dict) or set(value) != {field.name for field in fields(ValueEvidence)}:
-        raise ValueError("assessment.evidence_encoding_invalid")
-    if any(not isinstance(value[key], list) for key in ("qualifications", "findings", "calculations",
-            "method_fingerprints", "profile_fingerprints", "reference_fingerprints")):
-        raise ValueError("assessment.evidence_encoding_invalid")
-    findings = tuple(assessment_from("ProcessingFinding", item) for item in value["findings"])
-    calculations = tuple(assessment_from("CalculationEvidence", item) for item in value["calculations"])
-    coverage = None if value["coverage"] is None else assessment_from("CoverageAssessment", value["coverage"])
-    return ValueEvidence(frozenset(value["qualifications"]), coverage, findings, calculations,
-        tuple(value["method_fingerprints"]), tuple(value["profile_fingerprints"]), tuple(value["reference_fingerprints"]))
+    data = dict(value)
+    for key in ("members", "observed", "expected", "selection"):
+        if data[key] is not None:
+            if not isinstance(data[key], list): raise ValueError("assessment.encoding_invalid")
+            data[key] = tuple(data[key])
+    data["source_identity"] = None if data["source_identity"] is None else ByteIdentity(**data["source_identity"])
+    if data["expected_coordinates"] is not None:
+        if not isinstance(data["expected_coordinates"], list): raise ValueError("assessment.encoding_invalid")
+        data["expected_coordinates"] = tuple(assessment_from("CoverageCoordinate", item) for item in data["expected_coordinates"])
+    return CoverageAssessment(**data)

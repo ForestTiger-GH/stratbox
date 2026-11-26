@@ -79,7 +79,7 @@ class UsedInputReceipt:
     source_id: str | None = None
     container: ByteIdentity | None = None
     member: str | None = None
-    version: ByteIdentity | None = None
+    content_basis: ByteIdentity | None = None
 
     def __post_init__(self) -> None:
         if (not isinstance(self.role, str) or not self.role
@@ -90,7 +90,7 @@ class UsedInputReceipt:
         if any(value is not None and (not isinstance(value, str) or not value)
                for value in (self.source_id, self.member)):
             raise ValueError("input.receipt_invalid")
-        if any(value is not None and not isinstance(value, ByteIdentity) for value in (self.container, self.version)):
+        if any(value is not None and not isinstance(value, ByteIdentity) for value in (self.container, self.content_basis)):
             raise ValueError("input.receipt_invalid")
         if (self.container is None) != (self.member is None):
             raise ValueError("Archive evidence requires a container and member")

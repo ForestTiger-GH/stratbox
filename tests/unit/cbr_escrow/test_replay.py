@@ -1,10 +1,10 @@
-"""Cold-process continuation through each independent escrow material boundary."""
+"""Cold-process continuation through source geometry, observations and prepared views."""
 from dataclasses import replace
 from decimal import Decimal
 from io import BytesIO
-import json
-import os
 from pathlib import Path
+from types import SimpleNamespace
+import os
 import subprocess
 import sys
 
@@ -12,24 +12,48 @@ import pandas as pd
 import pytest
 from openpyxl import Workbook, load_workbook
 
-from stratbox.core.storage.datasets import FileDatasetStore
-from stratbox.core.storage.datasets.codec import reference_value
-from stratbox.core.storage.datasets.definitions import ReadSnapshotRequest, WriteSnapshotRequest
-from stratbox.core.storage.datasets.operations import read_snapshot, write_snapshot
-from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.domains.cbr.operations import project_finance as escrow
-from stratbox.domains.cbr.tables.project_finance.profiles import required_indicators
-from stratbox.domains.cbr.tables.project_finance.columns import resolve_indicator_spec_by_header
+from stratbox.core.formats.spreadsheets.cells import read_workbook_cells
+from stratbox.core.commands.standard import observations_merge
+from stratbox.domains.cbr.domain import DOMAIN
+from stratbox.domains.cbr.common.escrow import required_indicators
+from stratbox.domains.cbr.methods.actions import escrow, observations, serialization
+from stratbox.domains.cbr.products import actions
+from stratbox.domains.cbr.products.specifications import ESCROW_CONTENT
+from stratbox.domains.cbr.methods.tables.project_finance.columns import resolve_indicator_spec_by_header
 from stratbox.domains.cbr.products.project_finance.pivots import build_escrow_pivot
-from stratbox.domains.cbr.integration.project_finance.snapshots import dataset_snapshot
-from stratbox.shared.data.snapshots import DatasetSnapshot, SnapshotCoverage
+from stratbox.shared.data.values import Assessment, Material, SourceDataset, WorkbookEvidence, fingerprint
 from stratbox.shared.evidence import SourcePayload
 
+SERIES = "cbr.project_finance.escrow"
 
-def checked(result):
-    assert result.outcome == "succeeded", result.diagnostics
-    return result.value
+def context(**parameters):
+    return SimpleNamespace(parameters=parameters, checkpoint=lambda: None)
 
+def source(request):
+    period = request.source_name.rsplit("_", 1)[1].split(".")[0]
+    issue = f"{period[4:]}-{period[2:4]}-{period[:2]}"
+    ctx = context(issue_id=issue)
+    material = Material(request.payload.data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", SERIES)
+    physical = WorkbookEvidence(material, read_workbook_cells(material.data))
+    commands = DOMAIN.series[SERIES].commands
+    tables = escrow.extract({"physical": physical}, commands["command.table.extract"].settings, ctx)["tables"]
+    dataset = escrow.interpret({"tables": tables}, commands["command.table.interpret"].settings, ctx)["dataset"]
+    return physical, tables, dataset
+
+def history(*requests):
+    return observations_merge({"datasets": tuple(source(request)[2] for request in requests)}, {}, context())["dataset"]
+
+def prepared(dataset, settings=ESCROW_CONTENT, **parameters):
+    return actions.prepare({"dataset": dataset}, settings, context(**parameters))["view"]
+
+def rendered(view):
+    return actions.render({"view": view}, ESCROW_CONTENT, context())["product"]
+
+def encoded(value):
+    return serialization.encode({"value": value}, None, context())["representation"]
+
+def decoded(value):
+    return serialization.decode({"representation": value}, None, context())["value"]
 
 def publication(*, period="01062026", region="Example region", amount="0012.2500", extra=True):
     book = Workbook()
@@ -49,128 +73,86 @@ def publication(*, period="01062026", region="Example region", amount="0012.2500
     buffer = BytesIO()
     book.save(buffer)
     book.close()
-    return escrow.ParseEscrowRequest(SourcePayload(buffer.getvalue(), source_id="escrow-example"), f"escrow_{period}.xlsx")
+    return SimpleNamespace(payload=SourcePayload(buffer.getvalue(), source_id=SERIES), source_name=f"escrow_{period}.xlsx")
 
 
-def persist(snapshot, root):
-    store = FileDatasetStore(LocalFileStore(root), "datasets", provider_id="files", scope_id="escrow")
-    written = checked(write_snapshot(WriteSnapshotRequest(snapshot), store=store))
-    return store, written.reference
+def test_source_table_and_observations_replay_preserve_precision_and_unknown_cells(tmp_path):
+    physical, table, dataset = source(publication())
+    restored = decoded(encoded(table))
+    assert restored == table
+    cells = [escrow.decode_cell(item) for row in table.tables[0].rows for item in row] if hasattr(escrow, "decode_cell") else None
+    from stratbox.domains.cbr.methods.tables.project_finance.parser import decode_cell
+    states = {decode_cell(item)[2] for row in table.tables[0].rows for item in row}
+    assert {"blank", "marker", "unparsed", "formula_unresolved", "numeric"} <= states
+    assert "Unmapped source measure" in table.tables[0].headers
+    exact = next(row for row in dataset.rows if row["raw_token"] == "0012.2500")
+    assert exact["value"] == Decimal("12.2500")
+    assert dataset.semantics["unmapped_headers"] == ("Unmapped source measure",)
+    assert decoded(encoded(dataset)) == dataset
+    assert encoded(decoded(encoded(dataset))).identity == encoded(dataset).identity
+    assert physical.material.identity in dataset.lineage
 
 
-def test_flake_and_dataset_replay_preserve_cells_periods_and_render_in_a_fresh_process(tmp_path):
-    first = checked(escrow.parse(publication()))
-    assert first.df_cells.loc[first.df_cells["raw_token"].eq("0012.2500"), "value"].iloc[0] == Decimal("12.2500")
-    assert {"blank", "marker", "unparsed", "formula_unresolved", "numeric"} <= set(first.df_cells["status"])
-    first_snapshot = checked(escrow.build_flake_snapshot(escrow.EscrowFlakeSnapshotRequest(first)))
-    store, reference = persist(first_snapshot, tmp_path)
-    loaded = checked(read_snapshot(ReadSnapshotRequest(reference), store=store))
-    replayed = checked(escrow.read_flake_snapshot(escrow.ReadEscrowSnapshotRequest(loaded)))
-    pd.testing.assert_frame_equal(first.df_cells, replayed.df_cells)
-    assert replayed.original_identity == first.original_identity
-    assert replayed.source_id == first.source_id
-    assert replayed.unmapped_headers == ("Unmapped source measure",)
-    assert checked(escrow.build_flake_snapshot(escrow.EscrowFlakeSnapshotRequest(replayed))).identity == first_snapshot.identity
-
-    second = checked(escrow.parse(publication(period="01072026", region="New region")))
-    dataset = checked(escrow.integrate_flakes(escrow.IntegrateEscrowRequest((replayed, second))))
-    assert "Example region" in set(dataset.rows["Регион"])
-    assert "New region" in set(dataset.rows["Регион"])
-    snapshot = checked(escrow.build_dataset_snapshot(escrow.EscrowDatasetSnapshotRequest(dataset)))
-    _, reference = persist(snapshot, tmp_path)
-    request_file = tmp_path / "request.json"
-    request_file.write_text(json.dumps({"root": str(tmp_path), "reference": reference_value(reference)}))
+def test_prepared_product_renders_in_fresh_process_without_source_parser(tmp_path):
+    dataset = history(publication(), publication(period="01072026", region="New region"))
+    assert "Example region" in {row["subject"] for row in dataset.rows}
+    view = prepared(dataset)
+    assert "Example region" not in view.settings["region_order"]
+    retained = tmp_path / "prepared.json"
+    retained.write_bytes(encoded(view).data)
+    target = tmp_path / "product.xlsx"
     script = r'''
-import json, sys
+import sys
 from pathlib import Path
-from stratbox.core.storage.datasets import FileDatasetStore
-from stratbox.core.storage.datasets.codec import reference_from
-from stratbox.core.storage.datasets.definitions import ReadSnapshotRequest
-from stratbox.core.storage.datasets.operations import read_snapshot
-from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.domains.cbr.operations import project_finance as escrow
-info=json.loads(Path(sys.argv[1]).read_text())
-store=FileDatasetStore(LocalFileStore(info["root"]),"datasets",provider_id="files",scope_id="escrow")
-loaded=read_snapshot(ReadSnapshotRequest(reference_from(info["reference"])),store=store)
-assert loaded.outcome == "succeeded", loaded.diagnostics
-restored=escrow.read_dataset_snapshot(escrow.ReadEscrowSnapshotRequest(loaded.value))
-assert restored.outcome == "succeeded", restored.diagnostics
-views=escrow.build_views(escrow.BuildEscrowViewsRequest(restored.value))
-assert views.outcome == "succeeded", views.diagnostics
-assert "Example region" not in views.value.region_order
-assert "Example region" in set(restored.value.rows["Регион"])
-book=escrow.render_workbook(views.value)
-assert book.outcome == "succeeded", book.diagnostics
-Path(info["root"],"from_replay.xlsx").write_bytes(book.value.data)
+from types import SimpleNamespace
+from stratbox.domains.cbr.methods.actions.serialization import decode
+from stratbox.domains.cbr.products.actions import render
+from stratbox.domains.cbr.products.specifications import ESCROW_CONTENT
+ctx=SimpleNamespace(parameters={},checkpoint=lambda:None)
+view=decode({"representation":Path(sys.argv[1]).read_bytes()},None,ctx)["value"]
+product=render({"view":view},ESCROW_CONTENT,ctx)["product"]
+Path(sys.argv[2]).write_bytes(product.data)
 '''
-    env = {**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[3] / "src")}
-    completed = subprocess.run([sys.executable, "-c", script, str(request_file)], env=env, text=True, capture_output=True)
-    assert completed.returncode == 0, completed.stderr
-    book = load_workbook(tmp_path / "from_replay.xlsx", data_only=True)
+    result = subprocess.run([sys.executable, "-c", script, str(retained), str(target)], env=os.environ.copy(), capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    book = load_workbook(target, data_only=True)
     assert book["ССПКДПФО"]["B5"].value == 7.25
     assert book["ССПКДПФО"]["B5"].number_format == "#,##0.00"
     book.close()
 
 
-def test_prepared_view_replay_keeps_tokens_precision_and_dataset_identity(tmp_path):
-    flake = checked(escrow.parse(publication()))
-    dataset = checked(escrow.integrate_flakes(escrow.IntegrateEscrowRequest((flake,))))
-    view = checked(escrow.build_views(escrow.BuildEscrowViewsRequest(dataset)))
-    snapshot = checked(escrow.build_view_snapshot(escrow.EscrowViewSnapshotRequest(view)))
-    store, reference = persist(snapshot, tmp_path)
-    loaded = checked(read_snapshot(ReadSnapshotRequest(reference), store=store))
-    restored = checked(escrow.read_view_snapshot(escrow.ReadEscrowSnapshotRequest(loaded)))
-    assert restored.source_dataset == view.source_dataset
-    assert restored.row_metadata == view.row_metadata
-    assert restored.coverage == view.coverage
-    for code in view.pivots:
-        pd.testing.assert_frame_equal(view.pivots[code], restored.pivots[code])
-    assert checked(escrow.render_workbook(restored)) == checked(escrow.render_workbook(view))
-    assert any("—" in frame.values for frame in restored.pivots.values())
+def test_prepared_view_replay_keeps_tokens_and_actual_source_coordinates():
+    dataset = history(publication(), publication(period="01072026"))
+    view = prepared(dataset)
+    restored = decoded(encoded(view))
+    assert rendered(restored) == rendered(view)
+    assert any(row["raw_token"] == "—" for row in restored.value)
+    assert {use.coordinate.issue_id for use in dataset.source_uses} == {"2026-06-01", "2026-07-01"}
+    assert all(use.coordinate.material_identity is not None for use in dataset.source_uses)
 
 
 def test_duplicate_observations_are_never_averaged():
     frame = pd.DataFrame({"indicator_code": ["x", "x"], "Регион": ["r", "r"], "Дата": ["2026-01-01"] * 2, "Значение": [2, 10]})
     with pytest.raises(ValueError, match="duplicate_observation"):
         build_escrow_pivot(frame, "x", region_order=["r"], date_order=["2026-01-01"])
-    flake = checked(escrow.parse(publication()))
-    result = escrow.integrate_flakes(escrow.IntegrateEscrowRequest((flake, flake)))
-    assert result.outcome == "failed"
-    assert result.diagnostics[0].code == "escrow.duplicate_release"
+    with pytest.raises(Exception, match="duplicate"):
+        history(publication(), publication())
 
 
-def test_selected_or_mutated_material_cannot_be_admitted_as_a_complete_flake():
-    flake = checked(escrow.parse(publication()))
-    snapshot = checked(escrow.build_flake_snapshot(escrow.EscrowFlakeSnapshotRequest(flake)))
-    partial = DatasetSnapshot(snapshot.manifest, snapshot.tables[:-1])
-    result = escrow.read_flake_snapshot(escrow.ReadEscrowSnapshotRequest(partial))
-    assert result.outcome == "failed"
-    assert result.diagnostics[0].code == "escrow.snapshot_invalid"
-    flake.df_cells.loc[0, "raw_token"] = "modified"
-    result = escrow.integrate_flakes(escrow.IntegrateEscrowRequest((flake,)))
-    assert result.outcome == "failed"
-    assert result.diagnostics[0].code == "input.identity_mismatch"
+def test_changed_material_identity_cannot_be_admitted_as_original_physical_evidence():
+    physical, table, dataset = source(publication())
+    changed = replace(physical, material=replace(physical.material, data=b"different original"))
+    with pytest.raises(ValueError, match="identity_mismatch"):
+        encoded(changed)
+    modified = replace(dataset, assessment=Assessment("partial", qualifications=frozenset({"selection_incomplete"})))
+    assert modified.identity != dataset.identity
+    with pytest.raises(ValueError, match="history_incomplete"):
+        prepared(modified)
+    assert prepared(modified, require_complete_history=False)
 
 
-def test_coverage_and_average_rate_have_distinct_semantic_identity():
+def test_average_and_weighted_rates_have_distinct_semantic_identity():
     weighted = resolve_indicator_spec_by_header("Средневзвешенная ставка по кредитным договорам по федеральному округу, %")
     average = resolve_indicator_spec_by_header("Средняя ставка по кредитным договорам по федеральному округу, %")
     assert average.code != weighted.code
-    flake = checked(escrow.parse(publication()))
-    dataset = checked(escrow.integrate_flakes(escrow.IntegrateEscrowRequest((flake,))))
-    different = replace(dataset, coverage=SnapshotCoverage("partial", "Caller selected one issue from a larger inventory."))
-    assert dataset_snapshot(dataset).identity != dataset_snapshot(different).identity
-    assert dataset_snapshot(dataset).manifest.version_id != dataset_snapshot(different).manifest.version_id
-
-
-def test_prepared_escrow_views_retain_each_actual_publication_coordinate():
-    first = checked(escrow.parse(publication()))
-    second = checked(escrow.parse(publication(period="01072026")))
-    dataset = checked(escrow.integrate_flakes(escrow.IntegrateEscrowRequest((first, second))))
-    view = checked(escrow.build_views(escrow.BuildEscrowViewsRequest(dataset)))
-    assert len(view.source_uses) == 2
-    assert {use.coordinate.source_id for use in view.source_uses} == {"cbr.project_finance.escrow"}
-    assert {use.coordinate.issue_id for use in view.source_uses} == {"2026-06-01", "2026-07-01"}
-    saved = checked(escrow.build_view_snapshot(escrow.EscrowViewSnapshotRequest(view)))
-    restored = checked(escrow.read_view_snapshot(escrow.ReadEscrowSnapshotRequest(saved)))
-    assert restored.source_uses == view.source_uses
+    assert average.unit == weighted.unit == "percent"

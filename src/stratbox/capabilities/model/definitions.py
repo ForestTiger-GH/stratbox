@@ -9,6 +9,7 @@ from .reuse import ReuseContract
 
 @dataclass(frozen=True, slots=True)
 class CapabilityDefinition:
+    __authored_definition__ = True
     id: str
     inputs: Mapping[str, PortContract] = field(default_factory=dict)
     outputs: Mapping[str, PortContract] = field(default_factory=dict)

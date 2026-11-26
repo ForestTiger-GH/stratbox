@@ -10,7 +10,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.utils.dataframe import dataframe_to_rows
 
-from stratbox.domains.cbr.products.project_finance.profiles import EscrowProductIndicator
+from stratbox.domains.cbr.products.specifications import Sheet
 
 
 HEADER_FONT = Font(name="Arial", size=10, bold=True, color="000000")
@@ -26,7 +26,7 @@ WIDTH_OTHER_COLS = 11
 
 def build_escrow_workbook(
     pivots: dict[str, pd.DataFrame],
-    indicator_specs: list[EscrowProductIndicator],
+    indicator_specs: list[Sheet],
     *,
     title_row_font: Font | None = None,
     checkpoint=None,
@@ -42,8 +42,8 @@ def build_escrow_workbook(
     for spec in indicator_specs:
         if checkpoint is not None:
             checkpoint()
-        pivot_df = pivots[spec.code].reset_index()
-        sheet_name = spec.sheet_code
+        pivot_df = pivots[spec.metric].reset_index()
+        sheet_name = spec.name
         if sheet_name in used_sheet_names:
             raise ValueError(f"Duplicate escrow sheet code is detected: {sheet_name}")
         used_sheet_names.add(sheet_name)

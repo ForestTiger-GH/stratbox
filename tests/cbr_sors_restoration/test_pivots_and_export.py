@@ -5,8 +5,8 @@ import openpyxl
 
 from stratbox.domains.cbr.products.corporate_lending.sors.contracts import SorsPivotRequest
 from stratbox.domains.cbr.products.corporate_lending.sors.contracts import SorsWorkbookRequest
-from stratbox.domains.cbr.operations.corporate_lending.sors.definitions import RenderSorsRequest, BuildSorsViewsRequest
-from stratbox.domains.cbr.operations.corporate_lending.sors.api import build_views, render_views
+from stratbox.domains.cbr.products.corporate_lending.sors.pack import build_sors_views
+from stratbox.domains.cbr.products.corporate_lending.sors.rendering import render_sors_views
 from stratbox.domains.cbr.products.corporate_lending.sors.views import build_sors_pivot
 
 
@@ -23,16 +23,14 @@ def test_class_pivot_has_regions_as_rows(small_result) -> None:
 
 
 def test_workbook_export_uses_pivot_contract(tmp_path: Path, small_result) -> None:
-    prepared = build_views(BuildSorsViewsRequest(
+    prepared = build_sors_views(
         small_result,
         SorsWorkbookRequest(
             pivots=(SorsPivotRequest(region_name='Регион 1'),),
         ),
-    ))
-    assert prepared.outcome == "succeeded", prepared.diagnostics
-    operation = render_views(RenderSorsRequest(prepared.value))
-    assert operation.outcome == "succeeded", operation.diagnostics
-    workbook = openpyxl.load_workbook(BytesIO(operation.value.representation.data), read_only=True)
+    )
+    operation = render_sors_views(prepared)
+    workbook = openpyxl.load_workbook(BytesIO(operation.representation.data), read_only=True)
     assert 'Regional_OKVED2' in workbook.sheetnames
     assert any(name.startswith('Pivot_1_') for name in workbook.sheetnames)
 
@@ -43,7 +41,7 @@ def test_crosswalk_workbook_exports_primary_facts_bounds_and_mapping(
 ) -> None:
     import pandas as pd
 
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.results import SorsCrosswalkResult
+    from stratbox.domains.cbr.calculations.sors.results import SorsCrosswalkResult
 
     primary = small_result.regional_okved2_grid.copy()
     primary['bounds_certified'] = True
@@ -79,18 +77,16 @@ def test_crosswalk_workbook_exports_primary_facts_bounds_and_mapping(
         status='OPTIMAL',
         strict_result=small_result,
     )
-    prepared = build_views(BuildSorsViewsRequest(
+    prepared = build_sors_views(
         result,
         SorsWorkbookRequest(
             include_crosswalk_bounds=True,
             include_crosswalk_mapping=True,
             pivots=(SorsPivotRequest(region_name='Регион 1'),),
         ),
-    ))
-    assert prepared.outcome == "succeeded", prepared.diagnostics
-    operation = render_views(RenderSorsRequest(prepared.value))
-    assert operation.outcome == "succeeded", operation.diagnostics
-    workbook = openpyxl.load_workbook(BytesIO(operation.value.representation.data), read_only=True)
+    )
+    operation = render_sors_views(prepared)
+    workbook = openpyxl.load_workbook(BytesIO(operation.representation.data), read_only=True)
     assert 'Crosswalk_Facts' in workbook.sheetnames
     assert 'Crosswalk_Bounds' in workbook.sheetnames
     assert 'Crosswalk_Scenarios' in workbook.sheetnames

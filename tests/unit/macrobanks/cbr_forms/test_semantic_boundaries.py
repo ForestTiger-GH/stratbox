@@ -1,117 +1,84 @@
-"""Source forms, semantic alignment and model selection have independent boundaries."""
+"""Physical source facts, semantic observations and numerical purposes stay separate."""
 from dataclasses import replace
-from datetime import date
 from decimal import Decimal
-from struct import pack
 
-from stratbox.domains.cbr.operations import reporting_forms as forms
-from stratbox.shared.data.observations import PeriodRef
-from stratbox.shared.evidence import SourcePayload
+import pytest
 
-DAY=date(2026,4,1)
-
-def source(fields,rows):
-    size=1+16*len(fields)
-    header=pack("<BBBBIHH20x",3,126,4,1,len(rows),33+32*len(fields),size)
-    descriptors=b"".join(pack("<11sc4xBB14x",name.encode(),b"C",16,0) for name in fields)
-    values=b"".join(b" "+b"".join(value.encode().ljust(16) for value in row) for row in rows)
-    return SourcePayload(header+descriptors+b"\r"+values+b"\x1a")
-
-def ok(result):
-    assert result.outcome=="succeeded",result.diagnostics
-    return result.value
-
-def parse(code,fields,rows):
-    return ok(forms.parse_form(forms.ParseFormRequest(forms.FormKey(code,DAY),source(fields,rows))))
+from stratbox.shared.data.values import Material
+from .support import DAY, calculate, command, dataset, reopen, series, view
 
 
 def test_default_model_selects_all_admitted_banks_and_preserves_an_explicit_subset():
-    snapshot=parse("802",("REGN_GKO","STR","VSEGO"),(("1000","14","1.23"),("2000","14","9")))
-    all_banks=ok(forms.build_form_data(forms.BuildFormDataRequest((snapshot,))))
-    assert set(all_banks.banks.regn)=={"1000","2000"}
-    selected=ok(forms.build_form_data(forms.BuildFormDataRequest((snapshot,),(forms.BankSelection("1000","Selected"),))))
-    assert set(selected.banks.regn)=={"1000"}
+    source=dataset("802",("REGN_GKO","STR","VSEGO"),(("1000","14","1.23"),("2000","14","9")))
+    result=calculate("802",source)
+    assert {row["subject"] for row in result.rows}=={"1000","2000"}
+    selected=view(result,subjects=("1000",))
+    from io import BytesIO
+    from openpyxl import load_workbook
+    from .support import render
+    workbook=load_workbook(BytesIO(render(selected).data),data_only=True)
+    values=list(workbook["Данные"].values);ordinal=list(values[0]).index("REGN")
+    assert {str(row[ordinal]) for row in values[1:]}=={"1000"}
+    workbook.close()
 
 
-def test_alignment_keeps_banks_and_groups_distinct_and_retains_physical_record_evidence():
-    group=parse("802",("REGN_GKO","STR","VSEGO"),(("1000","14","000001.2300"),))
-    bank=parse("101",("REGN","NUM_SC","IITG","PLAN","A_P"),(("1000","47422","5","A","2"),))
-    batch=ok(forms.align_forms(forms.AlignFormRequest((group,bank),"forms.observations","v1")))
-    by_form={dict(item.dimensions)["form"]:item for item in batch.observations if item.value_status=="reported"}
-    assert by_form["802"].subject.namespace=="cbr.banking_group.registration"
-    assert by_form["101"].subject.namespace=="cbr.bank.registration"
-    assert by_form["802"].value==Decimal("1.2300")
-    assert by_form["802"].value.as_tuple().exponent==-4
-    assert by_form["802"].metric.unit=="RUB" and by_form["802"].metric.scale==Decimal(1000)
-    assert "record:1/field:VSEGO" in by_form["802"].evidence_ref
-    assert by_form["802"].raw_token=="000001.2300"
-    assert by_form["101"].perimeter=="credit_institution"
-    assert {(use.coordinate.source_id, use.coordinate.source_group_id, use.coordinate.issue_id) for use in batch.source_uses} == {
-        ("cbr.reporting_forms.f101", "reported_records", DAY.isoformat()),
-        ("cbr.reporting_forms.f802", "reported_records", DAY.isoformat())}
+def test_alignment_keeps_banks_groups_exact_number_and_physical_record_evidence():
+    group=dataset("802",("REGN_GKO","STR","VSEGO"),(("1000","14","000001.2300"),))
+    bank=dataset("101",("REGN","NUM_SC","IITG","PLAN","A_P"),(("1000","47422","5","A","2"),))
+    g=command("802","observations.align",{"dataset":group})["dataset"]
+    b=command("101","observations.align",{"dataset":bank})["dataset"]
+    assert g.rows[0]["subject_namespace"]=="cbr.banking_group.registration"
+    assert b.rows[0]["subject_namespace"]=="cbr.bank.registration"
+    assert g.rows[0]["value"]==Decimal("1.2300") and g.rows[0]["value"].as_tuple().exponent==-4
+    assert g.rows[0]["unit"]=="RUB" and g.rows[0]["scale"]==1000
+    assert "record=1&field=VSEGO" in g.rows[0]["evidence_ref"]
+    assert g.rows[0]["raw_token"]=="000001.2300"
+    assert b.rows[0]["perimeter"]=="credit_institution"
+    assert g.source_id==series("802").id and b.source_id==series("101").id
+    assert g.issue_id==b.issue_id==DAY and group.lineage[0] in g.lineage
+    assert g.source_uses==group.source_uses and b.source_uses==bank.source_uses
 
 
-def test_flow_alignment_requires_an_explicit_interval():
-    snapshot=parse("102",("REGN","CODE","SIM_ITOGO"),(("1000","11101","100"),))
-    refused=forms.align_forms(forms.AlignFormRequest((snapshot,),"forms.observations","v1"))
-    assert refused.outcome=="failed" and refused.diagnostics[0].code=="request.form_flow_period_required"
-    period=PeriodRef("interval",start=date(2026,1,1),end=date(2026,3,31))
-    admitted=ok(forms.align_forms(forms.AlignFormRequest((snapshot,),"forms.observations","v1",((DAY,period),))))
-    assert admitted.observations[0].period==period
-    assert admitted.observations[0].metric.quantity_kind=="flow"
+def test_flow_interpretation_requires_explicit_interval():
+    with pytest.raises(ValueError,match="flow_period_required"):
+        dataset("102",("REGN","CODE","SIM_ITOGO"),(("1000","11101","100"),))
+    source=dataset("102",("REGN","CODE","SIM_ITOGO"),(("1000","11101","100"),),period=("2026-01-01","2026-03-31"))
+    assert source.rows[0]["period"]==("2026-01-01","2026-03-31")
+    assert source.rows[0]["measure_kind"]=="flow"
 
 
-def test_alignment_distinguishes_blank_zero_and_absent_optional_measure():
-    snapshot=parse("802",("REGN_GKO","STR","VSEGO","KORR_P"),(("1000","14","0",""),))
-    batch=ok(forms.align_forms(forms.AlignFormRequest((snapshot,),"forms.observations","v1")))
-    channels={dict(item.dimensions)["measure"]:item for item in batch.observations}
-    assert channels["total"].value==Decimal(0) and channels["total"].value_status=="reported"
-    assert channels["consolidation_plus"].value_status=="blank"
-    assert channels["consolidation_minus"].value_status=="missing"
+def test_interpretation_distinguishes_blank_zero_and_absent_optional_measure():
+    source=dataset("802",("REGN_GKO","STR","VSEGO","KORR_P"),(("1000","14","0",""),))
+    channels={row["measure"]:row for row in source.rows}
+    assert channels["total"]["value"]==0 and channels["total"]["value_status"]=="reported"
+    assert channels["consolidation_plus"]["value_status"]=="blank"
+    assert "consolidation_minus" not in channels
 
 
-def test_source_comparison_reads_all_members_without_a_financial_model():
-    key=forms.FormKey("803",DAY)
-    before=ok(forms.extract_forms(forms.ExtractFormRequest(key,source(("CODE","VALUE"),(("0001","10"),)))))
-    after=ok(forms.extract_forms(forms.ExtractFormRequest(key,source(("CODE","VALUE"),(("0001","11"),)))))
-    changed=ok(forms.compare_sources(forms.CompareFormFlakesRequest(after,before,"available")))
-    assert changed.state=="revised" and changed.layers.facts=="changed"
-    initial=ok(forms.compare_sources(forms.CompareFormFlakesRequest(before,baseline_state="confirmed_absent")))
-    assert initial.state=="first_seen"
-    readable=ok(forms.make_readable(after))
-    assert '"0001", "11"' in readable.data.decode()
+def test_source_comparison_accepts_raw_material_without_a_financial_model():
+    before=Material(b"source-raw-before");after=Material(b"source-raw-after")
+    changed=command("803","source.assess",{"evidence":after,"baseline":before})["assessment"]
+    assert changed.status=="changed" and changed.basis=="exact_material_bytes"
+    initial=command("803","source.assess",{"evidence":before})["assessment"]
+    assert initial.status=="first_seen" and initial.basis=="no_baseline"
 
 
-def test_unknown_discovered_form_is_retained_as_an_unsupported_candidate():
-    inventory=ok(forms.discover_sources(forms.DiscoverFormsRequest(
-        SourcePayload(b'<a href="/vfs/credit/forms/999-20260401.rar">source</a>',"text/html"))))
-    assert inventory.sources==()
-    assert inventory.unsupported_sources[0][0].key.code=="999"
-    assert inventory.unsupported_sources[0][1]=="source.form_profile_unsupported"
-    key=forms.FormKey("999",DAY)
-    selected=forms.select_sources(forms.SelectFormSourcesRequest((key,)))
-    extracted=forms.extract_forms(forms.ExtractFormRequest(key,SourcePayload(b"unadmitted")))
-    for rejected in (selected,extracted):
-        assert rejected.outcome=="failed"
-        assert rejected.diagnostics[0].code=="source.form_profile_unsupported"
+def test_unknown_form_links_cannot_be_silently_admitted_to_a_known_series():
+    index=Material(b'<a href="/vfs/credit/forms/999-20260401.rar">source</a>',"text/html")
+    listing=command("803","publication.scan",{"index":index})["listing"]
+    assert listing.entries==() and listing.assessment.status=="partial"
+    assert "cbr.index_no_qualified_assets" in listing.assessment.findings
+    with pytest.raises(KeyError):
+        series("999")
 
 
-def test_integrated_observations_can_continue_after_their_own_snapshot():
-    snapshot=parse("802",("REGN_GKO","STR","VSEGO"),(("1000","14","1.2300"),))
-    aligned=ok(forms.align_forms(forms.AlignFormRequest((snapshot,),"logical.forms","release-1")))
-    encoded=ok(forms.snapshot_observations(forms.SnapshotFormObservationsRequest(aligned,"stored.forms","version-1")))
-    restored=ok(forms.restore_observations(encoded))
-    assert restored==aligned
-
-
-def test_normalized_calculated_and_prepared_forms_retain_source_coordinates():
-    normalized = parse("802", ("REGN_GKO", "STR", "VSEGO"), (("1000", "14", "1.23"),))
-    data = ok(forms.build_form_data(forms.BuildFormDataRequest((normalized,))))
-    views = ok(forms.build_form_views(data))
-    assert normalized.source_uses and data.source_uses == normalized.source_uses == views.source_uses
-    for value, restore in ((normalized, forms.restore_normalized), (data, forms.restore_data), (views, forms.restore_views)):
-        snapshot = ok(forms.snapshot_result(forms.FormResultSnapshotRequest(value, "caller.dataset", "caller.release")))
-        replayed = ok(restore(snapshot))
-        assert replayed.source_uses == value.source_uses
-        assert {(use.coordinate.source_id, use.coordinate.issue_id) for use in replayed.source_uses} == {
-            ("cbr.reporting_forms.f802", DAY.isoformat())}
+def test_integrated_values_and_prepared_views_continue_after_their_own_encoding(tmp_path):
+    source=dataset("802",("REGN_GKO","STR","VSEGO"),(("1000","14","1.2300"),))
+    integrated=command("802","observations.align",{"dataset":source})["dataset"]
+    assert reopen(tmp_path,integrated)==integrated
+    calculated=calculate("802",reopen(tmp_path,integrated))
+    prepared=view(calculated)
+    for value in (source,integrated,calculated,prepared):
+        restored=reopen(tmp_path,value)
+        assert restored==value and restored.lineage==value.lineage
+    assert source.lineage[0] in calculated.lineage and calculated.identity in prepared.lineage

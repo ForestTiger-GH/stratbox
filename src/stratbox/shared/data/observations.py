@@ -5,9 +5,6 @@ from datetime import date
 from decimal import Decimal
 from typing import Literal
 
-from stratbox.shared.evidence import UsedInputReceipt
-from stratbox.shared.data.source_context import SourceUse
-from stratbox.shared.data.assessment import ValueEvidence
 
 _VALUE_STATUSES = frozenset({
     "reported", "blank", "dash", "missing", "not_applicable",
@@ -37,7 +34,7 @@ class MetricRef:
     id: str
     unit: str
     quantity_kind: Literal["stock", "flow", "ratio", "index", "count"] | None = None
-    definition_version: str | None = None
+    definition_id: str | None = None
     scale: Decimal | None = None
 
     def __post_init__(self) -> None:
@@ -49,10 +46,10 @@ class MetricRef:
             "stock", "flow", "ratio", "index", "count"
         }:
             raise ValueError("Invalid metric quantity kind")
-        if self.definition_version is not None and (
-            not isinstance(self.definition_version, str) or not self.definition_version.strip()
+        if self.definition_id is not None and (
+            not isinstance(self.definition_id, str) or not self.definition_id.strip()
         ):
-            raise ValueError("Metric definition version must be nonempty if supplied")
+            raise ValueError("Metric definition identity must be nonempty if supplied")
         if self.scale is not None and type(self.scale) is not Decimal:
             raise TypeError("Metric scale must be a Decimal")
         if self.scale is not None and (not self.scale.is_finite() or self.scale <= 0):
@@ -111,20 +108,3 @@ class Observation:
             raise ValueError("Observation requires a finite value")
         if len({key for key, _ in self.dimensions}) != len(self.dimensions):
             raise ValueError("Duplicate observation dimension")
-
-
-@dataclass(frozen=True, slots=True)
-class ObservationBatch:
-    dataset_id: str
-    schema_version: int
-    release_id: str
-    observations: tuple[Observation, ...]
-    lineage: tuple[UsedInputReceipt, ...]
-    source_uses: tuple[SourceUse, ...] = ()
-    evidence: ValueEvidence | None = None
-
-    def __post_init__(self):
-        if not isinstance(self.source_uses, tuple) or any(not isinstance(use, SourceUse) for use in self.source_uses):
-            raise ValueError("observations.source_uses_invalid")
-        if self.evidence is not None and not isinstance(self.evidence, ValueEvidence):
-            raise ValueError("observations.evidence_invalid")

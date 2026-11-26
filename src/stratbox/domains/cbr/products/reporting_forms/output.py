@@ -11,9 +11,9 @@ import pandas as pd
 
 from stratbox.core.formats.spreadsheets.workbook_bytes import openpyxl_bytes
 from stratbox.core.rendering.excel.api import apply_preset
-from stratbox.domains.cbr.products.reporting_forms.excel_profiles import (
-    HIERARCHICAL_STATEMENT_PROFILE,
-    STANDARD_PROFILE,
+from stratbox.domains.cbr.products.reporting_forms.excel_settings import (
+    HIERARCHICAL_STATEMENT_LAYOUT,
+    STANDARD_LAYOUT,
     build_hierarchical_statement_sheets,
 )
 from stratbox.domains.cbr.products.reporting_forms.wide import build_wide_table
@@ -117,10 +117,10 @@ def _format_hierarchical_workbook(wb, sheets: dict[str, pd.DataFrame], registry)
 
 
 def build_form_sheets(*, profile, df_long, df_banks, model_df, indicator_order):
-    if profile == STANDARD_PROFILE:
+    if profile == STANDARD_LAYOUT:
         return {"data": build_wide_table(df_long=df_long, df_banks=df_banks,
                                          indicator_order=indicator_order)}
-    if profile == HIERARCHICAL_STATEMENT_PROFILE:
+    if profile == HIERARCHICAL_STATEMENT_LAYOUT:
         return build_hierarchical_statement_sheets(df_long=df_long, df_banks=df_banks, model_df=model_df)
     raise ValueError("Unknown form workbook profile")
 
@@ -137,7 +137,7 @@ def render_form_workbook(sheets, *, profile, budget=None, style_registry=None):
             for row in frame.itertuples(index=False, name=None):
                 sheet.append([None if pd.isna(value) else value for value in row])
         _set_workbook_meta(workbook)
-        if profile == HIERARCHICAL_STATEMENT_PROFILE:
+        if profile == HIERARCHICAL_STATEMENT_LAYOUT:
             _format_hierarchical_workbook(workbook, sheets, style_registry)
         else:
             sheet = workbook["data"]

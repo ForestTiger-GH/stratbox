@@ -14,12 +14,12 @@ class SourceCoordinate:
     issue_id: str | None = None
     asset_id: str | None = None
     material_identity: ByteIdentity | None = None
-    layout_edition: str | None = None
-    semantic_profile_edition: str | None = None
+    layout_identity: str | None = None
+    semantic_identity: str | None = None
 
     def __post_init__(self):
         for name in ("source_id", "family_id", "source_group_id", "issue_id", "asset_id",
-                     "layout_edition", "semantic_profile_edition"):
+                     "layout_identity", "semantic_identity"):
             value = getattr(self, name)
             if value is not None and (not isinstance(value, str) or not value or len(value) > 4096):
                 raise ValueError("source.coordinate_invalid")
@@ -78,8 +78,8 @@ class ValueContext:
         return self._projection("issue_id")
 
     @property
-    def editions(self):
-        return self._projection("layout_edition", "semantic_profile_edition")
+    def specification_identities(self):
+        return self._projection("layout_identity", "semantic_identity")
 
 
 def source_use_value(use: SourceUse) -> dict:

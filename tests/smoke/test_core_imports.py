@@ -1,19 +1,15 @@
-from __future__ import annotations
-
+"""Final public owner metadata is importable without opening providers."""
 import importlib
 
-MODULES = [
-    'stratbox',
-    'stratbox.core.runtime.providers',
-    'stratbox.core.formats',
-    'stratbox.core.storage.filestore',
-    'stratbox.domains.cbr.operations.collection',
-    'stratbox.domains.cbr.operations.corporate_lending.debt',
-    'stratbox.domains.cbr.operations.reporting_forms',
-    'stratbox.domains.cbr.operations.project_finance',
-    'stratbox.domains.frank_rg',
-]
 
-def test_core_imports() -> None:
-    for module in MODULES:
+def test_core_imports():
+    for module in (
+        'stratbox', 'stratbox.sdk', 'stratbox.capabilities.catalog',
+        'stratbox.capabilities.catalog.domains', 'stratbox.capabilities.preparation',
+        'stratbox.core.execution', 'stratbox.core.observability',
+        'stratbox.core.notifications', 'stratbox.core.storage.filestore',
+        'stratbox.domains.cbr.domain', 'stratbox.domains.fns.domain',
+        'stratbox.domains.minfin.domain', 'stratbox.domains.frank_rg.domain',
+        'stratbox.domains.rosstat.domain',
+    ):
         importlib.import_module(module)

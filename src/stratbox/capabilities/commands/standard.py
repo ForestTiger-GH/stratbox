@@ -8,7 +8,7 @@ def P(name, cls=object, *, required=True, role=None):
 
 MATERIAL = P('material', (v.Material, v.IdentifiedMaterial))
 DATASET = P('dataset', v.SourceDataset)
-PHYSICAL = P('physical', (v.WorkbookEvidence, v.DocumentEvidence, v.JsonEvidence, v.DbfEvidence, v.TableEvidenceSet))
+PHYSICAL = PortContract('physical',(v.WorkbookEvidence,v.DocumentEvidence,v.JsonEvidence,v.DbfEvidence,v.TableEvidenceSet,tuple),alternatives=frozenset({'result_collection'}),element_types=(v.WorkbookEvidence,v.DocumentEvidence,v.JsonEvidence,v.DbfEvidence,v.TableEvidenceSet))
 ASSESSMENT = P('assessment', v.Assessment, required=False)
 
 
@@ -17,20 +17,21 @@ def C(identifier, inputs, outputs, *, resource='cpu', effects=(), providers=(), 
         identifier, inputs=inputs, outputs=outputs, parameters=parameters or {},
         method=MethodRef('stratbox.core.commands.standard:' + identifier.removeprefix('command.').replace('.', '_')),
         specification_required=specialize,
-        resources=({resource: 1, 'cpu': 1} if resource in {'parse','solver','calculate','render'} else {resource: 1}), effects=frozenset(effects), required_providers=frozenset(providers),
-        reuse=ReuseContract(deterministic=not bool(effects), shareable=not bool(effects), completed=not bool(effects)),
+        resources=({'cpu': 1} if resource == 'calculate' else {resource: 1, 'cpu': 1} if resource in {'parse','solver','render'} else {resource: 1}), effects=frozenset(effects), required_providers=frozenset(providers),
+        reuse=ReuseContract(deterministic=not bool(effects), shareable=not bool(effects) or effects == ('network.read',), completed=not bool(effects), observation_scoped=effects == ('network.read',)),
     )
 
 # Each row is a distinct, reviewed action promise; the helper only normalizes syntax.
 COMMANDS = (
-    C('command.request.prepare', {'locator': P('locator', required=False), 'query': P('query', required=False)}, {'request': P('request', v.RequestSpec)}),
+    C('command.request.prepare', {'locator': P('locator', required=False), 'query': P('query', required=False), 'selection':P('selection',v.AssetSelection,required=False)}, {'request': P('request', v.RequestSpec)}),
     C('command.material.list', {'location': P('location'), 'query': P('query', required=False)}, {'inventory': P('inventory', tuple)}, resource='storage_read', providers=('filestore',)),
     C('command.material.fetch', {'request': P('request', v.RequestSpec)}, {'material': MATERIAL, 'evidence': P('fetch_evidence', v.FetchEvidence, required=False)}, resource='network', effects=('network.read',), providers=('http',)),
+    C('command.material.select', {'materials':P('materials',tuple)}, {'materials':P('materials',tuple),'assessment':ASSESSMENT}),
     C('command.material.read', {'location': P('location')}, {'material': MATERIAL, 'evidence': P('read_evidence', required=False)}, resource='storage_read', providers=('filestore',)),
-    C('command.material.identify', {'material': MATERIAL, 'claim': P('claim', v.SourceClaim, required=False)}, {'material': MATERIAL, 'assessment': ASSESSMENT}),
-    C('command.publication.scan', {'index': P('index', (v.Material, v.IdentifiedMaterial, tuple))}, {'listing': P('listing', v.PublicationListing), 'coverage': ASSESSMENT}, specialize=True),
+    C('command.material.identify', {'material': MATERIAL, 'claim': P('claim', v.SourceClaim, required=False),'request':P('request',v.RequestSpec,required=False),'evidence':P('fetch_evidence',v.FetchEvidence,required=False),'asset':P('asset',v.PublicationAsset,required=False)}, {'material': MATERIAL, 'assessment': ASSESSMENT}),
+    C('command.publication.scan', {'index': PortContract('index',(v.Material,v.IdentifiedMaterial,tuple),alternatives=frozenset({'material','inventory'}))}, {'listing': P('listing', v.PublicationListing), 'coverage': ASSESSMENT}, specialize=True),
     C('command.issue.select', {'listing': P('listing', v.PublicationListing), 'query': P('query', required=False)}, {'selection': P('selection', v.AssetSelection)}),
-    C('command.source.assess', {'evidence': P('source_evidence'), 'baseline': P('baseline', required=False)}, {'assessment': P('update_assessment', v.UpdateAssessment)}),
+    C('command.source.assess', {'evidence': PortContract('source_evidence',alternatives=frozenset({'material','listing','selection','inventory'})), 'baseline': P('baseline', required=False)}, {'assessment': P('update_assessment', v.UpdateAssessment)}),
     C('command.archive.unpack', {'material': MATERIAL}, {'members': P('materials', tuple)}, resource='parse'),
     C('command.archive.pack', {'members': P('materials', tuple)}, {'material': MATERIAL}),
     C('command.workbook.decode', {'material': MATERIAL}, {'physical': P('physical', v.WorkbookEvidence)}, resource='parse'),
@@ -44,12 +45,13 @@ COMMANDS = (
     C('command.table.interpret', {'tables': P('tables', v.TableEvidenceSet), 'issue': P('issue', required=False)}, {'dataset': DATASET, 'assessment': ASSESSMENT}, specialize=True),
     C('command.observations.validate', {'dataset': DATASET}, {'dataset': DATASET, 'assessment': ASSESSMENT}),
     C('command.observations.align', {'dataset': DATASET}, {'dataset': P('dataset', v.IntegratedDataset), 'assessment': ASSESSMENT}),
+    C('command.observations.merge', {'datasets':PortContract('datasets',tuple,alternatives=frozenset({'result_collection'}))}, {'dataset': DATASET, 'assessment': ASSESSMENT}),
     C('command.observations.compare', {'before': DATASET, 'after': DATASET}, {'changes': P('changes'), 'assessment': ASSESSMENT}),
     C('command.dataset.query', {'reference': P('snapshot', v.SnapshotRef), 'query': P('query', required=False)}, {'observations': DATASET}, resource='storage_read', providers=('dataset_reader',)),
     C('command.timeseries.partition', {'dataset': DATASET}, {'items': P('timeseries_collection', tuple)}),
     C('command.timeseries.prepare', {'observations': DATASET}, {'series': P('timeseries', v.TimeSeries), 'assessment': ASSESSMENT}),
     C('command.timeseries.validate', {'series': P('timeseries', v.TimeSeries)}, {'assessment': P('assessment', v.Assessment)}),
-    C('command.timeseries.adjust', {'series': P('timeseries', v.TimeSeries)}, {'adjustment': P('adjustment')}, resource='calculate'),
+    C('command.timeseries.adjust', {'series': P('timeseries', v.TimeSeries)}, {'adjustment': P('adjustment')}, resource='calculate', providers=('seasonal_adjustment',)),
     C('command.timeseries.diagnose', {'adjustment': P('adjustment')}, {'diagnostics': P('diagnostics')}),
     C('command.calculate.change', {'observations': DATASET}, {'dataset': P('dataset', v.DerivedDataset)}, resource='calculate'),
     C('command.calculate.ratio', {'numerator': DATASET, 'denominator': DATASET}, {'dataset': P('dataset', v.DerivedDataset)}, resource='calculate'),
@@ -68,16 +70,16 @@ COMMANDS = (
     C('command.observations.assemble', {'values': P('certified_values')}, {'dataset': P('dataset', v.DerivedDataset)}, specialize=True),
     C('command.view.prepare', {'dataset': DATASET}, {'view': P('view', v.View)}),
     C('command.product.render', {'view': P('view', v.View)}, {'product': P('product', v.EncodedProduct)}, resource='render'),
-    C('command.value.encode', {'value': P('typed_value')}, {'representation': P('representation', (v.EncodedProduct, v.Material, bytes))}),
-    C('command.value.decode', {'representation': P('representation', (v.EncodedProduct, v.Material, bytes))}, {'value': P('typed_value')}),
-    C('command.artifact.commit', {'material': P('encoded_material', (v.EncodedProduct, v.Material, bytes)), 'destination': P('destination', required=False)}, {'reference': P('artifact', v.ImmutableMaterialRef), 'receipt': P('receipt', required=False)}, resource='storage_write', effects=('storage.write',), providers=('filestore',)),
+    C('command.value.encode', {'value': PortContract('typed_value',alternatives=frozenset({'dataset','view','physical','tables','timeseries','certified_values'}))}, {'representation': P('representation', (v.EncodedProduct, v.Material, bytes))}),
+    C('command.value.decode', {'representation': P('representation', (v.EncodedProduct, v.Material, bytes))}, {'value': PortContract('typed_value',alternatives=frozenset({'dataset','view','physical','tables','timeseries','certified_values'}))}),
+    C('command.artifact.commit', {'material': PortContract('encoded_material',(v.EncodedProduct,v.Material,bytes),alternatives=frozenset({'product','representation','material'})), 'destination': P('destination', required=False)}, {'reference': P('artifact', v.ImmutableMaterialRef), 'receipt': P('receipt', required=False)}, resource='storage_write', effects=('storage.write',), providers=('filestore',)),
     C('command.artifact.reconcile', {'effect': P('effect')}, {'assessment': P('effect_assessment')}, resource='storage_read', providers=('filestore',)),
     C('command.dataset.ingest', {'dataset': DATASET, 'destination': P('destination', required=False)}, {'reference': P('snapshot', v.SnapshotRef), 'receipt': P('receipt', required=False)}, resource='storage_write', effects=('dataset.write',), providers=('dataset_writer',)),
     C('command.release.assemble', {'members': P('accepted_members', tuple)}, {'manifest': P('release_manifest')}),
     C('command.release.publish', {'manifest': P('release_manifest'), 'expected_token': P('state_token', required=False)}, {'receipt': P('publication_receipt')}, resource='storage_write', effects=('publication.write',), providers=('filestore',)),
     C('command.material.maintenance_plan', {'inventory': P('inventory', tuple)}, {'plan': P('maintenance_plan')}),
     C('command.material.maintenance_apply', {'plan': P('maintenance_plan')}, {'receipts': P('effect_receipts', tuple)}, resource='storage_write', effects=('storage.write',), providers=('filestore',)),
-    C('command.notification.prepare', {'facts': P('journal_facts', tuple)}, {'intents': P('notification_intents', tuple)}),
+    C('command.notification.prepare', {'facts': P('journal_facts', tuple)}, {'intents': P('notification_intents', tuple)}, effects=('notification.state',), providers=('notification_state',)),
     C('command.notification.deliver', {'intent': P('notification_intent')}, {'receipt': P('delivery_receipt')}, resource='network', effects=('notification.deliver',), providers=('notification',)),
     C('command.notification.reconcile', {'receipt': P('delivery_receipt')}, {'assessment': P('delivery_assessment')}, providers=('notification',)),
 )

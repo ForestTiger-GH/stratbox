@@ -386,7 +386,6 @@ class WorkbookPreview:
     value_basis: str
     start_row: int = 1
     start_column: int = 1
-    contract_version: int = 1
 
 
 class WorkbookWorker(Protocol):
@@ -490,7 +489,6 @@ def preview_workbook(
             budget.checkpoint()
         if (
             not isinstance(value, WorkbookPreview) or value.identity != identity
-            or type(value.contract_version) is not int or value.contract_version != 1
             or value.kind not in _ENGINES or value.selected_sheet not in value.sheets
             or (sheet is not None and value.selected_sheet != sheet)
             or type(value.start_row) is not int or value.start_row != start_row

@@ -55,10 +55,10 @@ def test_specialized_interpretation_and_readable_share_decode_with_equal_source_
     def forbidden(*args, **options):
         raise AssertionError('A CBR interpreter must consume the shared physical cells')
     if family == 'escrow':
-        monkeypatch.setattr('stratbox.domains.cbr.tables.project_finance.parser.load_workbook', forbidden)
+        monkeypatch.setattr('stratbox.domains.cbr.methods.tables.project_finance.parser.load_workbook', forbidden)
     else:
         module = 'debt' if family == '0105a' else 'issuance'
-        monkeypatch.setattr('stratbox.domains.cbr.tables.corporate_lending.' + module + '.parser.open_ooxml_workbook', forbidden)
+        monkeypatch.setattr('stratbox.domains.cbr.methods.tables.corporate_lending.' + module + '.parser.open_ooxml_workbook', forbidden)
     with StrategyBox(capabilities=snapshot) as box:
         result = checked(box.invoke(scenario.capability_id, inputs={'source': request.payload}, timeout=40))
         actual = result.output('file')
@@ -75,7 +75,7 @@ def test_specialized_interpretation_and_readable_share_decode_with_equal_source_
 def test_interpretation_uses_occupied_extent_and_bounds_sparse_distant_content():
     from stratbox.shared.data.workbook_cells import WorkbookCells, WorkbookCell, SheetCells
     from stratbox.shared.identity import ByteIdentity
-    from stratbox.domains.cbr.tables.decoded_workbooks import decoded_sheets
+    from stratbox.domains.cbr.methods.tables.decoded_workbooks import decoded_sheets
     original = b'exact original bytes'
     active = WorkbookCell(1, 1, 'A1', 'source header', None, 'inlineStr')
     cells = WorkbookCells((SheetCells('Source', 0, 1_048_576, 16_384, (active,)),), ByteIdentity.of(original))

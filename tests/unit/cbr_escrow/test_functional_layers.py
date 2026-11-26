@@ -1,132 +1,100 @@
-"""Semantic boundaries between source extraction, integration and presentation."""
+"""Independent source semantics, explicit reference mapping and presentation choices."""
 from dataclasses import replace
 from datetime import date
 from io import BytesIO
 
+import pytest
 from openpyxl import load_workbook
 
-from stratbox.domains.cbr.operations import project_finance as escrow
-from stratbox.domains.cbr.integration.project_finance.snapshots import dataset_snapshot
-from stratbox.domains.cbr.products.project_finance.profiles import DEFAULT_PRODUCT_PROFILE
-from stratbox.domains.cbr.tables.project_finance.snapshots import flake_snapshot
-from stratbox.shared.evidence import SourcePayload
+from stratbox.domains.cbr.common.contracts import MappingRules, SubjectBinding
+from stratbox.domains.cbr.methods.actions import observations, publications
+from stratbox.domains.cbr.products.specifications import ESCROW_CONTENT
+from stratbox.shared.data.values import Assessment
 
-from .test_replay import checked, publication
+from .test_replay import SERIES, context, decoded, encoded, history, prepared, publication, rendered, source
 
 
-def test_product_style_changes_neither_extracted_nor_integrated_identity():
-    request = publication()
-    flake = checked(escrow.parse(request))
-    dataset = checked(escrow.integrate_flakes(escrow.IntegrateEscrowRequest((flake,))))
-    original_flake = flake_snapshot(flake).identity
-    original_dataset = dataset_snapshot(dataset).identity
-    before = checked(escrow.build_views(escrow.BuildEscrowViewsRequest(dataset)))
-    selected = tuple(replace(item, sheet_code=f"Table_{index}", title=f"Published metric {index}",
-                             number_format="0.0000")
-                     for index, item in enumerate(DEFAULT_PRODUCT_PROFILE.indicators, 1))
-    profile = replace(DEFAULT_PRODUCT_PROFILE, version=2, indicators=selected)
-    after = checked(escrow.build_views(escrow.BuildEscrowViewsRequest(dataset,
-        escrow.EscrowViewBuildRequest(profile=profile))))
-    before_snapshot = checked(escrow.build_view_snapshot(escrow.EscrowViewSnapshotRequest(before)))
-    after_snapshot = checked(escrow.build_view_snapshot(escrow.EscrowViewSnapshotRequest(after)))
-    assert before_snapshot.identity != after_snapshot.identity
-    assert flake_snapshot(checked(escrow.parse(request))).identity == original_flake
-    assert dataset_snapshot(dataset).identity == original_dataset
-    assert not hasattr(flake.resolved_columns[0].spec, "sheet_code")
-    assert not hasattr(dataset.indicator_specs[0], "required_tokens")
-    book = load_workbook(BytesIO(checked(escrow.render_workbook(after)).data))
+def test_product_style_changes_neither_extracted_nor_interpreted_identity():
+    _, table, dataset = source(publication())
+    table_identity, dataset_identity = encoded(table).identity, dataset.identity
+    before = prepared(dataset)
+    customized = replace(ESCROW_CONTENT, sheets=tuple(replace(item, name=f"Table_{i}",
+        title=f"Published metric {i}", number_format="0.0000") for i, item in enumerate(ESCROW_CONTENT.sheets, 1)))
+    after = prepared(dataset, customized)
+    assert encoded(before).identity != encoded(after).identity
+    assert encoded(table).identity == table_identity and dataset.identity == dataset_identity
+    book = load_workbook(BytesIO(rendered(after).data))
     assert book.sheetnames[0] == "Table_1"
     assert book["Table_1"]["B5"].number_format == "0.0000"
     book.close()
 
 
-def test_history_composition_returns_the_same_integrated_dataset_contract():
+def test_history_uses_the_same_rows_as_independent_source_commands():
     requests = (publication(), publication(period="01072026", region="New region"))
-    composed = checked(escrow.build_history(escrow.EscrowHistoryBuildRequest(requests)))
-    flakes = tuple(checked(escrow.parse(request)) for request in requests)
-    independent = checked(escrow.integrate_flakes(escrow.IntegrateEscrowRequest(flakes, coverage=composed.coverage)))
-    assert type(composed) is type(independent) is escrow.EscrowDataset
-    assert dataset_snapshot(composed).identity == dataset_snapshot(independent).identity
-    result = escrow.build_views(escrow.BuildEscrowViewsRequest(flakes[0]))
-    assert result.outcome == "failed"
-    assert result.diagnostics[0].code == "request.integrated_dataset_required"
+    composed = history(*requests)
+    independent = tuple(row for request in requests for row in source(request)[2].rows)
+    assert composed.rows == independent
+    assert len(composed.source_uses) == 2
+    assert {row["period"] for row in composed.rows} == {"2026-06-01", "2026-07-01"}
 
 
-def test_prepared_product_replays_custom_style_and_exact_original_version_vector(monkeypatch):
-    requests = (publication(), publication(period="01072026"))
-    dataset = checked(escrow.build_history(escrow.EscrowHistoryBuildRequest(requests)))
-    profile = replace(DEFAULT_PRODUCT_PROFILE, version=2,
-        indicators=tuple(replace(item, sheet_code=f"View_{i}") for i, item in enumerate(DEFAULT_PRODUCT_PROFILE.indicators, 1)))
-    view = checked(escrow.build_views(escrow.BuildEscrowViewsRequest(dataset, escrow.EscrowViewBuildRequest(profile=profile))))
-    snapshot = checked(escrow.build_view_snapshot(escrow.EscrowViewSnapshotRequest(view)))
-    restored = checked(escrow.read_view_snapshot(escrow.ReadEscrowSnapshotRequest(snapshot)))
-    assert tuple(item.identity for item in restored.input_versions) == tuple(request.payload.identity for request in requests)
-    assert snapshot.manifest.inputs[1:] == restored.input_versions
-    assert restored.indicator_specs == view.indicator_specs
-    assert restored.product_profile_version == 2
-
+def test_prepared_product_replays_custom_style_without_source_or_calculation(monkeypatch):
+    dataset = history(publication(), publication(period="01072026"))
+    settings = replace(ESCROW_CONTENT, sheets=tuple(replace(item, name=f"View_{i}")
+        for i, item in enumerate(ESCROW_CONTENT.sheets, 1)))
+    view = prepared(dataset, settings)
+    restored = decoded(encoded(view))
+    assert restored.lineage == view.lineage
     def unexpected(*args, **kwargs):
-        raise AssertionError("Rendering a saved view must not reconstruct its earlier stages")
-    monkeypatch.setattr("stratbox.domains.cbr.tables.project_finance.parser.parse_escrow_excel_bytes", unexpected)
-    monkeypatch.setattr("stratbox.domains.cbr.integration.project_finance.assembly.integrate_values", unexpected)
-    monkeypatch.setattr("stratbox.domains.cbr.products.project_finance.views.prepare_dataset_view", unexpected)
-    assert checked(escrow.render_workbook(restored)) == checked(escrow.render_workbook(view))
+        raise AssertionError("A saved view must render independently")
+    monkeypatch.setattr("stratbox.domains.cbr.methods.tables.project_finance.parser.parse_escrow_excel_bytes", unexpected)
+    monkeypatch.setattr("stratbox.domains.cbr.methods.actions.escrow.interpret", unexpected)
+    monkeypatch.setattr("stratbox.domains.cbr.products.actions.prepare", unexpected)
+    assert rendered(restored) == rendered(view)
 
 
-def test_source_revision_comparison_distinguishes_representation_from_facts():
-    before = checked(escrow.parse(publication(amount="0012.2500")))
-    same_facts = checked(escrow.parse(publication(amount="12.25")))
-    changed = checked(escrow.parse(publication(amount="13.25")))
-    representation = checked(escrow.compare(escrow.CompareEscrowFlakesRequest(before, same_facts)))
-    assert representation.bytes_changed and not representation.facts_changed
-    assert not representation.issue_changed and not representation.interpretation_changed
-    facts = checked(escrow.compare(escrow.CompareEscrowFlakesRequest(before, changed)))
-    assert facts.facts_changed and not facts.issue_changed
-    later = checked(escrow.parse(publication(period="01072026", amount="0012.2500")))
-    assert checked(escrow.compare(escrow.CompareEscrowFlakesRequest(before, later))).issue_changed
+def test_revision_comparison_distinguishes_lexical_representation_and_facts():
+    before = source(publication(amount="0012.2500"))[2]
+    same = source(publication(amount="12.25"))[2]
+    changed = source(publication(amount="13.25"))[2]
+    settings = __import__("stratbox.domains.cbr.domain", fromlist=["DOMAIN"]).DOMAIN.series[SERIES].commands["command.source.assess"].settings
+    assert publications.assess({"baseline": before, "evidence": same}, settings, context())["assessment"].status == "representation_changed"
+    assert publications.assess({"baseline": before, "evidence": changed}, settings, context())["assessment"].status == "facts_changed"
+    later = source(publication(period="01072026"))[2]
+    assert {row["period"] for row in later.rows} != {row["period"] for row in before.rows}
 
 
-def test_validation_and_readable_keep_unknown_and_unresolved_source_cells():
-    flake = checked(escrow.parse(publication()))
-    result = checked(escrow.validate(flake))
-    assert result.unmapped_headers == ("Unmapped source measure",)
-    assert result.unresolved_cells == 3
-    text = checked(escrow.readable(flake)).data.decode("utf-8")
-    assert "0012.2500" in text and "formula_unresolved" in text
-    assert "Unmapped source measure" in text and "not understood" in text
+def test_source_geography_remains_local_until_explicit_dated_reference_mapping():
+    dataset = history(publication())
+    settings = MappingRules(SERIES)
+    original = observations.align({"dataset": dataset}, settings, context())["dataset"]
+    assert any(row["subject_namespace"] == "cbr.published_territory" and row["subject"] == "Example region" for row in original.rows)
+    money = next(row for row in original.rows if row["metric"] == "escrow_balance_mln_rub")
+    assert money["unit"] == "RUB" and money["scale"] == 1_000_000
+    assert {"blank", "dash"} <= {row["value_status"] for row in original.rows}
+    cumulative = next(row for row in original.rows if row["metric"] == "revealed_escrow_amount_mln_rub")
+    assert cumulative["measure_kind"] is None
+    assert dict(cumulative["dimensions"])["source_period_basis"] == "cumulative_start_unspecified"
+    binding = SubjectBinding("cbr.published_territory", "Example region", "reference.geography", "example",
+        "sha256:reference-content", date(2026, 1, 1), date(2026, 12, 31))
+    mapped = observations.align({"dataset": dataset}, replace(settings, bindings=(binding,)), context())["dataset"]
+    row = next(row for row in mapped.rows if row["subject"] == "example")
+    assert row["subject_namespace"] == "reference.geography"
+    assert row["source_subject"] == "Example region"
+    assert mapped.identity != original.identity and mapped.source_uses == original.source_uses
+    with pytest.raises(ValueError, match="mapping_ambiguous"):
+        observations.align({"dataset": dataset}, replace(settings, bindings=(binding, binding)), context())
+    expired = replace(binding, valid_until=date(2025, 12, 31))
+    unmatched = observations.align({"dataset": dataset}, replace(settings, bindings=(expired,)), context())["dataset"]
+    assert not any(row["subject"] == "example" for row in unmatched.rows)
 
 
-def test_shared_observations_keep_source_geography_until_explicit_historical_mapping():
-    dataset = checked(escrow.build_history(escrow.EscrowHistoryBuildRequest((publication(),))))
-    result = checked(escrow.align_observations(escrow.AlignEscrowObservationsRequest(dataset)))
-    unknown = next(item for item in result.observations if item.subject.id == "region:Example region")
-    assert unknown.subject.namespace == "cbr.project_finance.source_geography"
-    assert dict(unknown.dimensions)["geography_status"] == "source_identity"
-    money = next(item for item in result.observations if item.metric.id.endswith("escrow_balance_mln_rub"))
-    assert money.metric.unit == "RUB" and money.metric.scale == 1_000_000
-    assert any(item.value_status == "blank" for item in result.observations)
-    assert any(item.value_status == "dash" for item in result.observations)
-    cumulative = next(item for item in result.observations if item.metric.id.endswith("revealed_escrow_amount_mln_rub"))
-    assert cumulative.metric.quantity_kind is None
-    assert dict(cumulative.dimensions)["source_period_basis"] == "cumulative_start_unspecified"
-    rule = escrow.EscrowGeographyRule("Example region", "region", "reference.geography", "example",
-        "example-2026", date(2026, 1, 1), date(2026, 12, 31))
-    mapped = checked(escrow.align_observations(escrow.AlignEscrowObservationsRequest(dataset, (rule,))))
-    assert any(item.subject.namespace == "reference.geography" and item.subject.id == "example" for item in mapped.observations)
-    assert mapped.lineage[-1].identity != result.lineage[-1].identity
-    ambiguous = escrow.align_observations(escrow.AlignEscrowObservationsRequest(dataset, (rule, rule)))
-    assert ambiguous.outcome == "failed"
-    assert ambiguous.diagnostics[0].code == "escrow.geography_mapping_ambiguous"
-
-
-def test_partial_original_history_keeps_failed_sources_without_claiming_completion():
-    request = publication()
-    invalid = escrow.ParseEscrowRequest(SourcePayload(b"not a workbook"), "escrow_01072026.xlsx")
-    result = escrow.build_history(escrow.EscrowHistoryBuildRequest((request, invalid), continue_on_error=True))
-    assert result.outcome == "partial"
-    assert not result.value.selection_complete
-    assert result.value.failures[0][0] == invalid.source_name
-    replay = checked(escrow.read_dataset_snapshot(escrow.ReadEscrowSnapshotRequest(dataset_snapshot(result.value))))
-    assert replay.failures == result.value.failures
-    assert escrow.build_views(escrow.BuildEscrowViewsRequest(replay)).diagnostics[0].code == "source.history_incomplete"
-    assert escrow.build_views(escrow.BuildEscrowViewsRequest(replay, escrow.EscrowViewBuildRequest(require_complete_history=False))).outcome == "succeeded"
+def test_incomplete_history_retains_evidence_and_requires_explicit_presentation_choice():
+    dataset = history(publication())
+    partial = replace(dataset, assessment=Assessment("partial", ("one_publication_failed",),
+        qualifications=frozenset({"selection_incomplete"})))
+    retained = decoded(encoded(partial))
+    assert retained.assessment == partial.assessment
+    with pytest.raises(ValueError, match="history_incomplete"):
+        prepared(retained)
+    assert prepared(retained, require_complete_history=False)

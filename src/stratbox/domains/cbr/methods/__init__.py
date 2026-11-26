@@ -1,1 +1,1 @@
-"""Direct Bank of Russia technical methods."""
+"""Narrow domain methods executed by the common command runner."""

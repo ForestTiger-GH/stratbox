@@ -10,13 +10,32 @@ import pytest
 from openpyxl import Workbook, load_workbook
 
 from stratbox.shared.evidence import SourcePayload
-import stratbox.domains.cbr.operations.corporate_lending.issuance as issuance
-from stratbox.domains.cbr.tables.corporate_lending.industry.geography import CBR_0105A_DEBT_CORP_REGION_LAYOUT
-from stratbox.domains.cbr.tables.corporate_lending.industry.schema import CBR_0105A_DEBT_CORP_INDUSTRY_SPECS
-from stratbox.domains.cbr.tables.corporate_lending.issuance.parser import parse_workbook
-from stratbox.domains.cbr.publications.corporate_lending.issuance import discover_links
-from stratbox.domains.cbr.publications.corporate_lending.issuance_editions import reference_period
-from stratbox.domains.cbr.publications.corporate_lending.issuance_editions import report_date_from_filename
+from stratbox.domains.cbr.methods.tables.corporate_lending.industry.geography import CBR_0105A_DEBT_CORP_REGION_LAYOUT
+from stratbox.domains.cbr.methods.tables.corporate_lending.industry.schema import CBR_0105A_DEBT_CORP_INDUSTRY_SPECS
+from stratbox.domains.cbr.methods.tables.corporate_lending.issuance.parser import parse_workbook
+from stratbox.domains.cbr.methods.publications.corporate_lending.issuance import discover_links
+from stratbox.domains.cbr.methods.publications.corporate_lending.issuance_rules import reference_period
+from stratbox.domains.cbr.methods.publications.corporate_lending.issuance_rules import report_date_from_filename
+
+def _render(history, industry_code, *, include_metadata_sheet=False):
+    from stratbox.domains.cbr.calculations.industry.apk import calculate_cbr_0105a_debt_corp_apk_industry
+    from stratbox.domains.cbr.products.corporate_lending.industry.views import build_cbr_0105a_debt_corp_pivot_set
+    from stratbox.domains.cbr.products.corporate_lending.industry.contracts import IndustryPivotRequest
+    from stratbox.domains.cbr.products.corporate_lending.issuance.rendering import render_issuance_workbook
+    frame = history.df_stream
+    if industry_code == "apk":
+        frame = calculate_cbr_0105a_debt_corp_apk_industry(frame).df_stream
+        name = "АПК"
+    else:
+        spec = next((x for x in history.industries if x.code == industry_code), None)
+        if spec is None:
+            raise ValueError("request.industry_unresolved")
+        name = spec.canonical_name_ru
+    selected = frame.loc[frame.industry_code.astype(object).eq(industry_code)].copy()
+    pivots = build_cbr_0105a_debt_corp_pivot_set(selected, IndustryPivotRequest("region_code", "report_date", sheet_dimensions=("measure", "currency_scope")), stream_result=history)
+    return render_issuance_workbook(pivots, industry_code=industry_code, industry_name_ru=name,
+        reference_periods=history.reference_periods, include_metadata_sheet=include_metadata_sheet)
+
 
 SHEETS = (
     ("rubles", "в рублях", 1),
@@ -68,18 +87,20 @@ def _book(*, date_text="Январь 2019", wrong_industry=False,
     return binary.getvalue()
 
 
-def _request(payload: bytes | None = None) -> issuance.ParseIssuanceRequest:
-    return issuance.ParseIssuanceRequest(
-        SourcePayload(payload if payload is not None else _book()),
-        "01_04_A_New_loans_corp_20190201.xlsx",
-    )
+def _request(payload=None):
+    from types import SimpleNamespace
+    return SimpleNamespace(payload=SourcePayload(payload if payload is not None else _book()), source_name="01_04_A_New_loans_corp_20190201.xlsx")
 
 
-def _history():
-    result = issuance.build_stream(issuance.BuildIssuanceStreamRequest((_request(),)))
-    assert result.outcome == "succeeded", result.diagnostics
-    assert result.value.ok
-    return result.value
+
+def _history(content=None, selection=None):
+    from stratbox.domains.cbr.methods.alignment.corporate_lending.issuance.contracts import IssuanceStreamResult
+    from stratbox.domains.cbr.methods.tables.corporate_lending.industry.contracts import IndustrySelection
+    parsed = parse_workbook(content or _book(), source_name=_request().source_name, selection=selection or IndustrySelection())
+    return IssuanceStreamResult((), (), (parsed,), parsed.validation_issues, parsed.df_stream,
+        (parsed.report_date,), (parsed.reference_period,), parsed.report_date, parsed.report_date,
+        parsed.report_date, True, parsed.regions, parsed.industries, len(parsed.df_stream), selection=parsed.selection)
+
 
 
 def test_release_filename_and_reference_month_cross_year() -> None:
@@ -133,48 +154,46 @@ def test_parser_fails_closed_on_semantic_changes(kwargs) -> None:
 def test_parser_retains_missing_value_and_rejects_negative() -> None:
     parsed = parse_workbook(_book(blank_component=True), source_name=_request().source_name)
     assert any(issue.code == "missing_values" for issue in parsed.validation_issues)
-    result = issuance.parse(_request(_book(negative=True)))
-    assert result.outcome == "failed"
-    assert result.value is not None
-    assert any(issue.code == "negative_values" for issue in result.value.validation_issues)
+    negative = parse_workbook(_book(negative=True), source_name=_request().source_name)
+    assert any(issue.code == "negative_values" and issue.severity == "error" for issue in negative.validation_issues)
+
 
 
 def test_missing_apk_component_prevents_rendering() -> None:
-    result = issuance.build_stream(issuance.BuildIssuanceStreamRequest((_request(_book(blank_component=True)),)))
-    assert result.outcome == "succeeded"
-    rendering = issuance.render_industry(issuance.IssuanceWorkbookRequest(result.value, "apk"))
-    assert rendering.outcome == "failed"
+    from stratbox.domains.cbr.calculations.industry.apk import calculate_cbr_0105a_debt_corp_apk_industry, Cbr0105ADebtCorpDerivedIndustryError
+    with pytest.raises(Cbr0105ADebtCorpDerivedIndustryError):
+        calculate_cbr_0105a_debt_corp_apk_industry(_history(_book(blank_component=True)).df_stream)
+
 
 
 def test_history_preserves_month_and_rejects_duplicates() -> None:
+    from stratbox.domains.cbr.methods.tables.corporate_lending.debt.parser import concat_industry_streams
+    from stratbox.domains.cbr.products.corporate_lending.industry.views import build_cbr_0105a_debt_corp_pivot_set, Cbr0105ADebtCorpPivotError
+    from stratbox.domains.cbr.products.corporate_lending.industry.contracts import IndustryPivotRequest
     history = _history()
     assert history.dates == ("2019-02-01",)
     assert history.reference_periods == ("2019-01",)
     assert len(history.df_stream) == 96 * 26 * 3
-    duplicated = issuance.build_stream(issuance.BuildIssuanceStreamRequest((_request(), _request())))
-    assert duplicated.outcome == "failed"
+    duplicated = concat_industry_streams((history.df_stream, history.df_stream))
+    selected = duplicated.loc[duplicated.industry_code.eq("total")]
+    with pytest.raises(Cbr0105ADebtCorpPivotError):
+        build_cbr_0105a_debt_corp_pivot_set(selected, IndustryPivotRequest("region_code", "report_date", sheet_dimensions=("measure", "currency_scope")))
+
 
 
 def test_apk_reuses_shared_formula_for_issuance() -> None:
-    history = _history()
-    result = issuance.calculate_apk(issuance.CalculateIssuanceApkRequest(history.df_stream))
-    assert result.outcome == "succeeded", result.diagnostics
-    frame = result.value.df_stream
-    apk = frame.loc[
-        frame["industry_code"].astype("object").eq("apk")
-        & frame["region_code"].astype("object").eq("0105a_region_001")
-        & frame["currency_scope"].astype("object").eq("total")
-    ]
-    assert apk["value"].iloc[0] == (30 + 20 + 3 + 5) * 3
-    assert apk["reference_period"].iloc[0] == "2019-01"
+    from stratbox.domains.cbr.calculations.industry.apk import calculate_cbr_0105a_debt_corp_apk_industry
+    result = calculate_cbr_0105a_debt_corp_apk_industry(_history().df_stream)
+    apk = result.df_stream.loc[result.df_stream.industry_code.eq("apk") & result.df_stream.region_code.eq("0105a_region_001") & result.df_stream.currency_scope.eq("total")]
+    assert apk.value.iloc[0] == (30 + 20 + 3 + 5) * 3
+    assert apk.reference_period.iloc[0] == "2019-01"
+
 
 
 def test_render_three_sheets_and_preserve_official_total() -> None:
     history = _history()
     for industry, expected in (("total", 3000), ("apk", 174)):
-        rendered = issuance.render_industry(issuance.IssuanceWorkbookRequest(history, industry))
-        assert rendered.outcome == "succeeded", rendered.diagnostics
-        output = rendered.value
+        output = _render(history, industry)
         assert output.ok
         assert output.reference_periods == ("2019-01",)
         workbook = load_workbook(BytesIO(output.representation.data), read_only=True, data_only=True)
@@ -186,104 +205,66 @@ def test_render_three_sheets_and_preserve_official_total() -> None:
             workbook.close()
 
 
+
 def test_render_optional_metadata_and_unknown_industry() -> None:
     history = _history()
-    rendered = issuance.render_industry(issuance.IssuanceWorkbookRequest(
-        history, "total", include_metadata_sheet=True))
-    assert rendered.outcome == "succeeded"
-    assert rendered.value.sheet_names[0] == "_Параметры"
-    assert rendered.value.sheet_count == 3
-    invalid = issuance.render_industry(issuance.IssuanceWorkbookRequest(history, "unknown"))
-    assert invalid.outcome == "failed"
+    rendered = _render(history, "total", include_metadata_sheet=True)
+    assert rendered.sheet_names[0] == "_Параметры"
+    assert rendered.sheet_count == 3
+    with pytest.raises(ValueError, match="industry_unresolved"):
+        _render(history, "unknown")
+
 
 
 def test_public_issuance_chain_keeps_parents_and_accepts_layout_changes():
-    from stratbox.domains.cbr.products.corporate_lending.industry.contracts import IndustryPivotRequest as Cbr0105ADebtCorpPivotRequest
-    from stratbox.domains.cbr.operations.corporate_lending.debt.contracts import RenderPivotRequest
-    from stratbox.domains.cbr.operations.corporate_lending.debt.operations import render_pivots
-
+    from stratbox.domains.cbr.methods.actions.industries import extract, interpret
+    from stratbox.domains.cbr.calculations.industry.actions import calculate
+    from stratbox.core.formats.spreadsheets.cells import read_workbook_cells
+    from stratbox.domains.cbr.domain import DOMAIN
+    from stratbox.shared.data.values import Material, WorkbookEvidence
+    from types import SimpleNamespace
     original = _request()
-    base = issuance.parse(original)
+    base = parse_workbook(original.payload.data, source_name=original.source_name)
     workbook = load_workbook(BytesIO(original.payload.data))
     workbook.create_sheet("Справка")["A1"] = "Пояснения к публикации"
-    workbook["foreign"].insert_rows(5)
-    workbook["foreign"].insert_cols(4)
+    workbook["foreign"].insert_rows(5); workbook["foreign"].insert_cols(4)
     workbook["foreign"]["D3"] = "Пояснение к строке"
-    target = BytesIO()
-    workbook.save(target)
-    workbook.close()
-    changed = replace(original, payload=SourcePayload(target.getvalue()))
-    parsed = issuance.parse(changed)
-    assert parsed.outcome == "succeeded", parsed.diagnostics
-    assert parsed.value.unmapped_headers == (("foreign", "Пояснение к строке"),)
+    target = BytesIO(); workbook.save(target); workbook.close()
+    parsed = parse_workbook(target.getvalue(), source_name=original.source_name)
+    assert parsed.unmapped_headers == (("foreign", "Пояснение к строке"),)
     keys = ["region_code", "currency_scope", "industry_code", "reference_period", "value"]
-    assert parsed.value.df_stream[keys].equals(base.value.df_stream[keys])
-    history = issuance.build_stream(issuance.BuildIssuanceStreamRequest((changed,)))
-    assert history.outcome == "succeeded", history.diagnostics
-    calculated = issuance.calculate_apk(issuance.CalculateIssuanceApkRequest(history.value))
-    assert calculated.outcome == "succeeded", calculated.diagnostics
-    pivot = Cbr0105ADebtCorpPivotRequest(
-        "region_code", "report_date", sheet_dimensions=("currency_scope",),
-    )
-    tables = issuance.build_pivots(issuance.PivotIssuanceRequest(calculated.value, pivot, industry_code="apk"))
-    assert tables.outcome == "succeeded", tables.diagnostics
-    rendered = render_pivots(RenderPivotRequest(tables.value))
-    assert rendered.outcome == "succeeded", rendered.diagnostics
-    receipt = rendered.computation
-    for _ in range(3):
-        receipt = receipt.parents[0][1]
-    assert receipt.inputs[0].identity == changed.payload.identity
-    calculated.value.df_stream.loc[calculated.value.df_stream.index[0], "value"] = 999
-    rejected = issuance.build_pivots(issuance.PivotIssuanceRequest(calculated.value, pivot, industry_code="apk"))
-    assert rejected.diagnostics[0].code == "input.identity_mismatch"
+    assert parsed.df_stream[keys].equals(base.df_stream[keys])
+    material = Material(target.getvalue(), source_id="cbr.corporate_lending.issuance_0104a")
+    context = SimpleNamespace(parameters={"source_name": original.source_name, "issue_id": "2019-02-01"}, checkpoint=lambda: None)
+    commands = DOMAIN.series[material.source_id].commands
+    tables = extract({"physical": WorkbookEvidence(material, read_workbook_cells(material.data))}, commands["command.table.extract"].settings, context)["tables"]
+    source = interpret({"tables": tables}, commands["command.table.interpret"].settings, context)["dataset"]
+    assert {row["period"] for row in source.rows} == {("2019-01-01", "2019-01-31")}
+    result = calculate({"dataset": source}, DOMAIN.calculations["cbr.corporate_lending.issuance_apk"].commands["command.calculate.formula"].settings, context)["dataset"]
+    assert material.identity in result.lineage
+    assert all(len(row["operands"]) == 5 for row in result.rows)
+
 
 
 def test_issuance_selected_observations_and_batch_export_match_individual() -> None:
-    from stratbox.domains.cbr.tables.corporate_lending.industry.contracts import IndustrySelection
+    from stratbox.domains.cbr.methods.tables.corporate_lending.industry.contracts import IndustrySelection
+    full = _history()
+    projection = _history(selection=IndustrySelection(("apk", "total")))
+    assert projection.rows_stream == 96 * 6 * 3
+    assert projection.selection.industry_codes == ("apk", "total")
+    assert projection.source_validation_scope == "full"
+    assert projection.reference_periods == ("2019-01",)
+    assert full.validation_issues == projection.validation_issues
+    codes = {"total", "agriculture_hunting_services", "agriculture_hunting_forestry", "manufacturing_food_beverages_tobacco", "manufacturing_machinery_agriculture_forestry", "manufacturing_wood_products"}
+    cols = ["report_date", "reference_period", "region_code", "industry_code", "currency_scope", "value", "source_row", "source_column"]
+    assert full.df_stream.loc[full.df_stream.industry_code.isin(codes), cols].astype(object).to_dict("records") == projection.df_stream[cols].astype(object).to_dict("records")
+    for code in ("apk", "total"):
+        assert _render(projection, code).representation.data == _render(full, code).representation.data
 
-    original = _request()
-    full = issuance.build_stream(issuance.BuildIssuanceStreamRequest((original,)))
-    projection = issuance.build_stream(issuance.BuildIssuanceStreamRequest(
-        (original,), selection=IndustrySelection(("apk", "total")),
-    ))
-    assert full.outcome == "succeeded", full.diagnostics
-    assert projection.outcome == "succeeded", projection.diagnostics
-    assert projection.value.rows_stream == 96 * 6 * 3
-    assert projection.value.selection.industry_codes == ("apk", "total")
-    assert projection.value.source_validation_scope == "full"
-    assert projection.value.reference_periods == ("2019-01",)
-    assert full.value.validation_issues == projection.value.validation_issues
-    assert full.value.evidence.computation_id != projection.value.evidence.computation_id
-    codes = set(("total", "agriculture_hunting_services", "agriculture_hunting_forestry",
-                 "manufacturing_food_beverages_tobacco", "manufacturing_machinery_agriculture_forestry",
-                 "manufacturing_wood_products"))
-    selected = full.value.df_stream.loc[
-        full.value.df_stream["industry_code"].isin(codes)
-    ].reset_index(drop=True)
-    cols = ["report_date", "reference_period", "region_code", "industry_code",
-            "currency_scope", "value", "source_row", "source_column"]
-    assert selected[cols].astype(object).to_dict("records") == (
-        projection.value.df_stream[cols].astype(object).to_dict("records")
-    )
-    batch = issuance.render_industries(issuance.RenderIssuanceIndustriesRequest(
-        projection.value, ("apk", "total"),
-    ))
-    assert batch.outcome == "succeeded", batch.diagnostics
-    assert batch.computation is not None
-    for item in batch.value.items:
-        individually = issuance.render_industry(
-            issuance.IssuanceWorkbookRequest(projection.value, item.industry_code),
-        )
-        assert individually.outcome == "succeeded", individually.diagnostics
-        assert individually.value.representation.data == item.representation.data
 
 
 def test_issuance_source_validation_checks_outside_selected_industries() -> None:
-    from stratbox.domains.cbr.tables.corporate_lending.industry.contracts import IndustrySelection
-
-    run = issuance.parse(issuance.ParseIssuanceRequest(
-        SourcePayload(_book(negative=True)), "01_04_A_New_loans_corp_20190201.xlsx",
-        selection=IndustrySelection(("total",)),
-    ))
-    assert run.outcome == "failed"
-    assert run.diagnostics[0].code == "source.validation_failed"
+    from stratbox.domains.cbr.methods.tables.corporate_lending.industry.contracts import IndustrySelection
+    result = parse_workbook(_book(negative=True), source_name=_request().source_name, selection=IndustrySelection(("total",)))
+    assert result.source_validation_scope == "full"
+    assert any(issue.code == "negative_values" and issue.severity == "error" for issue in result.validation_issues)

@@ -1,1 +1,0 @@
-"""Canonical notifications dispatch components."""

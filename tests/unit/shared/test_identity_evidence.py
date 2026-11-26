@@ -11,9 +11,8 @@ import pytest
 
 from stratbox.shared.identity import ByteIdentity, canonical_manifest_bytes
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt, AcquiredSource, AcquisitionReceipt
-from stratbox.shared.data.datasets import build_dataset_version, computation_identity
-from stratbox.shared.data.observations import SubjectRef, MetricRef, PeriodRef, Observation, ObservationBatch
-from stratbox.shared.data.representation import Representation
+from stratbox.shared.data.values import SourceDataset, fingerprint
+from stratbox.shared.data.observations import SubjectRef, MetricRef, PeriodRef, Observation
 
 
 def test_canonical_bytes_deterministic_and_timezone_aware():
@@ -47,17 +46,13 @@ def test_byte_identity_size_is_an_exact_integer(size):
         ByteIdentity("0" * 64, size)
 
 
-def test_dataset_and_computation_identity_are_resource_sensitive():
+def test_content_basis_includes_exact_input_and_reference_content():
     source = SourcePayload(b"123", "text/plain", "source:fixture")
-    used = (UsedInputReceipt.for_payload(source, "source"),)
-    version = build_dataset_version("example.dataset", "2026-11-18", "method.v1",
-                                    used, ByteIdentity.of(b"output"), resources={"dictionary": "A"})
-    changed = build_dataset_version("example.dataset", "2026-11-18", "method.v1",
-                                    used, ByteIdentity.of(b"output"), resources={"dictionary": "B"})
-    assert version.identity != changed.identity
-    assert computation_identity("example.read", "v1", used, resources={"reference": "A"}) != (
-        computation_identity("example.read", "v1", used, resources={"reference": "B"})
-    )
+    used = UsedInputReceipt.for_payload(source, "source")
+    settings = {"method": "parse", "resources": {"dictionary": "A"}, "input": used}
+    assert fingerprint(settings) == fingerprint(dict(settings))
+    assert fingerprint(settings) != fingerprint({**settings, "resources": {"dictionary": "B"}})
+
 
 
 def test_observation_period_and_missing_value_are_distinct():
@@ -116,38 +111,14 @@ def test_manifest_canonical_bytes_match_independent_golden_vector():
     )
 
 
-def test_dataset_content_projection_and_computation_origin_are_distinct():
-    left = UsedInputReceipt.for_payload(
-        SourcePayload(b"same", "text/csv", "publisher:A"), "source"
-    )
-    right = UsedInputReceipt.for_payload(
-        SourcePayload(b"same", "text/csv", "publisher:B"), "source"
-    )
-    result = ByteIdentity.of(b"result")
-    a = build_dataset_version("fixture", "2026-11-18", "method-1", (left,), result)
-    b = build_dataset_version("fixture", "2026-11-18", "method-1", (right,), result)
-    assert a.identity == b.identity  # Dataset projection is byte/method-oriented.
-    assert computation_identity("fixture.parse", "method-1", (left,)) != (
-        computation_identity("fixture.parse", "method-1", (right,))
-    )  # Execution identity includes source_id.
-
-
-def test_release_facts_are_order_invariant_but_preserve_status_difference():
-    from stratbox.shared.data.releases import build_release
-    from stratbox.shared.data.observations import (
-        Observation, SubjectRef, MetricRef, PeriodRef,
-    )
-    subject = SubjectRef("fixture", "A")
-    metric = MetricRef("balance", "RUB")
-    period = PeriodRef("as_of", as_of=date(2026, 11, 18))
-    def obs(name, value, status):
-        return Observation(subject, metric, period, (("type", name),),
-                           "fixture", value, status, "fixture:1")
-    a = obs("one", 0, "reported")
-    b = obs("two", None, "missing")
-    def build(values):
-        return build_release("fixture", "profile", "method",
-                             date(2026, 11, 18), b"test", len(values),
-                             (), observations=values)
-    assert build((a, b)).facts_identity == build((b, a)).facts_identity
-    assert build((a, b)).facts_identity != build((a, obs("two", None, "withheld"))).facts_identity
+def test_source_semantics_and_observation_status_belong_to_identity():
+    left = SourceDataset("publisher:A", ({"value": Decimal("0"), "status": "reported"},),
+                         {"unit": "RUB", "measure_kind": "stock"})
+    right = SourceDataset("publisher:B", left.rows, left.semantics)
+    assert left.identity != right.identity
+    assert left.identity != SourceDataset(left.source_id,
+        ({"value": None, "status": "missing"},), left.semantics).identity
+    assert left.identity != SourceDataset(left.source_id, left.rows,
+        {"unit": "USD", "measure_kind": "stock"}).identity
+    with pytest.raises(TypeError):
+        left.rows[0]["value"] = 100

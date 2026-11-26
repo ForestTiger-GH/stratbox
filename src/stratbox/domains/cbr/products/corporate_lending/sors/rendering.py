@@ -4,8 +4,8 @@ import math
 import re
 from dataclasses import asdict
 from stratbox.core.storage.bytes import OutputBuffer
-from stratbox.shared.data.representation import Representation
-from stratbox.shared.data.representation import XLSX
+from stratbox.shared.data.values import EncodedProduct
+XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 from datetime import date, datetime
 from typing import Any
 
@@ -13,7 +13,7 @@ import pandas as pd
 import xlsxwriter
 
 from stratbox.domains.cbr.products.corporate_lending.sors.results import SorsWorkbookResult, SorsViewPack
-from .snapshots import validate_view_pack
+from stratbox.domains.cbr.products.corporate_lending.sors.validation import validate_view_pack
 
 
 
@@ -76,5 +76,5 @@ def render_sors_views(views: SorsViewPack, *, checkpoint=lambda: None, budget=No
             checkpoint()
             _write_frame(workbook, frame, sheet, header_format, checkpoint)
     sheets = tuple(sheet for sheet, _ in frames)
-    return SorsWorkbookResult(Representation("cbr.sors.workbook", 1, XLSX, output.getvalue()),
+    return SorsWorkbookResult(EncodedProduct(output.getvalue(), XLSX, (views.source_identity,) if views.source_identity else ()),
                               sheets, len(sheets))

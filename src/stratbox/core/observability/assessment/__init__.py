@@ -1,1 +1,0 @@
-"""Canonical observability assessment components."""

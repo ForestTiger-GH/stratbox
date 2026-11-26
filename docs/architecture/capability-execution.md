@@ -1,112 +1,82 @@
-# Capability definitions and execution
+# Standard actions, explicit specialization and direct execution
 
-The canonical capability path separates authored definitions, prepared command
-work and accepted results. Four kinds share one catalog and one execution
-session: command, operation, scenario and cascade. The neutral stages and all
-five domain contributions use this path within their explicitly supported
-source formats, reviewed profiles and analytical contracts.
+Stratbox exposes four callable kinds through one standard catalog. A command
+performs an independently useful action. An operation establishes a reusable
+functional result. A scenario accomplishes a purpose. A cascade coordinates
+independent scenario purposes. Each kind retains its own outputs and acceptance.
 
-## Ownership and dependencies
+The implementation uses static domain knowledge and a single execution service.
+Publisher interpretation is limited to the scientific scope supported by actual
+methods and material. A registered route establishes its contracts, not universal
+coverage of every historical publisher layout.
 
-| Owner | Responsibility | Allowed dependencies |
-| --- | --- | --- |
-| `capabilities/model` | Pure contracts, authoring graph, acceptance and reuse identity | Shared contracts |
-| `capabilities/catalog` | Immutable snapshots, resolution, profiles, methods and typed views | Pure models and shared contracts |
-| `capabilities/commands`, `operations`, `scenarios`, `cascades` | Authored definitions and implementation references | Pure models and catalog descriptor types |
-| `composition` | Closure, lowering, scopes, physical plan and explanation | Definitions, shared contracts and neutral execution handoff |
-| `core` | Providers, resources, execution, owned values and effects | Pure contracts and technical implementations |
-| `domains` | Source-specific interpretation and analytical meaning | Shared contracts and technical core |
-| `sdk` | Bootstrap, embedding and direct calls | Catalog, compiler and execution service |
+## Contents
 
-Definitions contain implementation references rather than imported handlers.
-Discovery imports no numerical or workbook backend. The bootstrap binds only
-selected command implementations for execution. A catalog snapshot fixes the
-definition, method, profile and reference identities for a prepared plan.
+1. Ownership — definitions, domain knowledge and technical execution.
+2. Specialization — a direct method and narrow settings for one action.
+3. Preparation — typed closure, source agreement and retained purposes.
+4. Execution — physical work, values, effects and observation.
 
-## Authoring and preparation
+## 1. Ownership
 
-An operation body contains command calls. A scenario contains operations or
-reusable scenarios. A cascade coordinates scenarios and preserves their
-individual acceptance scopes. Structural nodes organize work; they do not
-replace analytical operations.
+| Owner | Responsibility |
+| --- | --- |
+| `capabilities/model` | Four kinds, semantic ports, graph constructs and static domain records. |
+| `capabilities/commands` | One authored standard command catalog. |
+| `capabilities/operations`, `scenarios`, `cascades` | Source-independent graphs and purpose contracts. |
+| `capabilities/preparation`, `plan` | Exact specialization, closure and prepared logical/physical work. |
+| `domains/<publisher>` | Series facts, shared rules and scientific methods. |
+| `core` | Providers, direct execution, resources, values, effects and journals. |
+| `sdk` | One discovery and invocation facade. |
 
-Exact preparation resolves the selected method and profile, then builds the
-dependency closure from requested outputs, required completions, checks and effects.
-Supplied accepted values cut their upstream prerequisites. Concrete input and
-provider admission applies to the selected closure. Unused branches impose no
-runtime requirement. A required save remains required when its receipt has no
-downstream reader.
+Commands do not arise from a loop wrapping each publisher function in a new
+command and operation. Domain methods implement standard procedures. A genuinely
+different promise requires a distinct standard action or composition.
 
-The authoring graph lives under `capabilities/model`; the physical execution
-plan lives under `composition`. The plan preserves logical occurrences and
-their mapping to physical commands. Equivalent command work may serve multiple
-operations while retaining independent consumer acceptance and scope outcomes.
+## 2. Direct command specifications
 
-## Execution and ownership
+Each domain exports `DOMAIN` with immutable `common`, `series`, `calculations`
+and `products` mappings. A `SeriesSpec` describes a continuing logical table,
+its publication relationship, semantics and command entries. Each `CommandSpec`
+contains a `MethodRef`, narrow immutable settings and applicability conditions.
 
-The session coordinates initial tasks and admitted dynamic work with the same
-provider checks, resource ledger and upper quotas. Waiting followers consume
-no worker. Cancellation of one consumer preserves a shared producer needed by
-another consumer. Retry delay belongs to the coordinator.
+The outside preparer selects the target record and the entry for the requested
+action. Common constants and settings are referenced directly. There is no second
+profile catalog, contribution merger or operation generator.
 
-Candidate values become accepted only after validation. Mutable inputs receive
-isolated reads. Demand pins, reader leases and retained result ownership control
-cleanup. Completing a run releases its active-run slot; live returned results
-remain charged until their owner releases them. Process-private spill remains
-local temporary storage.
+The method protocol is `method(inputs, settings, context) -> named outputs`.
+Methods receive the services authorized for that action. Table interpretation
+consumes supplied evidence; it does not hide a fresh download, product write or
+notification inside the parser.
 
-All task, attempt, scope, map and collection projections address the same
-managed result placement. Moving a result to temporary storage clears its
-resident payload through that owner. Reads reserve materialization capacity;
-mutable worker copies hold their own reservations until consumption finishes.
+## 3. Preparation and source agreement
 
-Every capability owns its named output promises. A scenario predicate can
-reject its exported output while the successful nested operation remains
-available separately. Named predicates can release independent outputs early.
-Predicates over multiple outputs wait for their full input group to settle.
-Inherited activation conditions compose as a conjunction throughout the graph.
+Closure starts at requested outputs, required checks, completion obligations and
+effects. Supplied physical evidence can eliminate decoding; a supplied accepted
+dataset can eliminate acquisition and extraction. Unused branches do not require
+their optional backends.
 
-In-flight sharing and completed reuse have separate permissions. The shared
-work identity includes the selected semantic basis and actual input evidence.
-Content equality alone cannot transfer another consumer's source ancestry.
+A prepared command contains the exact method/settings basis, typed ports,
+source requirements, resources and effects. Actual input evidence is checked
+against the requested target. A known B original cannot satisfy an A-only request.
+Unknown caller attribution remains qualified until the required checks establish
+it. A shared asset can support several series through explicit logical uses.
 
-Effects have their own authority, expected revision and confirmation state.
-Computation success, committed storage and notification delivery are separate
-facts. A lost effect reply remains unknown until reconciliation. Observability
-projects authoritative execution facts; optional capture failures preserve the
-business result. Durable recovery is supplied by an external host through the
-declared state, artifact and effect ports.
+Logical operation/scenario/cascade scopes survive lowering into physical work.
+Bounded maps, format dispatch and scientific iteration enter the same admission
+path as initial work. Ordinary dependency cycles remain invalid.
 
-Promised publication capacity is reserved before work is admitted. Immutable
-fact obligations enter the bounded outbox before journal publication; a full
-journal delays their transfer while preserving their identities. Variable-size
-effect producers reserve additional receipt capacity before each mutation.
-Impossible claims fail admission; temporary pressure suspends dynamic expansion.
+## 4. Direct technical execution
 
-The [effect and stage-event guide](../current-how/effect-recovery-and-stage-events.md)
-describes reconciliation, retained facts and notification boundaries.
+The execution service schedules actual commands without translating them into
+a retired operation runtime. Resource claims are explicit and include mandatory
+base classes. Pure physical work can be shared while logical consumers retain
+independent source uses, acceptance, cancellation and outputs.
 
-## Adding capabilities
+An accepted dataset, a completed purpose and a confirmed storage/delivery effect
+are different facts. Unknown effects require reconciliation. Journals retain
+qualified facts, and notification subscriptions consume those facts independently.
 
-Add a pure typed definition, an implementation reference for each command and
-an explicit profile or method binding for source-specific interpretation.
-Use a local snapshot overlay for temporary notebook definitions. Keep source
-selection in registered groups and recipes. The generic compiler contains no
-publisher-specific dispatch.
-
-The SDK bootstrap assembles neutral metadata and the five independent domain
-contributions. Port contracts retain alternative schemas, accepted outcomes and
-optional provider declarations. A generic input explicitly accepts arbitrary
-schema identities while preserving outcome, qualification and coverage checks;
-it never weakens an enclosing operation's declared input contract.
-
-Finite ordered folds lower to ordinary scenario occurrences. Each member has
-its own attempt history and receives the previous accepted state. Shared limits
-and retries remain visible to the coordinator. Required completion roots keep
-independent goals in the closure without turning them into output guards.
-
-The import checker enforces pure capability metadata ownership and shared
-dependency direction. The migration audit checks all declared routes separately
-from scientific publisher-edition evidence. Deterministic fixtures establish
-their bounded layouts; unavailable publisher originals remain explicit evidence
-obligations. Direct facade and machine-surface migration have their own gates.
+Only Stratbox has a release version. Rules, references and material are pinned
+by exact content/build identities and factual dates, not independent component
+release counters.

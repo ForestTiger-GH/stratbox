@@ -1,35 +1,31 @@
-"""Public, validated codecs for portable computation and input evidence.
-
-These records contain data and pinned identities only. Decoding never imports
-classes or recreates execution providers. Material descriptors and domain
-snapshots use the same validation rules.
-"""
-from __future__ import annotations
-
-from stratbox.shared.data.datasets import ComputationReceipt
-from stratbox.shared.evidence import UsedInputReceipt
+"""Exact, validated input evidence without executable state or component releases."""
+from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
+from stratbox.shared.identity import ByteIdentity
 
 
-def computation_value(value: ComputationReceipt | None) -> dict | None:
-    from stratbox.shared.materials import _computation
-    return _computation(value)
+def _identity(value):
+    return None if value is None else {'sha256':value.sha256,'size':value.size}
 
 
-def computation_from(value: dict | None) -> ComputationReceipt | None:
-    from stratbox.shared.materials import _read_computation
-    return _read_computation(value)
+def _read_identity(value):
+    if not isinstance(value,dict) or set(value)!={'sha256','size'} or type(value['size']) is not int:
+        raise ValueError('lineage.identity_invalid')
+    return ByteIdentity(value['sha256'],value['size'])
 
 
-def input_value(value: UsedInputReceipt) -> dict:
-    from stratbox.shared.materials import _input, _read_input
-    result = _input(value)
-    _read_input(result)
+def input_value(value):
+    if not isinstance(value,UsedInputReceipt):raise TypeError('lineage.input_required')
+    result={'role':value.role,'identity':_identity(value.identity),'media_type':value.media_type,
+        'availability':value.availability,'source_id':value.source_id,'container':_identity(value.container),
+        'member':value.member,'content_basis':_identity(value.content_basis)}
+    input_from(result)
     return result
 
 
-def input_from(value: dict) -> UsedInputReceipt:
-    from stratbox.shared.materials import _read_input
-    return _read_input(value)
-
-
-__all__ = ("computation_value", "computation_from", "input_value", "input_from")
+def input_from(value):
+    keys={'role','identity','media_type','availability','source_id','container','member','content_basis'}
+    if not isinstance(value,dict) or set(value)!=keys:
+        raise ValueError('lineage.input_invalid')
+    return UsedInputReceipt(value['role'],_read_identity(value['identity']),value['media_type'],value['availability'],
+        value['source_id'],_read_identity(value['container']) if value['container'] else None,value['member'],
+        _read_identity(value['content_basis']) if value['content_basis'] else None)

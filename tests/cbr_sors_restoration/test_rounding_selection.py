@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import pandas as pd
 
-from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsOptimizationConfig
-from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsSelectionPolicy
-import stratbox.domains.cbr.analytics.corporate_lending.sors.optimization.selection as selection_module
-from stratbox.domains.cbr.analytics.corporate_lending.sors.optimization.selection import _connected_candidate_clusters
-from stratbox.domains.cbr.analytics.corporate_lending.sors.optimization.selection import validate_selection_clusters
-from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import RoundingPolicy
+from stratbox.domains.cbr.calculations.sors.contracts import SorsOptimizationConfig
+from stratbox.domains.cbr.calculations.sors.contracts import SorsSelectionPolicy
+import stratbox.domains.cbr.calculations.sors.optimization.selection as selection_module
+from stratbox.domains.cbr.calculations.sors.optimization.selection import _connected_candidate_clusters
+from stratbox.domains.cbr.calculations.sors.optimization.selection import validate_selection_clusters
+from stratbox.domains.cbr.calculations.sors.publication import RoundingPolicy
 
 
 def _candidate(target_id: str, components: tuple[str, ...]) -> dict[str, object]:
@@ -168,7 +168,7 @@ def _one_target_bounds(lower: float, upper: float):
 def test_weak_rounding_never_selects_when_zero_bucket_remains_possible() -> None:
     from types import SimpleNamespace
     import numpy as np
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.optimization.selection import build_selection_candidates
+    from stratbox.domains.cbr.calculations.sors.optimization.selection import build_selection_candidates
 
     targets, bounds = _one_target_bounds(0.0, 1.2)
     profile = SimpleNamespace(benchmark_values=np.asarray([0.9]))
@@ -189,8 +189,8 @@ def test_weak_rounding_never_selects_when_zero_bucket_remains_possible() -> None
 def test_bucket_competition_prefers_lower_global_rounding_cost(monkeypatch) -> None:
     from types import SimpleNamespace
     import numpy as np
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.optimization.selection import build_selection_candidates
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.optimization.selection import score_bucket_competition
+    from stratbox.domains.cbr.calculations.sors.optimization.selection import build_selection_candidates
+    from stratbox.domains.cbr.calculations.sors.optimization.selection import score_bucket_competition
 
     targets, bounds = _one_target_bounds(10.0, 12.0)
     profile = SimpleNamespace(

@@ -11,6 +11,14 @@ from stratbox.shared.data.values import Material, SourceClaim, IdentifiedMateria
 INT=PortContract('integer',int)
 M=MethodRef('operator:neg')
 
+def retained_dataset(source):
+    from stratbox.shared.data.values import SourceDataset
+    from stratbox.shared.data.source_context import SourceUse, SourceCoordinate
+    from stratbox.shared.identity import ByteIdentity
+    use=SourceUse(SourceCoordinate(source, material_identity=ByteIdentity.of(source.encode())),
+                  'interpreted_source', 'domain_validated')
+    return SourceDataset(source, (), source_uses=(use,))
+
 def leaf(name, *, effects=frozenset()):
     return CommandDefinition(name,inputs={'value':INT},outputs={'value':INT},method=M,effects=effects)
 
@@ -117,3 +125,161 @@ def test_catalog_has_explicit_structured_formula_and_no_component_versions():
     assert not any('version' in f.name or 'revision' in f.name for f in fields(CommandDefinition))
     with pytest.raises(ValueError,match='conflicting_definition'):
         catalog.with_definitions(CommandDefinition('command.json.decode',outputs={'value':INT},method=M))
+
+
+def demo_domain():
+    spec=CommandSpec(M)
+    series=SeriesSpec('A',PublicationSpec('A',formats=frozenset({'xlsx'})),ObservationSemantics(),{
+        'command.publication.scan':spec,'command.table.extract':spec,'command.table.interpret':spec})
+    return DomainCatalog({'demo':DomainSpec('demo',{}, {'A':series})})
+
+
+def test_full_refresh_contains_source_assessment_acquisition_and_two_bounded_maps():
+    plan=prepare('scenario.series.refresh',target='A',domains=demo_domain())
+    assert any(isinstance(t,CommandTask) and t.command.id=='command.source.assess' for t in plan.tasks)
+    maps=[t for t in plan.tasks if isinstance(t,MapTask)]
+    assert len(maps)==2
+    assert any(t.command.id=='command.material.fetch' for t in maps[0].template.tasks)
+    assert any(t.command.id=='command.workbook.decode' for t in maps[1].template.tasks)
+    assert any(isinstance(t,CommandTask) and t.command.id=='command.observations.merge' for t in plan.tasks)
+
+
+def test_supplied_listing_and_retained_dataset_eliminate_network():
+    from stratbox.shared.data.values import PublicationListing, SourceDataset
+    listing=PublicationListing('demo',())
+    check=prepare('operation.source.check',inputs={'listing':listing},target='A',domains=demo_domain())
+    assert not any(t.command.id=='command.material.fetch' for t in check.tasks)
+    retained=prepare('scenario.series.refresh',inputs={'dataset':retained_dataset('A')},target='A',domains=demo_domain())
+    assert [t.command.id for t in retained.tasks]==['command.observations.validate']
+    assert retained.outputs['dataset'].task_id=='root/retained/validate'
+
+
+def test_retention_goal_survives_selecting_only_dataset():
+    from stratbox.shared.data.values import SourceDataset
+    plan=prepare('scenario.series.refresh',inputs={'dataset':retained_dataset('A'),'destination':'saved.json'},
+        target='A',domains=demo_domain(),outputs=('dataset',))
+    assert {task.command.id for task in plan.tasks}=={'command.observations.validate','command.value.encode','command.artifact.commit'}
+    assert plan.outputs.keys()=={'dataset'}
+
+
+def test_network_read_has_observation_reuse_but_writes_do_not():
+    catalog=standard_catalog()
+    fetch=catalog.get('command.material.fetch')
+    save=catalog.get('command.artifact.commit')
+    assert fetch.reuse.observation_scoped and fetch.reuse.inflight_eligible
+    assert not fetch.reuse.completed_eligible
+    assert not save.reuse.inflight_eligible
+    assert catalog.get('command.calculate.formula').resources=={'cpu':1}
+    assert catalog.get('command.model.feasibility').resources=={'cpu':1,'solver':1}
+
+
+def test_document_conversion_and_archive_collection_are_visible_standard_steps():
+    from dataclasses import dataclass
+    @dataclass(frozen=True)
+    class Publication:
+        id: str
+        formats: frozenset
+        archive_mode: str = 'single'
+    specs={name:CommandSpec(M) for name in ('command.table.extract','command.table.interpret')}
+    doc=SeriesSpec('DOC',Publication('DOC',frozenset({'doc'})),ObservationSemantics(),specs)
+    archive=SeriesSpec('ZIP',Publication('ZIP',frozenset({'zip'}),'workbook_collection'),ObservationSemantics(),specs)
+    domains=DomainCatalog({'demo':DomainSpec('demo',{}, {'DOC':doc,'ZIP':archive})})
+    converted=prepare('operation.series.extract_document',inputs={'material':Material(b'doc',source_id='DOC')},target='DOC',domains=domains)
+    assert [t.command.id for t in converted.tasks][:2]==['command.document.convert','command.document.decode']
+    packed=prepare('operation.series.extract_archive',inputs={'material':Material(b'zip',source_id='ZIP')},target='ZIP',domains=domains)
+    maps=[t for t in packed.tasks if isinstance(t,MapTask)]
+    assert len(maps)==1 and maps[0].template.tasks[0].command.id=='command.workbook.decode'
+    assert sum(getattr(getattr(t,'command',None),'id',None)=='command.table.interpret' for t in packed.tasks)==1
+
+
+def test_unused_nested_output_does_not_keep_unrequested_backend():
+    pure=leaf('command.test.pure')
+    expensive=CommandDefinition('command.test.expensive',inputs={'value':INT},outputs={'value':INT},specification_required=True)
+    child=OperationDefinition('operation.child',inputs={'value':INT},outputs={'primary':INT,'extra':INT},body=GraphBody((
+        Call('p',pure.id,{'value':InputRef('value')}),Call('x',expensive.id,{'value':InputRef('value')})),
+        {'primary':OutputRef('p'),'extra':OutputRef('x')}))
+    parent=OperationDefinition('operation.parent',inputs={'value':INT},outputs={'value':INT},body=GraphBody((
+        Call('c',child.id,{'value':InputRef('value')}),Call('unused',pure.id,{'value':OutputRef('c','extra')})),
+        {'value':OutputRef('c','primary')}))
+    plan=prepare(parent.id,inputs={'value':1},catalog=Catalog({d.id:d for d in (pure,expensive,child,parent)}))
+    assert [t.command.id for t in plan.tasks]==[pure.id]
+
+
+def test_retained_dataset_cannot_bypass_target_and_cascade_freezes_member_targets():
+    from stratbox.capabilities.preparation import InvocationRequest
+    from stratbox.shared.data.values import SourceDataset
+    domains=demo_domain()
+    with pytest.raises(ValueError,match='context_conflict'):
+        prepare('scenario.series.refresh',inputs={'dataset':SourceDataset('B',())},target='A',domains=domains)
+    spec=SeriesSpec('B',PublicationSpec('B'),ObservationSemantics(),{})
+    original=domains.domains['demo']
+    domains=DomainCatalog({'demo':DomainSpec('demo',{}, {'A':original.series['A'],'B':spec})})
+    members=(InvocationRequest('scenario.series.refresh',inputs={'dataset':retained_dataset('A')},target='A'),
+             InvocationRequest('scenario.series.refresh',inputs={'dataset':retained_dataset('B')},target='B'))
+    plan=prepare('cascade.sources.refresh',inputs={'members':members},domains=domains)
+    commands=[t.command for t in plan.tasks if isinstance(t,CommandTask)]
+    assert [c.parameters['source_id'] for c in commands]==['A','B']
+    assert len([s for s in plan.scopes if s.kind=='scenario'])==2
+
+
+def test_nested_conditions_are_conjoined_and_keep_condition_producers_in_closure():
+    command=leaf('command.test')
+    child=OperationDefinition('operation.child',inputs={'value':INT},outputs={'value':INT},body=GraphBody((
+        Call('x',command.id,{'value':InputRef('value')},condition=Condition(True)),),{'value':OutputRef('x')}))
+    parent=OperationDefinition('operation.parent',inputs={'value':INT},outputs={'value':INT},body=GraphBody((
+        Call('flag',command.id,{'value':InputRef('value')}),
+        Call('child',child.id,{'value':InputRef('value')},condition=Condition(OutputRef('flag'),equals=1))),{'value':OutputRef('child')}))
+    plan=prepare(parent.id,inputs={'value':1},catalog=Catalog({d.id:d for d in (command,child,parent)}))
+    nested=next(t for t in plan.tasks if t.task_id.endswith('/x'))
+    assert len(nested.condition)==2
+    assert 'root/flag' in nested.deps
+
+
+def test_seasonal_provider_requirement_is_declared_before_execution():
+    assert standard_catalog().get('command.timeseries.adjust').required_providers==frozenset({'seasonal_adjustment'})
+    assert standard_catalog().get('command.notification.prepare').effects==frozenset({'notification.state'})
+
+
+def test_refresh_assessment_can_be_requested_without_exporting_dataset():
+    plan=prepare('scenario.series.refresh',inputs={'dataset':retained_dataset('A')},
+        target='A',domains=demo_domain(),outputs=('assessment',))
+    assert plan.outputs.keys()=={'assessment'}
+    assert plan.outputs['assessment'].path=='assessment'
+    assert [task.command.id for task in plan.tasks]==['command.observations.validate']
+
+
+def test_supplied_table_entrance_needs_no_transport_or_physical_decoder():
+    table=TableEvidenceSet((),material=Material(b'table',source_id='A'),source_id='A')
+    plan=prepare('scenario.series.refresh',inputs={'tables':table},target='A',domains=demo_domain())
+    assert [task.command.id for task in plan.tasks]==['command.table.interpret','command.observations.validate']
+
+
+def test_incomplete_selected_publication_cannot_be_acquired():
+    from stratbox.shared.data.values import AssetSelection, PublicationAsset, Assessment
+    asset=PublicationAsset('A','2026-11-01','main','https://example.org/table.xlsx','xlsx')
+    selection=AssetSelection((asset,),Assessment('partial',('index.unresolved',)))
+    with pytest.raises(ValueError,match='selection_incomplete'):
+        prepare('operation.series.acquire',inputs={'selection':selection},target='A',domains=demo_domain())
+
+
+def test_map_parameter_limits_cannot_deadlock_or_remove_bounds():
+    command=leaf('command.test')
+    operation=OperationDefinition('operation.test', outputs={'items':PortContract('result_collection',tuple)},
+        body=GraphBody((MapCall('map',command.id,(1,),item_input='value',output_port='value'),),
+            {'items':OutputRef('map','items')}))
+    catalog=Catalog({d.id:d for d in (command,operation)})
+    for parameters in ({'window':0},{'max_items':-1},{'completion':'anything'}):
+        with pytest.raises(ValueError,match='invalid_map'):
+            prepare(operation.id,catalog=catalog,parameters=parameters)
+
+
+def test_feed_and_series_targets_resolve_their_actual_record_kinds():
+    from stratbox.capabilities.model.targets import FeedTarget, SeriesTarget
+    publication=PublicationSpec('A',commands={'command.publication.scan':CommandSpec(M)})
+    series=SeriesSpec('A',publication,ObservationSemantics(),{'command.table.interpret':CommandSpec(M)})
+    domains=DomainCatalog({'demo':DomainSpec('demo',{'publications':{'A':publication}}, {'A':series})})
+    assert domains.get('A',kind='feed') is domains.domains['demo'].common['publications']['A']
+    assert domains.get('A',kind='series') is domains.domains['demo'].series['A']
+    assert prepare('operation.source.check',inputs={'index':Material(b'index')},target=FeedTarget('A'),domains=domains)
+    with pytest.raises(ValueError,match='specification_required'):
+        prepare('command.table.interpret',inputs={'tables':TableEvidenceSet(())},target=FeedTarget('A'),domains=domains)

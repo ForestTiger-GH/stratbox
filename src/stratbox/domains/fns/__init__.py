@@ -1,1 +1,1 @@
-"""Federal Tax Service statistical source domains."""
+"""Publisher knowledge and methods for standard Stratbox commands."""

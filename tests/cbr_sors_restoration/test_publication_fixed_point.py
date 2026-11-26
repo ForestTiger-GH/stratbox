@@ -3,13 +3,13 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import RoundingPolicy
-from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import SorsPublicationLedger
-from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import SorsPublicationFixedPointLimitError
-from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import build_publication_graph
-from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import run_publication_fixed_point
-from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.interval_closure import SorsIntervalClosureState
-from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.quantities import SorsQuantityGraph
+from stratbox.domains.cbr.calculations.sors.publication import RoundingPolicy
+from stratbox.domains.cbr.calculations.sors.publication import SorsPublicationLedger
+from stratbox.domains.cbr.calculations.sors.publication import SorsPublicationFixedPointLimitError
+from stratbox.domains.cbr.calculations.sors.publication import build_publication_graph
+from stratbox.domains.cbr.calculations.sors.publication import run_publication_fixed_point
+from stratbox.domains.cbr.calculations.sors.strict.interval_closure import SorsIntervalClosureState
+from stratbox.domains.cbr.calculations.sors.strict.quantities import SorsQuantityGraph
 
 
 def _row(

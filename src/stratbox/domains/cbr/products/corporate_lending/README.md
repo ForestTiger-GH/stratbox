@@ -1,10 +1,3 @@
-# Corporate lending products
+# Scientific products and presentation
 
-This boundary prepares views from supplied analytical values and renders
-prepared tables. Debt and issuance use the shared industry view engine. SORS
-builds a complete ordered view pack containing every selected data, pivot and
-audit sheet; the pack has its own snapshot codec and independent renderer.
-
-Use the [operation API](../../operations/corporate_lending/README.md) for bounded
-execution and evidence. Numerical reconstruction belongs to
-[analytics](../../analytics/corporate_lending/README.md).
+This package owns source-aware scientific methods and typed evidence. Standard callable definitions and execution remain outside the domain. The [domain catalog](../../domain.py) binds these methods through explicit command specifications.

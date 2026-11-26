@@ -1,11 +1,3 @@
-# CBR prepared views and rendered products
+# Scientific products and presentation
 
-View builders select and arrange integrated or calculated values with explicit
-display policies. Complete prepared views can be stored and restored before
-rendering. Renderers consume those views without reacquiring originals or
-executing models. Titles, order, number formats and colours belong here.
-
-Returned representations use neutral material operations for saving, transfer
-and archive packaging through independently chosen destinations.
-
-[CBR routes](../../../../../docs/current-how/cbr-data-pipeline.md)
+This package owns source-aware scientific methods and typed evidence. Standard callable definitions and execution remain outside the domain. The [domain catalog](../domain.py) binds these methods through explicit command specifications.

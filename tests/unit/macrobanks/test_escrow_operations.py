@@ -4,7 +4,7 @@ from openpyxl import Workbook, load_workbook
 
 from stratbox.shared.evidence import SourcePayload
 from stratbox.domains.cbr.operations import project_finance as escrow
-from stratbox.domains.cbr.tables.project_finance.profiles import required_indicators
+from stratbox.domains.cbr.methods.tables.project_finance.profiles import required_indicators
 
 
 def workbook_bytes():

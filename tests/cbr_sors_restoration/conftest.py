@@ -5,8 +5,8 @@ from dataclasses import replace
 import pandas as pd
 import pytest
 
-from stratbox.domains.cbr.analytics.corporate_lending.sors.results import SorsRestorationResult
-from stratbox.domains.cbr.analytics.corporate_lending.sors.results import SorsRunSummary
+from stratbox.domains.cbr.calculations.sors.results import SorsRestorationResult
+from stratbox.domains.cbr.calculations.sors.results import SorsRunSummary
 
 
 @pytest.fixture
@@ -74,7 +74,7 @@ def small_result() -> SorsRestorationResult:
                         'closure_pass': 1 if identified else None,
                         'lower_solve_id': None,
                         'upper_solve_id': None,
-                        'rules_version': 'test',
+                        'rules_fingerprint': 'test',
                         'solver_backend': 'highspy',
                         'solver_version': 'test',
                     }

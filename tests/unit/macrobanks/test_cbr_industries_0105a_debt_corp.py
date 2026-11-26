@@ -14,27 +14,39 @@ from stratbox.core.storage.filestore import LocalFileStore
 from stratbox.domains.cbr.products.corporate_lending.debt.contracts import Cbr0105ADebtCorpIndustryWorkbookRequest
 from stratbox.domains.cbr.products.corporate_lending.industry.contracts import IndustryPivotRequest as Cbr0105ADebtCorpPivotRequest
 from stratbox.domains.cbr.products.corporate_lending.debt.contracts import Cbr0105ADebtCorpPivotWorkbookRequest
-from stratbox.domains.cbr.tables.corporate_lending.debt.contracts import Cbr0105ADebtCorpSourceFailure
-from stratbox.domains.cbr.publications.corporate_lending.contracts import Cbr0105ADebtCorpSourceLink
-from stratbox.domains.cbr.integration.corporate_lending.debt.contracts import Cbr0105ADebtCorpStreamResult
-from stratbox.domains.cbr.tables.corporate_lending.industry.contracts import IndustryValidationIssue as Cbr0105ADebtCorpValidationIssue
+from stratbox.domains.cbr.methods.tables.corporate_lending.debt.contracts import Cbr0105ADebtCorpSourceFailure
+from stratbox.domains.cbr.methods.publications.corporate_lending.contracts import Cbr0105ADebtCorpSourceLink
+from stratbox.domains.cbr.methods.alignment.corporate_lending.debt.contracts import Cbr0105ADebtCorpStreamResult
+from stratbox.domains.cbr.methods.tables.corporate_lending.industry.contracts import IndustryValidationIssue as Cbr0105ADebtCorpValidationIssue
 from stratbox.core.storage.bytes import read_bounded_bytes, write_verified_bytes
 from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.evidence import SourcePayload
-from stratbox.domains.cbr.operations.corporate_lending.debt.contracts import ParseIndustryRequest
-from stratbox.domains.cbr.operations.corporate_lending.debt.contracts import RenderIndustryRequest
-from stratbox.domains.cbr.operations.corporate_lending.debt.contracts import RenderPivotRequest
-from stratbox.domains.cbr.operations.corporate_lending.debt.operations import parse
-from stratbox.domains.cbr.operations.corporate_lending.debt.operations import render_industry
-from stratbox.domains.cbr.operations.corporate_lending.debt.operations import render_pivots
 from stratbox.domains.cbr.products.corporate_lending.industry.views import build_cbr_0105a_debt_corp_pivot_set
-from stratbox.domains.cbr.tables.corporate_lending.debt.parser import concat_industry_streams
-from stratbox.domains.cbr.tables.corporate_lending.debt.parser import parse_cbr_0105a_debt_corp_excel_bytes
+from stratbox.domains.cbr.methods.tables.corporate_lending.debt.parser import concat_industry_streams
+from stratbox.domains.cbr.methods.tables.corporate_lending.debt.parser import parse_cbr_0105a_debt_corp_excel_bytes
 from stratbox.domains.cbr.products.corporate_lending.industry.views import Cbr0105ADebtCorpPivotError
-from stratbox.domains.cbr.tables.corporate_lending.industry.geography import CBR_0105A_DEBT_CORP_REGION_LAYOUT
-from stratbox.domains.cbr.integration.corporate_lending.industry.geography import normalize_cbr_0105a_debt_corp_regions_to_latest
-from stratbox.domains.cbr.tables.corporate_lending.industry.schema import CBR_0105A_DEBT_CORP_INDUSTRY_SPECS
-from stratbox.domains.cbr.publications.corporate_lending.debt import discover_cbr_0105a_debt_corp_links_from_html
+from stratbox.domains.cbr.methods.tables.corporate_lending.industry.geography import CBR_0105A_DEBT_CORP_REGION_LAYOUT
+from stratbox.domains.cbr.methods.alignment.corporate_lending.industry.geography import normalize_cbr_0105a_debt_corp_regions_to_latest
+from stratbox.domains.cbr.methods.tables.corporate_lending.industry.schema import CBR_0105A_DEBT_CORP_INDUSTRY_SPECS
+from stratbox.domains.cbr.methods.publications.corporate_lending.debt import discover_cbr_0105a_debt_corp_links_from_html
+
+from stratbox.domains.cbr.products.corporate_lending.debt.rendering import render_cbr_0105a_debt_corp_pivot_workbook, render_cbr_0105a_debt_corp_industry_workbook
+
+def _render_industry(source, request):
+    from stratbox.domains.cbr.calculations.industry.apk import calculate_cbr_0105a_debt_corp_apk_industry
+    frame = source.df_stream
+    if request.industry_code == "apk":
+        frame = calculate_cbr_0105a_debt_corp_apk_industry(frame).df_stream
+        name = "АПК"
+    else:
+        spec = next((x for x in source.industries if x.code == request.industry_code), None)
+        if spec is None:
+            raise ValueError("request.industry_unresolved")
+        name = spec.canonical_name_ru
+    selected = frame.loc[frame["industry_code"].astype(object).eq(request.industry_code)].copy()
+    pivot = build_cbr_0105a_debt_corp_pivot_set(selected,
+        Cbr0105ADebtCorpPivotRequest("region_code", "report_date", sheet_dimensions=("measure", "currency_scope")), stream_result=source)
+    return render_cbr_0105a_debt_corp_industry_workbook(pivot, request, industry_name_ru=name)
 
 
 SHEETS = (
@@ -171,19 +183,14 @@ def _parsed_pair():
 
 @lru_cache(maxsize=1)
 def _stream_result() -> Cbr0105ADebtCorpStreamResult:
-    from stratbox.domains.cbr.operations.corporate_lending.debt.contracts import BuildIndustryStreamRequest
-    from stratbox.domains.cbr.operations.corporate_lending.debt.operations import build_stream
+    files = _parsed_pair()
+    frame = concat_industry_streams(item.df_stream for item in files)
+    return Cbr0105ADebtCorpStreamResult((), (), files,
+        tuple(issue for item in files for issue in item.validation_issues), frame,
+        tuple(item.report_date for item in files), files[-1].report_date,
+        files[-1].report_date, files[-1].report_date, True,
+        files[-1].regions, files[-1].industries, len(frame))
 
-    inputs = tuple(ParseIndustryRequest(
-        SourcePayload(_workbook_bytes(report_date=printed, kemerovo_name=region)),
-        f"01_05_A_Debt_corp_{day}.xlsx",
-    ) for day, printed, region in (
-        ("20190201", "01.02.2019", "Кемеровская область"),
-        ("20260601", "01.06.2026", "Кемеровская область - Кузбасс"),
-    ))
-    result = build_stream(BuildIndustryStreamRequest(inputs))
-    assert result.outcome == "succeeded", result.diagnostics
-    return result.value
 
 
 def test_discovery_filters_exact_series_and_period() -> None:
@@ -288,19 +295,26 @@ def test_region_names_are_normalized_to_current_local_layout() -> None:
 
 
 def test_parse_uses_exact_bytes_read_from_explicit_store(tmp_path: Path) -> None:
-    content = _workbook_bytes(
-        report_date="01.06.2026",
-        kemerovo_name="Кемеровская область - Кузбасс",
-    )
+    from stratbox.domains.cbr.methods.actions.industries import extract, interpret
+    from stratbox.core.formats.spreadsheets.cells import read_workbook_cells
+    from stratbox.shared.data.values import Material, WorkbookEvidence
+    from stratbox.domains.cbr.domain import DOMAIN
+    from types import SimpleNamespace
+    content = _workbook_bytes(report_date="01.06.2026", kemerovo_name="Кемеровская область - Кузбасс")
     store = LocalFileStore(root=str(tmp_path))
     filename = "01_05_A_Debt_corp_20260601.xlsx"
-    path = f"cache/{filename}"
-    store.write_bytes(path, content)
-    payload = SourcePayload(read_bounded_bytes(path, store=store, limit=len(content)))
-    result = parse(ParseIndustryRequest(payload, filename))
-    assert result.outcome == "succeeded"
-    assert result.value.report_date == "2026-06-01"
-    assert result.used_inputs[0].identity == ByteIdentity.of(content)
+    store.write_bytes(filename, content)
+    body = read_bounded_bytes(filename, store=store, limit=len(content))
+    material = Material(body, source_id="cbr.corporate_lending.debt_0105a")
+    context = SimpleNamespace(parameters={"source_name": filename, "issue_id": "2026-06-01"}, checkpoint=lambda: None)
+    series = DOMAIN.series[material.source_id]
+    physical = WorkbookEvidence(material, read_workbook_cells(body))
+    tables = extract({"physical": physical}, series.commands["command.table.extract"].settings, context)["tables"]
+    result = interpret({"tables": tables}, series.commands["command.table.interpret"].settings, context)["dataset"]
+    assert result.native.report_date == "2026-06-01"
+    assert result.lineage[0] == ByteIdentity.of(content)
+    assert result.native.evidence.inputs[0].identity == ByteIdentity.of(content)
+
 
 
 def test_concat_preserves_categorical_dtypes() -> None:
@@ -417,11 +431,8 @@ def test_render_pivot_workbook_includes_all_tables(tmp_path: Path) -> None:
         ),
         stream_result=result,
     )
-    operation = render_pivots(RenderPivotRequest(
-        pivot_set, Cbr0105ADebtCorpPivotWorkbookRequest(include_metadata_sheet=True),
-    ))
-    assert operation.outcome == "succeeded"
-    saved = operation.value
+    saved = render_cbr_0105a_debt_corp_pivot_workbook(
+        pivot_set, Cbr0105ADebtCorpPivotWorkbookRequest(include_metadata_sheet=True))
     assert saved.sheet_count == 7
     workbook = load_workbook(BytesIO(saved.representation.data), read_only=True, data_only=True)
     try:
@@ -458,9 +469,8 @@ def test_pivot_representation_can_be_saved_without_overwriting(tmp_path: Path) -
         stream_result=result,
     )
     store = LocalFileStore(root=str(tmp_path))
-    rendered = render_pivots(RenderPivotRequest(pivot_set))
-    assert rendered.outcome == "succeeded"
-    data = rendered.value.representation
+    rendered = render_cbr_0105a_debt_corp_pivot_workbook(pivot_set, Cbr0105ADebtCorpPivotWorkbookRequest())
+    data = rendered.representation
     saved = write_verified_bytes("result.xlsx", data.data, store=store, expected_sha256=data.identity.sha256)
     assert saved.status == "stored"
     different = ByteIdentity.of(b"different")
@@ -533,9 +543,9 @@ def test_pivot_partial_stream_policy_is_explicit() -> None:
 
 
 def test_apk_calculation_uses_corrected_lpk_formula() -> None:
-    from stratbox.domains.cbr.analytics.corporate_lending.industry.apk import CBR_0105A_DEBT_CORP_APK_FORMULA_RU
-    from stratbox.domains.cbr.analytics.corporate_lending.industry.apk import CBR_0105A_DEBT_CORP_LPK_FORMULA_RU
-    from stratbox.domains.cbr.analytics.corporate_lending.industry.apk import calculate_cbr_0105a_debt_corp_apk_industry
+    from stratbox.domains.cbr.calculations.industry.apk import CBR_0105A_DEBT_CORP_APK_FORMULA_RU
+    from stratbox.domains.cbr.calculations.industry.apk import CBR_0105A_DEBT_CORP_LPK_FORMULA_RU
+    from stratbox.domains.cbr.calculations.industry.apk import calculate_cbr_0105a_debt_corp_apk_industry
 
     result = _stream_result()
     stream = result.df_stream.copy()
@@ -574,8 +584,8 @@ def test_apk_calculation_uses_corrected_lpk_formula() -> None:
 
 
 def test_apk_calculation_rejects_incomplete_component_group() -> None:
-    from stratbox.domains.cbr.analytics.corporate_lending.industry.apk import Cbr0105ADebtCorpDerivedIndustryError
-    from stratbox.domains.cbr.analytics.corporate_lending.industry.apk import calculate_cbr_0105a_debt_corp_apk_industry
+    from stratbox.domains.cbr.calculations.industry.apk import Cbr0105ADebtCorpDerivedIndustryError
+    from stratbox.domains.cbr.calculations.industry.apk import calculate_cbr_0105a_debt_corp_apk_industry
 
     result = _stream_result()
     stream = result.df_stream.copy()
@@ -597,7 +607,7 @@ def test_apk_calculation_rejects_incomplete_component_group() -> None:
 
 
 def test_apk_calculation_integrates_with_six_sheet_pivot() -> None:
-    from stratbox.domains.cbr.analytics.corporate_lending.industry.apk import calculate_cbr_0105a_debt_corp_apk_industry
+    from stratbox.domains.cbr.calculations.industry.apk import calculate_cbr_0105a_debt_corp_apk_industry
 
     result = _stream_result()
     calculated = calculate_cbr_0105a_debt_corp_apk_industry(result.df_stream)
@@ -623,11 +633,9 @@ def test_apk_calculation_integrates_with_six_sheet_pivot() -> None:
 
 def test_industry_workbook_exports_apk_in_cbr_publication_style(tmp_path: Path) -> None:
     result = _stream_result()
-    rendered = render_industry(RenderIndustryRequest(result, Cbr0105ADebtCorpIndustryWorkbookRequest(
+    exported = _render_industry(result, Cbr0105ADebtCorpIndustryWorkbookRequest(
             industry_code="apk",
-    )))
-    assert rendered.outcome == "succeeded"
-    exported = rendered.value
+    ))
 
     assert exported.ok
     assert exported.industry_code == "apk"
@@ -673,11 +681,9 @@ def test_industry_workbook_exports_apk_in_cbr_publication_style(tmp_path: Path) 
 
 def test_industry_workbook_uses_published_total_without_recalculation(tmp_path: Path) -> None:
     result = _stream_result()
-    rendered = render_industry(RenderIndustryRequest(result, Cbr0105ADebtCorpIndustryWorkbookRequest(
+    exported = _render_industry(result, Cbr0105ADebtCorpIndustryWorkbookRequest(
             industry_code="total",
-    )))
-    assert rendered.outcome == "succeeded"
-    exported = rendered.value
+    ))
 
     assert exported.ok
     assert exported.industry_code == "total"
@@ -696,12 +702,10 @@ def test_industry_workbook_uses_published_total_without_recalculation(tmp_path: 
 
 def test_industry_workbook_supports_fast_selection_of_source_industry(tmp_path: Path) -> None:
     result = _stream_result()
-    rendered = render_industry(RenderIndustryRequest(result, Cbr0105ADebtCorpIndustryWorkbookRequest(
+    exported = _render_industry(result, Cbr0105ADebtCorpIndustryWorkbookRequest(
             industry_code="manufacturing",
             include_metadata_sheet=True,
-    )))
-    assert rendered.outcome == "succeeded"
-    exported = rendered.value
+    ))
 
     assert exported.ok
     assert exported.industry_name_ru == "Обрабатывающие производства"
@@ -715,127 +719,69 @@ def test_industry_workbook_supports_fast_selection_of_source_industry(tmp_path: 
 
 
 def test_industry_workbook_rejects_unknown_industry() -> None:
-    result = render_industry(RenderIndustryRequest(
-        _stream_result(), Cbr0105ADebtCorpIndustryWorkbookRequest(industry_code="unknown"),
-    ))
-    assert result.outcome == "failed"
-    assert result.diagnostics[0].code == "request.industry_unresolved"
+    with pytest.raises(ValueError, match="industry_unresolved"):
+        _render_industry(_stream_result(), Cbr0105ADebtCorpIndustryWorkbookRequest(industry_code="unknown"))
+
 
 
 def test_public_debt_chain_checks_tables_and_preserves_the_original_identity():
-    from stratbox.core.execution import ExecutionBudget, ExecutionContext
-    import stratbox.domains.cbr.operations.corporate_lending.debt as domain
+    from stratbox.domains.cbr.methods.actions.industries import extract, interpret
+    from stratbox.domains.cbr.calculations.industry.actions import calculate
+    from stratbox.domains.cbr.domain import DOMAIN
+    from stratbox.core.formats.spreadsheets.cells import read_workbook_cells
+    from stratbox.shared.data.values import Material, WorkbookEvidence, fingerprint
+    from types import SimpleNamespace
+    original = Material(_workbook_bytes(report_date="01.06.2026", kemerovo_name="Кемеровская область - Кузбасс"), source_id="cbr.corporate_lending.debt_0105a")
+    series = DOMAIN.series[original.source_id]
+    context = SimpleNamespace(parameters={"source_name": "01_05_A_Debt_corp_20260601.xlsx", "issue_id": "2026-06-01"}, checkpoint=lambda: None)
+    tables = extract({"physical": WorkbookEvidence(original, read_workbook_cells(original.data))}, series.commands["command.table.extract"].settings, context)["tables"]
+    source = interpret({"tables": tables}, series.commands["command.table.interpret"].settings, context)["dataset"]
+    source_identity = source.identity
+    derived = calculate({"dataset": source}, DOMAIN.calculations["cbr.corporate_lending.debt_apk"].commands["command.calculate.formula"].settings, context)["dataset"]
+    assert original.identity in derived.lineage
+    assert source.identity == source_identity
+    assert {row["metric"] for row in derived.rows} == {"apk", "lpk"}
+    assert all(row["operands"] and len(row["operands"]) == 5 for row in derived.rows)
+    source.native.df_stream.loc[0, "value"] = 999
+    assert source.identity != source_identity
 
-    original = SourcePayload(_workbook_bytes(
-        report_date="01.06.2026", kemerovo_name="Кемеровская область - Кузбасс",
-    ))
-    source = domain.ParseIndustryRequest(original, "01_05_A_Debt_corp_20260601.xlsx")
-    history = domain.build_stream(domain.BuildIndustryStreamRequest((source,)))
-    assert history.outcome == "succeeded", history.diagnostics
-    apk = domain.calculate_apk(domain.CalculateApkRequest(history.value))
-    assert apk.outcome == "succeeded", apk.diagnostics
-    pivot = Cbr0105ADebtCorpPivotRequest(
-        "region_code", "report_date", sheet_dimensions=("measure", "currency_scope"),
-    )
-    req = domain.PivotInput(apk.value, pivot, industry_code="apk")
-    constrained = domain.build_pivots(req, context=ExecutionContext(
-        budget=ExecutionBudget(cells=apk.value.df_stream.size + 10),
-    ))
-    assert constrained.diagnostics[0].code == "budget.cells"
-    views = domain.build_pivots(req)
-    assert views.outcome == "succeeded", views.diagnostics
-    rendered = domain.render_pivots(domain.RenderPivotRequest(views.value))
-    assert rendered.outcome == "succeeded", rendered.diagnostics
-    receipt = rendered.computation
-    for _ in range(3):
-        receipt = receipt.parents[0][1]
-    assert receipt.inputs[0].identity == original.identity
-    changed = history.value.df_stream.copy()
-    changed.loc[changed.index[0], "value"] = 999
-    rejected = domain.build_pivots(domain.PivotInput(changed, pivot, source=history.value))
-    assert rejected.diagnostics[0].code == "input.identity_mismatch"
-    own = domain.calculate_apk(domain.CalculateApkRequest(changed))
-    assert own.outcome == "succeeded" and own.used_inputs[0].role == "user_table"
-    assert not own.computation.parents and own.computation.version != apk.computation.version
 
 
 def test_selective_history_preserves_full_validation_and_batch_workbooks() -> None:
-    import stratbox.domains.cbr.operations.corporate_lending.debt as domain
-    from stratbox.domains.cbr.tables.corporate_lending.debt.selection import resolve_industry_codes
+    from stratbox.domains.cbr.methods.tables.corporate_lending.debt.selection import resolve_industry_codes
+    from stratbox.domains.cbr.methods.tables.corporate_lending.industry.contracts import IndustrySelection
+    raw = _workbook_bytes(report_date="01.06.2026", kemerovo_name="Кемеровская область - Кузбасс")
+    full = parse_cbr_0105a_debt_corp_excel_bytes(raw, source_name="01_05_A_Debt_corp_20260601.xlsx")
+    selected = parse_cbr_0105a_debt_corp_excel_bytes(raw, source_name="01_05_A_Debt_corp_20260601.xlsx", selection=IndustrySelection(("apk", "total")))
+    codes = resolve_industry_codes(IndustrySelection(("apk", "total")))
+    assert len(codes) == 6
+    assert selected.rows_stream == 96 * 6 * 6
+    assert selected.source_validation_scope == "full"
+    assert selected.selection.industry_codes == ("apk", "total")
+    cols = ["report_date", "region_code", "industry_code", "measure", "currency_scope", "value", "source_row", "source_column"]
+    assert full.df_stream.loc[full.df_stream["industry_code"].isin(codes), cols].astype(object).to_dict("records") == selected.df_stream[cols].astype(object).to_dict("records")
+    assert full.validation_issues == selected.validation_issues
 
-    payload = SourcePayload(_workbook_bytes(
-        report_date="01.06.2026", kemerovo_name="Кемеровская область - Кузбасс",
-    ))
-    source = domain.ParseIndustryRequest(payload, "01_05_A_Debt_corp_20260601.xlsx")
-    all_rows = domain.build_stream(domain.BuildIndustryStreamRequest((source,)))
-    selected = domain.build_stream(domain.BuildIndustryStreamRequest(
-        (source,), selection=domain.IndustrySelection(("apk", "total")),
-    ))
-    assert all_rows.outcome == "succeeded", all_rows.diagnostics
-    assert selected.outcome == "succeeded", selected.diagnostics
-    source_codes = resolve_industry_codes(domain.IndustrySelection(("apk", "total")))
-    assert len(source_codes) == 6
-    assert selected.value.rows_stream == 96 * 6 * 6
-    assert selected.value.source_validation_scope == "full"
-    assert selected.value.selection.industry_codes == ("apk", "total")
-    assert all_rows.value.evidence.computation_id != selected.value.evidence.computation_id
-    full_subset = all_rows.value.df_stream.loc[
-        all_rows.value.df_stream["industry_code"].isin(source_codes)
-    ].reset_index(drop=True)
-    selected_subset = selected.value.df_stream.reset_index(drop=True)
-    compare_columns = ["report_date", "region_code", "industry_code", "measure",
-                       "currency_scope", "value", "source_row", "source_column"]
-    assert full_subset[compare_columns].astype(object).to_dict("records") == (
-        selected_subset[compare_columns].astype(object).to_dict("records")
-    )
-    assert all_rows.value.validation_issues == selected.value.validation_issues
-
-    batch = domain.render_industries(domain.RenderIndustriesRequest(
-        selected.value, ("apk", "total"),
-    ))
-    assert batch.outcome == "succeeded", batch.diagnostics
-    assert batch.computation is not None
-    assert batch.value.ok
-    assert tuple(item.industry_code for item in batch.value.items) == ("apk", "total")
-    for item in batch.value.items:
-        individual = domain.render_industry(domain.RenderIndustryRequest(
-            selected.value, domain.Cbr0105ADebtCorpIndustryWorkbookRequest(item.industry_code),
-        ))
-        assert individual.outcome == "succeeded", individual.diagnostics
-        assert individual.value.representation.data == item.representation.data
 
 
 def test_selection_rejects_invalid_codes_and_detects_excluded_negative_cells() -> None:
-    import stratbox.domains.cbr.operations.corporate_lending.debt as domain
-
-    raw = _workbook_bytes(
-        report_date="01.06.2026", kemerovo_name="Кемеровская область - Кузбасс",
-    )
-    wrong = domain.parse(domain.ParseIndustryRequest(
-        SourcePayload(raw), "01_05_A_Debt_corp_20260601.xlsx",
-        selection=domain.IndustrySelection(("total", "missing")),
-    ))
-    assert wrong.outcome == "failed"
-    assert wrong.diagnostics[0].code == "request.industry_selection_invalid"
-
-    book = load_workbook(BytesIO(raw))
-    book.worksheets[0]["C4"] = -1  # Mining, excluded from the requested total-only projection.
-    stream = BytesIO()
-    book.save(stream)
-    book.close()
-    parsed = domain.parse(domain.ParseIndustryRequest(
-        SourcePayload(stream.getvalue()), "01_05_A_Debt_corp_20260601.xlsx",
-        selection=domain.IndustrySelection(("total",)),
-    ))
-    assert parsed.outcome == "failed"
-    assert parsed.diagnostics[0].code == "source.validation_failed"
+    from stratbox.domains.cbr.methods.tables.corporate_lending.industry.contracts import IndustrySelection
+    raw = _workbook_bytes(report_date="01.06.2026", kemerovo_name="Кемеровская область - Кузбасс")
+    with pytest.raises(ValueError, match="selection"):
+        parse_cbr_0105a_debt_corp_excel_bytes(raw, source_name="01_05_A_Debt_corp_20260601.xlsx", selection=IndustrySelection(("total", "missing")))
+    book = load_workbook(BytesIO(raw)); book.worksheets[0]["C4"] = -1
+    stream = BytesIO(); book.save(stream); book.close()
+    parsed = parse_cbr_0105a_debt_corp_excel_bytes(stream.getvalue(), source_name="01_05_A_Debt_corp_20260601.xlsx", selection=IndustrySelection(("total",)))
+    assert any(issue.code == "negative_values" and issue.severity == "error" for issue in parsed.validation_issues)
+    assert parsed.source_validation_scope == "full"
 
 
-def test_batch_render_rejects_mutated_caller_table() -> None:
-    import stratbox.domains.cbr.operations.corporate_lending.debt as domain
 
+def test_prepared_pivot_identity_changes_after_caller_mutation() -> None:
+    from stratbox.shared.data.tables import table_identity
     result = _stream_result()
-    result.df_stream.loc[result.df_stream.index[0], "value"] = 999
-    batch = domain.render_industries(domain.RenderIndustriesRequest(result, ("total",)))
-    assert batch.outcome == "failed"
-    assert batch.diagnostics[0].code == "input.identity_mismatch"
+    identity = table_identity((("stream", result.df_stream),))
+    changed = result.df_stream.copy()
+    changed.loc[changed.index[0], "value"] = 999
+    assert table_identity((("stream", changed),)) != identity
+    assert table_identity((("stream", result.df_stream),)) == identity

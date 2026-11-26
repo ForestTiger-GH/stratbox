@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from stratbox.shared.data.representation import Representation
+from stratbox.shared.data.values import EncodedProduct
 from stratbox.shared.data.source_context import SourceUse
-from stratbox.domains.cbr.tables.corporate_lending.industry.sources import merge_source_uses
+from stratbox.domains.cbr.methods.tables.corporate_lending.industry.sources import merge_source_uses
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,7 +22,7 @@ class Cbr0105ADebtCorpPivotWorkbookRequest:
 class Cbr0105ADebtCorpPivotWorkbookResult:
     """Результат отдельной операции сохранения Excel-книги."""
 
-    representation: Representation
+    representation: EncodedProduct
     sheet_names: tuple[str, ...]
     sheet_count: int
     source_uses: tuple[SourceUse, ...] = ()
@@ -45,7 +45,7 @@ class Cbr0105ADebtCorpIndustryWorkbookRequest:
 class Cbr0105ADebtCorpIndustryWorkbookResult:
     """Результат экспорта одной отрасли в шестилистовую CBR-подобную книгу."""
 
-    representation: Representation
+    representation: EncodedProduct
     industry_code: str
     industry_name_ru: str
     sheet_names: tuple[str, ...]

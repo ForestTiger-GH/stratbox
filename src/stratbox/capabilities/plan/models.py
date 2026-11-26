@@ -5,6 +5,16 @@ from ..model import PortContract, AcceptanceContract, SourceRequirement, MethodR
 from ..model.immutable import freeze
 
 @dataclass(frozen=True, slots=True)
+class OutputGuard:
+    scope_id: str
+    port: str
+
+@dataclass(frozen=True, slots=True)
+class InputGuard:
+    value: object
+    contract: PortContract
+
+@dataclass(frozen=True, slots=True)
 class ValueRef:
     task_id: str
     port: str = 'value'
@@ -45,6 +55,8 @@ class CommandTask:
     scope_id: str = ''
     condition: object = None
     required: bool = True
+    guards: tuple[OutputGuard, ...] = ()
+    input_guards: tuple[InputGuard, ...] = ()
     kind = 'command'
 
     def __post_init__(self): object.__setattr__(self, 'inputs', freeze(self.inputs))
@@ -64,6 +76,9 @@ class MapTask:
     deps: tuple[str, ...] = ()
     scope_id: str = ''
     required: bool = True
+    condition: object = None
+    guards: tuple[OutputGuard, ...] = ()
+    input_guards: tuple[InputGuard, ...] = ()
     kind = 'map'
     @property
     def dependencies(self): return self.deps
@@ -80,6 +95,9 @@ class RepeatTask:
     deps: tuple[str, ...] = ()
     scope_id: str = ''
     required: bool = True
+    condition: object = None
+    guards: tuple[OutputGuard, ...] = ()
+    input_guards: tuple[InputGuard, ...] = ()
     kind = 'repeat'
     @property
     def dependencies(self): return self.deps
@@ -91,6 +109,12 @@ class CollectTask:
     deps: tuple[str, ...] = ()
     scope_id: str = ''
     required: bool = True
+    condition: object = None
+    guards: tuple[OutputGuard, ...] = ()
+    input_guards: tuple[InputGuard, ...] = ()
+    optional_items: frozenset[int] = frozenset()
+    min_items: int = 0
+    item_guards: Mapping[int, tuple[OutputGuard, ...]] = field(default_factory=dict)
     kind = 'collect'
     @property
     def dependencies(self): return self.deps
@@ -124,3 +148,22 @@ class PreparedPlan:
     target: object = None
 
     def __post_init__(self): object.__setattr__(self, 'outputs', freeze(self.outputs))
+
+
+@dataclass(frozen=True, slots=True)
+class DispatchTask:
+    task_id: str
+    selector: object
+    alternatives: Mapping[str, PreparedPlan]
+    input_name: str = 'material'
+    output_port: str = 'dataset'
+    selector_kind: str = 'material_format'
+    deps: tuple[str, ...] = ()
+    scope_id: str = ''
+    required: bool = True
+    condition: object = None
+    guards: tuple[OutputGuard, ...] = ()
+    input_guards: tuple[InputGuard, ...] = ()
+    kind = 'dispatch'
+    @property
+    def dependencies(self): return self.deps

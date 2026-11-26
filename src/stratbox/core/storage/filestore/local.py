@@ -42,6 +42,7 @@ class _LocalStage:
             os.fsync(self.stream.fileno())
             self.stream.close()
             target = self.store.checked_file_path(str(self.destination))
+            if mode != "immutable": self.store._mutable(target)
         except OSError as error:
             raise MutationRejected("Unable to finalize staging") from error
         if mode == "immutable":
@@ -81,6 +82,10 @@ class LocalFileStore(FileStore):
 
     def __init__(self, root: str | None = None):
         self._root = Path(root).expanduser().resolve() if root is not None else None
+
+    def _mutable(self, path):
+        if re.fullmatch(r"[a-f0-9]{64}", Path(path).name):
+            raise MutationRejected("Retained content member is protected", code="storage.immutable_member")
 
     def _abs(self, path: str) -> Path:
         value = str(path).replace("\\", "/")
@@ -164,7 +169,8 @@ class LocalFileStore(FileStore):
         return self._abs(path).open("rb")
 
     def open_write(self, path: str) -> BinaryIO:
-        p = self._abs(path)
+        p = self.checked_file_path(path)
+        self._mutable(p)
         p.parent.mkdir(parents=True, exist_ok=True)
         return p.open("wb")
 
@@ -206,17 +212,23 @@ class LocalFileStore(FileStore):
         self._abs(path).mkdir(parents=True, exist_ok=True)
 
     def remove(self, path: str) -> None:
-        self._abs(path).unlink()
+        target = self.checked_file_path(path)
+        self._mutable(target)
+        target.unlink()
 
     def rmdir(self, path: str) -> None:
         self._abs(path).rmdir()
 
     def rmtree(self, path: str) -> None:
-        shutil.rmtree(self._abs(path))
+        target = self.checked_file_path(path)
+        if any(re.fullmatch(r"[a-f0-9]{64}", item.name) for item in target.rglob("*")):
+            raise MutationRejected("Directory contains retained content", code="storage.immutable_member")
+        shutil.rmtree(target)
 
     def rename(self, src: str, dst: str) -> None:
-        src_p = self._abs(src)
-        dst_p = self._abs(dst)
+        src_p = self.checked_file_path(src)
+        dst_p = self.checked_file_path(dst)
+        self._mutable(src_p); self._mutable(dst_p)
         dst_p.parent.mkdir(parents=True, exist_ok=True)
         src_p.rename(dst_p)
 
@@ -325,6 +337,7 @@ class LocalFileStore(FileStore):
         )
 
     def remove_expected(self, expected: FileVersion) -> bool:
+        self._mutable(expected.path)
         if self.inspect_file(expected.path) != expected:
             return False
         source = self.checked_file_path(expected.path)
@@ -334,6 +347,7 @@ class LocalFileStore(FileStore):
         return True
 
     def rename_expected(self, expected: FileVersion, target: str) -> bool:
+        self._mutable(expected.path); self._mutable(target)
         if self.inspect_file(expected.path) != expected:
             return False
         source = self.checked_file_path(expected.path)
@@ -365,3 +379,54 @@ class LocalFileStore(FileStore):
         ):
             raise OSError("Move could not be confirmed")
         return True
+
+
+    provider_id = "local.files"
+    immutable_content = True
+
+    def open(self, location, mode="rb"):
+        if mode != "rb":
+            raise ValueError("storage.use_explicit_mutation")
+        return self.open_read(location)
+
+    def list(self, location):
+        result = []
+        for name in self.listdir(location):
+            path = str(Path(location) / name)
+            info = self.stat(path)
+            if info.is_file:
+                result.append({"path": path, "filename": name, "size": info.size, "mtime": info.mtime})
+        return tuple(result)
+
+    def create_immutable(self, location, data):
+        from hashlib import sha256
+        if re.fullmatch(r"[a-f0-9]{64}", Path(location).name) and Path(location).name != sha256(data).hexdigest():
+            raise MutationRejected("Content address mismatch", code="storage.identity_mismatch")
+        self.makedirs(str(Path(location).parent))
+        created = self.create_if_absent(location, data)
+        if not created and self.read_bytes(location) != data:
+            raise MutationRejected("Immutable content conflict", code="storage.immutable_conflict")
+        return sha256(data).hexdigest()
+
+    def compare_and_set(self, location, expected_token, data):
+        from hashlib import sha256
+        target = self._abs(location)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with self.guard_directory(str(target.parent)):
+            current = sha256(target.read_bytes()).hexdigest() if target.exists() else None
+            if current != expected_token:
+                raise MutationRejected("Publication state changed", code="storage.state_conflict")
+            with self.stage_write(str(target)) as stage:
+                stage.stream.write(data)
+                stage.commit("best_effort_verified", None)
+            return sha256(data).hexdigest()
+
+    def move(self, source, destination):
+        if len(Path(source).name) == 64:
+            raise MutationRejected("Retained content member is protected", code="storage.immutable_member")
+        return self.rename(source, destination)
+
+    def delete(self, source):
+        if len(Path(source).name) == 64:
+            raise MutationRejected("Retained content member is protected", code="storage.immutable_member")
+        return self.remove(source)

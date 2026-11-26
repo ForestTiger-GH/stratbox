@@ -1,59 +1,7 @@
-# Направление зависимостей и безопасные границы
+# Dependency direction
 
-**Architecture candidate:** `PA-SB-2026-10-09-CANDIDATE-1`.
+Definitions and prepared plans depend on pure model and shared data contracts. The execution service consumes prepared plans and resolves the already bound methods. Source interpretation depends on shared values and neutral technical utilities. The SDK joins the preparation and execution boundaries.
 
-## Базовые инварианты
+No command definition imports a domain implementation. The explicit domain manifest loads root `DOMAIN` objects only. Each domain root links simple immutable mappings; there is no second builder or executable contribution registry.
 
-1. Доменный core не импортирует UI и application orchestration. Core API можно проверить независимо от Qt, desktop launcher и managed lifecycle.
-2. Пользовательская поверхность обращается к application use cases или непосредственно разрешённым core operations в current local profile, но не копирует предметные алгоритмы.
-3. Application model зависит от абстрактного core/domain API; платформенные активационные сведения доступны только через адаптер конкретного внешнего контракта.
-4. Инфраструктурные реализации среды могут заменяться посредством нейтрального API. Доступность расширения, право активации и полномочие совершить рискованное действие — разные факты.
-5. Техническая ошибка источника должна сохранять собственную причину при прохождении в operation result, UI и диагностику; каждый слой может создать своё представление, но оно сохраняет различение failure/empty/unknown.
-
-## Проверочные диаграммы зависимости
-
-```text
-           Windows UI / conditional future renderers
-                           |
-                     app contracts
-                       |       \
-                   core ports   platform-adapter port
-                       |                |
-                  domain core       external platform contracts
-```
-
-Существующая прямая зависимость внутри Windows `runtime.bootstrap → presentation.qt_desktop` является **Current HOW drift относительно предлагаемого общего application contract**, а не доказательством уже достигнутой независимости. Старый smoke test ожидает другую версию manifest, поэтому соответствующая интеграция нуждается в реальной CI-проверке перед release.
-
-## Контракт границы успеха/сбоя
-
-| Граница | Что должен сохранить downstream |
-| --- | --- |
-| Source → core | Версию, измерение, единицу, источники, неопределённость, отсутствие/ошибку |
-| Core → application | Типизированный результат, diagnostics, scope и possible side effects |
-| Application → surface | Durable status, valid actions, permission-filtered details, unresolved effects |
-| Application ↔ storage | Проверяемую запись, версию/идентичность и recovery proof |
-| Application ↔ external platform | Только подтверждённые versioned interface и safe health/problem projection |
-
-## Техническая свобода
-
-Реализация может выбрать язык/СУБД/IPC/UI toolkit и способ публикации при условии прохождения принимающих контрактов. Изменение семантического authority ownership, общих идентификаторов, допустимой неоднозначности эффектов или privacy boundary требует пересмотра соответствующих Product/Architecture Decisions, а не локального refactor.
-
-**Reopen:** изменение прямых product-owner paths, опубликованного интерфейса external platform, принятие shared-node и offline профилей либо тестовый контрпример на границе ошибок.
-
-
-## Canonical shared dependency layers
-
-The current Python implementation owns byte identity and canonical manifests in
-`shared.identity`, source/use receipts in `shared.evidence`, statistical
-observations/releases in `shared.data`, versioned reference resources in
-`shared.reference`, and calendar grids in `shared.time`.
-
-`shared` has no imports from `core` or concrete `domains`. Within `shared`,
-`identity` is foundational, `evidence` may depend on `identity`, and `data`
-may depend on both. `data` does not import concrete reference families.
-Domain-specific source codes and local statistical perimeters cannot be
-reassigned by lexical territorial normalization.
-
-The canonical graph and its examples are maintained in
-[shared semantic ownership](shared-ownership.md). These implemented Python
-boundaries are separate from the application deployment candidate above.
+`python scripts/check_internal_imports.py` rejects missing internal modules and imports through retired execution or registry owners. Metadata import checks run without optional dataframe, workbook or solver packages.

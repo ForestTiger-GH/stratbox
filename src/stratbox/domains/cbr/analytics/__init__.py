@@ -1,1 +1,0 @@
-"""CBR analytics functional owner."""

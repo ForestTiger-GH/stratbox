@@ -6,15 +6,17 @@ from io import StringIO
 from stratbox.core.formats.spreadsheets.workbook_bytes import openpyxl_bytes
 from stratbox.core.limits import BudgetMeter, ExecutionBudget
 from stratbox.core.runtime.dependencies import require_extra
-from stratbox.shared.data.representation import Representation
-from stratbox.shared.data.representation import CSV, XLSX
+from stratbox.shared.data.values import EncodedProduct
+
+CSV = "text/csv"
+XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
 def spreadsheet_view(
-    source: Representation, *, limits: ExecutionBudget | None = None,
-) -> Representation:
+    source: EncodedProduct, *, limits: ExecutionBudget | None = None,
+) -> EncodedProduct:
     """Preserve literal fields as text cells and keep the original CSV separate."""
-    if source.media_type != CSV or source.encoding not in {None, "utf-8"}:
+    if source.media_type != CSV or source.descriptor.get("encoding") not in {None, "utf-8"}:
         raise ValueError("Expected a literal UTF-8 CSV representation")
     meter = BudgetMeter(ExecutionBudget.intersect(
         limits, ExecutionBudget(input_bytes=16 * 1024**2, cells=1_000_000)
@@ -31,6 +33,6 @@ def spreadsheet_view(
         for cell in sheet[index]:
             cell.data_type = "s"
     data = openpyxl_bytes(workbook, literal_text=True, budget=meter)
-    result = Representation("spreadsheet.literal-text", 1, XLSX, data)
+    result = EncodedProduct(data, XLSX, source.lineage, {"format": "spreadsheet.literal-text"})
     meter.account_output("returned", result.identity)
     return result

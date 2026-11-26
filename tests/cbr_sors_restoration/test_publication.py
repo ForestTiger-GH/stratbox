@@ -1,8 +1,8 @@
-from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import PublicationInterval
-from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import RoundingPolicy
-from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import solver_lower_bound
-from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import solver_upper_bound
-from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.certification import certify_interval
+from stratbox.domains.cbr.calculations.sors.publication import PublicationInterval
+from stratbox.domains.cbr.calculations.sors.publication import RoundingPolicy
+from stratbox.domains.cbr.calculations.sors.publication import solver_lower_bound
+from stratbox.domains.cbr.calculations.sors.publication import solver_upper_bound
+from stratbox.domains.cbr.calculations.sors.strict.certification import certify_interval
 
 
 def test_half_open_zero_is_one_publication_bucket() -> None:
@@ -37,8 +37,8 @@ def test_open_endpoints_use_adjacent_floating_point_solver_bounds() -> None:
 def test_unbounded_interval_has_no_publication_bucket() -> None:
     from math import inf
 
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import PublicationInterval
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import RoundingPolicy
+    from stratbox.domains.cbr.calculations.sors.publication import PublicationInterval
+    from stratbox.domains.cbr.calculations.sors.publication import RoundingPolicy
 
     assert RoundingPolicy().single_bucket_interval(
         PublicationInterval(0.0, inf, True, False)
@@ -55,7 +55,7 @@ def test_candidate_buckets_cover_accumulated_rounding_interval() -> None:
 def test_publication_ledger_accepts_rounding_preferred_evidence() -> None:
     from types import SimpleNamespace
 
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.publication.ledger import SorsPublicationLedger
+    from stratbox.domains.cbr.calculations.sors.publication.ledger import SorsPublicationLedger
 
     ledger = SorsPublicationLedger()
     quantity = SimpleNamespace(

@@ -1,28 +1,30 @@
-"""Invoke a temporary operation and a public command through one local session."""
-from stratbox.capabilities.commands import MATERIAL, MATERIAL_INPUT
-from stratbox.capabilities.model import Call, GraphBody, InputRef, OperationDefinition, OutputRef
-from stratbox.composition.requests import InvocationRequest
+"""Discover standard callables and prepare independent source jobs in one service."""
+from argparse import ArgumentParser
+from pathlib import Path
+from stratbox.capabilities.preparation import InvocationRequest
 from stratbox.sdk import StrategyBox
+from stratbox.shared.data.values import Material
 
 
 def main():
-    operation = OperationDefinition("example.prepare_material", GraphBody((
-        Call("read", "material.read", {"material": InputRef("material")}),
-    ), {"material": OutputRef("read")}),
-        inputs={"material": MATERIAL_INPUT}, outputs={"material": MATERIAL})
+    parser=ArgumentParser(description=__doc__)
+    parser.add_argument('file',type=Path)
+    parser.add_argument('--issue',required=True)
+    args=parser.parse_args()
     with StrategyBox() as box:
-        plan = box.prepare(operation, inputs={"material": b"source data"})
-        print(plan.explain()["root_kind"])
-        result = box.run(plan)
-        command = box.run(InvocationRequest("material.read", inputs={"material": b"source data"}))
-        assert result.outcome == command.outcome == "succeeded"
-        assert result.output("material").identity == command.output("value").identity
-        print(result.output("material").identity.sha256)
-    # Returned values retain their own lifetime after the session closes.
-    assert result.output("material").data == b"source data"
-    result.close()
-    command.close()
+        print([entry['id'] for entry in box.discover(kind='scenario').entries])
+        request=InvocationRequest('scenario.series.refresh',
+            {'material':Material(args.file.read_bytes(),'application/json','fns.sme'),'issue':args.issue},target='fns.sme')
+        plan=box.prepare('cascade.sources.refresh',inputs={'members':(request,)})
+        handle=box.submit(plan)
+        result=handle.result(timeout=60)
+        print(handle.snapshot())
+        print(result.outcome,result.diagnostics)
+        if result.outcome=='succeeded':
+            print([len(value.rows) for value in result.output('results')])
+        result.close()
+    return result.outcome!='succeeded'
 
 
-if __name__ == "__main__":
-    main()
+if __name__=='__main__':
+    raise SystemExit(main())

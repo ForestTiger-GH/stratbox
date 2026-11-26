@@ -1,1 +1,0 @@
-"""FNS legal entities tables."""

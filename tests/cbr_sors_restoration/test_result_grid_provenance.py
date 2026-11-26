@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from stratbox.domains.cbr.analytics.corporate_lending.sors.result_grid import _lp_proof_flags
+from stratbox.domains.cbr.calculations.sors.result_grid import _lp_proof_flags
 
 
 def test_deterministic_bucket_is_not_mislabeled_as_lp_certified() -> None:

@@ -5,15 +5,15 @@ from importlib.resources import files
 import pandas as pd
 import pytest
 
-from stratbox.domains.cbr.operations import reporting_forms as forms
-from stratbox.domains.cbr.analytics.reporting_forms.formula import build_formula_long
-from stratbox.domains.cbr.analytics.reporting_forms.model import parse_form_model
-from stratbox.domains.cbr.tables.reporting_forms.layouts.form101 import DEFAULT_SPEC
+from .support import calculate, dataset
+from stratbox.domains.cbr.calculations.reporting_forms.formula import build_formula_long
+from stratbox.domains.cbr.calculations.reporting_forms.model import parse_form_model
+from stratbox.domains.cbr.methods.tables.reporting_forms.layouts.form101 import DEFAULT_SPEC
 
 
 def _model():
     return parse_form_model(
-        files("stratbox.domains.cbr.analytics.reporting_forms.models").joinpath("form101.csv").read_bytes(),
+        files("stratbox.domains.cbr.calculations.reporting_forms.models").joinpath("form101.csv").read_bytes(),
         "101",
     )
 
@@ -40,19 +40,12 @@ def test_balance_formulas_reject_cross_chapter_value_contamination():
     assert order["loans_individuals"] == 1
 
 
-def test_typed_operation_accepts_cross_chapter_account_duplicates():
-    key = forms.FormKey("101", date(2024, 1, 1))
-    snapshot = forms.FormSnapshot(key, {}, _rows(), ())
-    result = forms.build_form_data(
-        forms.BuildFormDataRequest(
-            (snapshot,), banks=(forms.BankSelection("1481", "Example"),)
-        )
-    )
-    assert result.outcome == "succeeded", result.diagnostics
-    row = result.value.long.loc[
-        result.value.long["IndicatorId"].eq("loans_individuals")
-    ]
-    assert str(row.iloc[0]["Значение"]) == "123.4"
+def test_formula_command_accepts_cross_chapter_account_duplicates():
+    source = dataset("101", ("REGN", "NUM_SC", "IITG", "PLAN", "A_P"),
+        tuple(_rows().itertuples(index=False, name=None)), issue_id="2024-01-01")
+    result = calculate("101", source)
+    value = next(row["value"] for row in result.rows if row["metric"] == "loans_individuals")
+    assert str(value) == "123.4"
 
 
 def test_missing_chapter_fails_instead_of_combining_unrelated_accounts():

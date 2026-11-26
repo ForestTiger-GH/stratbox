@@ -10,10 +10,10 @@ from dataclasses import fields, replace
 import pandas as pd
 import pytest
 
-from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.contracts import SorsSourceBundle
-from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsRunConfig
-from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsDeterministicConfig
-from stratbox.domains.cbr.analytics.corporate_lending.sors.operations import _identities
+from stratbox.domains.cbr.calculations.sors.inputs.contracts import SorsSourceBundle
+from stratbox.domains.cbr.calculations.sors.contracts import SorsRunConfig
+from stratbox.domains.cbr.calculations.sors.contracts import SorsDeterministicConfig
+from stratbox.domains.cbr.calculations.sors.assembly import _identities
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 from stratbox.shared.identity import ByteIdentity
 from stratbox.shared.reference.assets import (
@@ -56,8 +56,7 @@ def test_classifier_use_is_qualified_by_family_role_bytes_and_snapshot():
     )
     assert used.role == "data"
     assert used.reference_id == "reference.okved2"
-    assert used.edition_id
-    assert used.snapshot_identity == receipt.version
+    assert used.snapshot_identity == receipt.content_basis
     assert used.identity == receipt.identity
     with pytest.raises(ReferenceError, match="exactly one"):
         qualified_reference_use(
@@ -75,7 +74,7 @@ def test_classifier_use_is_qualified_by_family_role_bytes_and_snapshot():
         )
     with pytest.raises(ReferenceError, match="Unqualified"):
         qualified_reference_use(
-            [replace(receipt, version=ByteIdentity("0" * 64, receipt.version.size))],
+            [replace(receipt, content_basis=ByteIdentity("0" * 64, receipt.content_basis.size))],
             package="stratbox.shared.reference.okved2", role="data"
         )
 
@@ -117,14 +116,13 @@ def test_sors_dataset_identity_ignores_classifier_policy_but_model_does_not():
 
 
 def test_unsealed_prebuilt_sors_bundle_is_rejected_before_solver():
-    from stratbox.core.execution import OperationFailure
-    from stratbox.domains.cbr.operations.corporate_lending.sors.api import _use_grids
-    with pytest.raises(OperationFailure, match="input.snapshot_required"):
-        _use_grids(None, _bundle((_classifier(),)), "sors_source_bundle")
+    from stratbox.domains.cbr.calculations.sors.admission import validate_bundle_context
+    with pytest.raises(ValueError, match="source_parameters_required"):
+        validate_bundle_context(_bundle((_classifier(),)))
 
 
-def test_strict_identity_fingerprints_classifier_byte_and_edition_changes(monkeypatch):
-    import stratbox.domains.cbr.analytics.corporate_lending.sors.operations as operations
+def test_strict_identity_fingerprints_classifier_bytes_and_snapshot(monkeypatch):
+    import stratbox.domains.cbr.calculations.sors.assembly as operations
     from stratbox.shared.reference.assets import qualified_reference_use
     receipt = _classifier()
     used = qualified_reference_use(
@@ -140,7 +138,7 @@ def test_strict_identity_fingerprints_classifier_byte_and_edition_changes(monkey
     assert changed_bytes[1] != baseline[1]
     assert changed_bytes[2] != baseline[2]
     monkeypatch.setattr(operations, "qualified_reference_use", lambda *args, **kwargs:
-                        replace(used, snapshot_identity=ByteIdentity.of(b"alternate curated edition")))
+                        replace(used, snapshot_identity=ByteIdentity.of(b"alternate curated reference")))
     changed_policy = operations._identities(source, config)
     assert changed_policy[0] == baseline[0]
     assert changed_policy[1] != baseline[1]

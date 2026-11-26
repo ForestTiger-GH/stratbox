@@ -4,19 +4,18 @@ import os
 from pathlib import Path
 
 import pytest
+import sys
+from support import interpreted_sources, execute_model_methods
+from stratbox.domains.cbr.calculations.sors.inputs.loader import parse_source_inputs
 
-from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.domains.cbr.operations.corporate_lending.sors.definitions import PrepareSorsOriginalsRequest
-from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsRunConfig
-from stratbox.domains.cbr.operations.corporate_lending.sors.api import prepare_from_originals
-from stratbox.domains.cbr.operations.corporate_lending.sors.api import read_source_files
-from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.contracts import SorsSourceFiles
-from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import RoundingPolicy
-from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import SorsPublicationLedger
-from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import build_publication_graph
-from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import run_publication_fixed_point
-from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.interval_closure import SorsIntervalClosureState
-from stratbox.domains.cbr.analytics.corporate_lending.sors.strict.quantities import build_quantity_graph
+from stratbox.domains.cbr.calculations.sors.contracts import SorsRunConfig
+from types import SimpleNamespace
+from stratbox.domains.cbr.calculations.sors.publication import RoundingPolicy
+from stratbox.domains.cbr.calculations.sors.publication import SorsPublicationLedger
+from stratbox.domains.cbr.calculations.sors.publication import build_publication_graph
+from stratbox.domains.cbr.calculations.sors.publication import run_publication_fixed_point
+from stratbox.domains.cbr.calculations.sors.strict.interval_closure import SorsIntervalClosureState
+from stratbox.domains.cbr.calculations.sors.strict.quantities import build_quantity_graph
 
 
 def _real_dir() -> Path | None:
@@ -28,7 +27,7 @@ def _real_dir() -> Path | None:
 def test_real_20260701_sme_constraints_restore_corporate_udmurtia_47_overdue_fx() -> None:
     root = _real_dir()
     assert root is not None
-    files = SorsSourceFiles(
+    files = SimpleNamespace(
         regional_traditional=root / '01_05_A_Debt_corp_20260701.xlsx',
         national_okved2=root / '01_02_C_Debt_corp_by_activity.xlsx',
         federal_district_okved2=root / '01_03_C_Loans_corp_by_fd_activity_20260701.xlsx',
@@ -40,11 +39,7 @@ def test_real_20260701_sme_constraints_restore_corporate_udmurtia_47_overdue_fx(
         sme_regional_totals=root / '01_13_F_Debt_sme_subj.xlsx',
         sme_ie_regional_totals=root / '01_13_I_Debt_sme_subj.xlsx',
     )
-    inputs = read_source_files(files, store=LocalFileStore())
-    assert inputs.outcome == "succeeded", inputs.diagnostics
-    loaded = prepare_from_originals(PrepareSorsOriginalsRequest(inputs.value, SorsRunConfig(as_of_date="2026-07-01")))
-    assert loaded.outcome == "succeeded", loaded.diagnostics
-    bundle = loaded.value
+    bundle = parse_source_inputs(interpreted_sources(files), "2026-07-01")
     assert len(bundle.source_grid) == 18266
     assert set(bundle.source_grid['portfolio_scope']) == {
         'CORPORATE_TOTAL', 'SME', 'SME_IE'

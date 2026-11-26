@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 
-from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.closure import close_crosswalk_bounds
-from stratbox.domains.cbr.analytics.corporate_lending.sors.linear.contracts import CsrMatrixData
-from stratbox.domains.cbr.analytics.corporate_lending.sors.linear.contracts import SorsLinearProblem
+from stratbox.domains.cbr.calculations.sors.crosswalk.closure import close_crosswalk_bounds
+from stratbox.domains.cbr.calculations.sors.linear.contracts import CsrMatrixData
+from stratbox.domains.cbr.calculations.sors.linear.contracts import SorsLinearProblem
 
 
 def _problem() -> SorsLinearProblem:

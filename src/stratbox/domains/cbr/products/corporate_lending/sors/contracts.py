@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from stratbox.domains.cbr.analytics.corporate_lending.sors.schema import TARGET_METRICS
+from stratbox.domains.cbr.calculations.sors.schema import TARGET_METRICS
 
 
 @dataclass(frozen=True, slots=True)

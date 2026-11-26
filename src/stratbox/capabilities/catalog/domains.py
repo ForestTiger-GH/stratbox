@@ -27,13 +27,15 @@ class DomainCatalog:
                     if key in seen: raise ValueError('catalog.duplicate_target:' + key)
                     seen.add(key)
 
-    def get(self, identifier):
+    def get(self, identifier, *, kind=None):
         matches = []
         for domain in self.domains.values():
-            for group in (domain.series, domain.calculations, domain.products):
+            groups={'series':domain.series, 'calculation':domain.calculations, 'product':domain.products}
+            for name, group in groups.items():
+                if kind is not None and kind != name: continue
                 if identifier in group: matches.append(group[identifier])
             publications = domain.common.get('publications', {})
-            if isinstance(publications, Mapping) and identifier in publications and not matches:
+            if isinstance(publications, Mapping) and identifier in publications and (kind=='feed' or kind is None and not matches):
                 matches.append(publications[identifier])
         if len(matches) != 1: raise ValueError('catalog.target_' + ('unknown' if not matches else 'ambiguous') + ':' + identifier)
         return matches[0]

@@ -3,11 +3,11 @@ from __future__ import annotations
 from dataclasses import asdict
 import re
 import pandas as pd
-from stratbox.domains.cbr.analytics.corporate_lending.sors.results import SorsRestorationResult, SorsCrosswalkResult
-from .contracts import SorsWorkbookRequest
-from .results import SorsViewPack
-from .views import build_sors_pivot
-from stratbox.domains.cbr.analytics.corporate_lending.sors.identity import source_uses
+from stratbox.domains.cbr.calculations.sors.results import SorsRestorationResult, SorsCrosswalkResult
+from stratbox.domains.cbr.products.corporate_lending.sors.contracts import SorsWorkbookRequest
+from stratbox.domains.cbr.products.corporate_lending.sors.results import SorsViewPack
+from stratbox.domains.cbr.products.corporate_lending.sors.views import build_sors_pivot
+from stratbox.domains.cbr.calculations.sors.identity import source_uses
 
 _PRIMARY_COLUMNS = (
     'as_of_date', 'region_code', 'class_code', 'metric',
@@ -18,7 +18,7 @@ _PRIMARY_COLUMNS = (
     'identification_status', 'derivation_method', 'is_primary_fact',
     'is_reconstructed', 'bounds_certified', 'value_identified',
     'is_final_accepted', 'is_estimate', 'is_benchmark_estimate',
-    'benchmark_value', 'evidence_layer', 'evidence_profile', 'mapping_version',
+    'benchmark_value', 'evidence_layer', 'evidence_profile', 'mapping_fingerprint',
     'scenario_ids', 'scenario_coverage_complete', 'source_observation_ids',
     'supporting_partition_ids', 'supporting_relation_ids', 'supporting_fact_ids', 'proof_ids', 'is_zero_at_published_precision', 'is_exact_zero',
     'is_lp_certified', 'lp_lower_certified', 'lp_upper_certified',

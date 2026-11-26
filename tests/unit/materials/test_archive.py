@@ -1,47 +1,64 @@
 from io import BytesIO
-from zipfile import ZipFile
+from zipfile import ZipFile, ZIP_DEFLATED, ZipInfo
 
 import pytest
-
-from stratbox.core.execution import ExecutionContext
-from stratbox.core.operations.materials.archive import archive_materials
-from stratbox.core.operations.materials.archive_definitions import ArchiveMember, ArchiveRequest
-from stratbox.core.operations.materials.definitions import ReadLocationRequest
-from stratbox.core.operations.materials.operations import read_location
-from stratbox.core.operations.source.original_definitions import OriginalDestination
-from stratbox.core.runtime.capabilities import CapabilityRequirement, ProviderBinding, ProviderSelection
-from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.shared.evidence import SourcePayload
+from stratbox.sdk import StrategyBox
+from stratbox.shared.data.values import Material
 
 
-def test_archive_can_collect_members_from_distinct_named_stores_and_supplied_bytes(tmp_path):
-    a, b, out = (LocalFileStore(str(tmp_path / name)) for name in ("a", "b", "out"))
-    a.write_bytes("report", b"%PDF-1.7\nexact source")
-    b.write_bytes("report", b"opaque workbook")
-    left = read_location(ReadLocationRequest("report", "application/pdf"), store=a).value.material
-    right = read_location(ReadLocationRequest("report"), store=b).value.material
-    context = ExecutionContext(bindings=tuple(
-        ProviderBinding(name, CapabilityRequirement(role), "ready", store)
-        for name, role, store in (("a", "filestore", a), ("b", "filestore", b), ("out", "output_filestore", out))))
-    result = archive_materials(ArchiveRequest((
-        ArchiveMember("source.pdf", left, ProviderSelection("a")),
-        ArchiveMember("report.xlsx", right, ProviderSelection("b")),
-        ArchiveMember("description.txt", SourcePayload(b"source selection", "text/plain")),
-    ), OriginalDestination("bundle.zip")), output_selection=ProviderSelection("out"), context=context)
-    assert result.outcome == "succeeded", result.diagnostics
-    with ZipFile(BytesIO(out.read_bytes("bundle.zip"))) as archive:
-        assert archive.read("source.pdf") == a.read_bytes("report")
-        assert archive.read("report.xlsx") == b.read_bytes("report")
-        assert archive.read("description.txt") == b"source selection"
-    assert result.value.material.identity not in {left.identity, right.identity}
-    assert all(receipt.container == result.value.material.identity and receipt.member == name
-               for name, receipt in result.value.members)
-    assert len(result.used_inputs) == 3
+def checked(result, port):
+    assert result.outcome == 'succeeded', result.diagnostics
+    return result.output(port)
 
 
-@pytest.mark.parametrize("names", [("../unsafe",), ("same", "SAME")])
-def test_unsafe_or_colliding_archive_members_do_not_write(tmp_path, names):
-    out = LocalFileStore(str(tmp_path))
-    result = archive_materials(ArchiveRequest(tuple(ArchiveMember(name, SourcePayload(b"data")) for name in names),
-                                             OriginalDestination("archive.zip")), output_store=out)
-    assert result.outcome == "failed" and not result.effects and not out.exists("archive.zip")
+def archive_bytes(names):
+    stream = BytesIO()
+    with ZipFile(stream, 'w', ZIP_DEFLATED) as archive:
+        for name in names:
+            archive.writestr(name, b'exact source')
+    return stream.getvalue()
+
+
+def test_archive_composes_supplied_materials_and_retains_exact_member_bytes():
+    members = (Material(b'%PDF-1.7\nsource', 'application/pdf', metadata={'member':'sources/source.pdf'}),
+               Material(b'exact workbook', metadata={'member':'workbook.xlsx'}),
+               Material(b'selected scope', 'text/plain', metadata={'member':'scope.txt'}))
+    with StrategyBox() as box:
+        packed = checked(box.invoke('command.archive.pack', inputs={'members':members}), 'material')
+        unpacked = checked(box.invoke('command.archive.unpack', inputs={'material':packed}), 'members')
+    assert tuple((m.metadata['member'],m.data) for m in unpacked) == tuple((m.metadata['member'],m.data) for m in members)
+    assert all(m.metadata['parent'] == packed.identity.sha256 for m in unpacked)
+    assert packed.identity not in {member.identity for member in members}
+    assert set(packed.lineage) == {member.identity for member in members}
+
+
+@pytest.mark.parametrize('names', [('../unsafe',),('/absolute',),('C:/drive',),('same','SAME'),
+    ('file','file/child'),('a/b','a/B'),('dir\\file',),('dir/../file',),('dir//file',)])
+@pytest.mark.parametrize('mode', ['pack','unpack'])
+def test_unsafe_aliases_and_file_parent_conflicts_are_rejected(names, mode):
+    with StrategyBox() as box:
+        if mode == 'pack':
+            inputs = {'members':tuple(Material(b'data',metadata={'member':name}) for name in names)}
+            result = box.invoke('command.archive.pack',inputs=inputs)
+        else:
+            result = box.invoke('command.archive.unpack',inputs={'material':Material(archive_bytes(names))})
+        assert result.outcome != 'succeeded', (names,result.diagnostics)
+        assert not result.effects
+
+
+def test_unpack_rejects_symbolic_links():
+    stream = BytesIO()
+    with ZipFile(stream,'w') as archive:
+        info = ZipInfo('link')
+        info.create_system = 3
+        info.external_attr = 0o120777 << 16
+        archive.writestr(info,'target')
+    with StrategyBox() as box:
+        result = box.invoke('command.archive.unpack',inputs={'material':Material(stream.getvalue())})
+        assert result.outcome != 'succeeded'
+
+
+def test_packing_null_member_name_is_rejected_before_zip_truncates_it():
+    with StrategyBox() as box:
+        result=box.invoke('command.archive.pack',inputs={'members':(Material(b'x',metadata={'member':'a\x00b'}),)})
+    assert result.outcome!='succeeded'

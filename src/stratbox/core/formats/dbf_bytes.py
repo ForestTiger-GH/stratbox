@@ -3,7 +3,7 @@
 from contextlib import contextmanager
 from struct import unpack_from
 
-from stratbox.core.storage.filestore import workdir
+from stratbox.core.storage.temporary import workdir
 from stratbox.core.runtime.dependencies import require_extra
 
 

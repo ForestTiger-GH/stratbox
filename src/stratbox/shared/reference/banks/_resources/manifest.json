@@ -1,60 +1,53 @@
 {
-  "manifest_schema_version": 1,
   "reference_id": "reference.banks",
-  "active_edition": "bundled-original-2026-11",
-  "editions": [
+  "publisher": null,
+  "published_at": null,
+  "effective_from": null,
+  "assets": [
     {
-      "edition_id": "bundled-original-2026-11",
+      "role": "official_xlsx",
+      "path": "official/RC_F02_02_2026_T02_02_2026.xlsx",
+      "sha256": "8af8c25cd4c809a28c415bd9a531cc0ef0b90e534124a17bbef0c8463ac657f6",
+      "size": 142625,
+      "media_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "required": true,
+      "publisher": "Bank of Russia",
+      "origin_kind": "published_source",
+      "curator": null
+    },
+    {
+      "role": "aliases",
+      "path": "aliases/cbr_replacements.csv",
+      "sha256": "25e0e6114e56d5f8b485442d930f07e281e5002309d928e33f9dcf789026a13f",
+      "size": 622,
+      "media_type": "text/csv",
+      "required": true,
       "publisher": null,
-      "published_at": null,
-      "effective_from": null,
-      "assets": [
-        {
-          "role": "official_xlsx",
-          "path": "official/RC_F02_02_2026_T02_02_2026.xlsx",
-          "sha256": "8af8c25cd4c809a28c415bd9a531cc0ef0b90e534124a17bbef0c8463ac657f6",
-          "size": 142625,
-          "media_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-          "required": true,
-          "publisher": "Bank of Russia",
-          "origin_kind": "published_source",
-          "curator": null
-        },
-        {
-          "role": "aliases",
-          "path": "aliases/cbr_replacements.csv",
-          "sha256": "25e0e6114e56d5f8b485442d930f07e281e5002309d928e33f9dcf789026a13f",
-          "size": 622,
-          "media_type": "text/csv",
-          "required": true,
-          "publisher": null,
-          "origin_kind": "curated_policy",
-          "curator": "Strategy Box"
-        },
-        {
-          "role": "default_selection",
-          "path": "selections/cbr_standart.csv",
-          "sha256": "dbd4ed1be2ff03f8e2eaa44a06a4e31473941861b93e38860259cbf1ee41bb50",
-          "size": 1382,
-          "media_type": "text/csv",
-          "required": true,
-          "publisher": null,
-          "origin_kind": "curated_policy",
-          "curator": "Strategy Box"
-        },
-        {
-          "role": "legacy_selection",
-          "path": "selections/cbr_legacy.csv",
-          "sha256": "3e4fb049f49370367872840a113750a2cc97c64149d46d6d3320a0cc37f94309",
-          "size": 330,
-          "media_type": "text/csv",
-          "required": true,
-          "publisher": null,
-          "origin_kind": "curated_policy",
-          "curator": "Strategy Box"
-        }
-      ],
+      "origin_kind": "curated_policy",
+      "curator": "Strategy Box"
+    },
+    {
+      "role": "default_selection",
+      "path": "selections/cbr_standart.csv",
+      "sha256": "dbd4ed1be2ff03f8e2eaa44a06a4e31473941861b93e38860259cbf1ee41bb50",
+      "size": 1382,
+      "media_type": "text/csv",
+      "required": true,
+      "publisher": null,
+      "origin_kind": "curated_policy",
+      "curator": "Strategy Box"
+    },
+    {
+      "role": "legacy_selection",
+      "path": "selections/cbr_legacy.csv",
+      "sha256": "3e4fb049f49370367872840a113750a2cc97c64149d46d6d3320a0cc37f94309",
+      "size": 330,
+      "media_type": "text/csv",
+      "required": true,
+      "publisher": null,
+      "origin_kind": "curated_policy",
       "curator": "Strategy Box"
     }
-  ]
+  ],
+  "curator": "Strategy Box"
 }

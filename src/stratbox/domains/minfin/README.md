@@ -1,36 +1,23 @@
-# Minfin
+# Ministry of Finance statistics
 
-The domain owns four publisher families and thirteen logical series: ten budget
-and NWF workbook series, plus three historical NWF document series. Canonical
-source and profile resources live under `stratbox.domains.registry`;
-typed Python profiles own source
-recognition, table interpretation and reviewed calculations.
+`domain.py` explicitly declares thirteen fiscal series. `series/` contains their
+standard command specifications; `common/` owns publication access, asset
+recognition, periods and row semantics; `methods/` interprets supplied physical
+evidence. Numerical treatments and product definitions have separate owners in
+`calculations/` and `products/`.
 
-| Owner | Responsibility |
-| --- | --- |
-| [publications](publications/) | Publisher indexes, acquisition, release evidence and checkpoints |
-| [documents](documents/) | Ordered PDF/DOCX blocks, publication context and durable replay |
-| [tables](tables/) | Exact source cells, source-local flakes, validation and codecs |
-| [integration](integration/) | Explicit row semantics and common qualified observations |
-| [analytics](analytics/) | Reviewed headlines and independently retained calculation results |
-| [products](products/) | Prepared selections, replay and portable rendering |
-| [operations](operations/) | Runtime admission, evidence, source cards and one operation owner |
-| [Capability contribution](capabilities.py) | Exact command graphs, source recipes and processing groups |
+Monthly and quarterly budget values retain cumulative YTD intervals. Fund rows
+use individual monetary units and stock/flow meaning. Reporting periods come
+from source headers, separately from attachment publication and capture dates.
+The reviewed workbook scope covers budget revenue, expenditure and balance,
+and fund total/other-asset stocks. Other physical rows remain available with
+explicit interpretation-coverage findings.
 
-Monthly and quarterly budget values retain cumulative YTD periods. NWF units and
-basis are row-specific. Publication dates remain release evidence. Integration
-uses reviewed headline bindings or explicit caller-supplied row bindings;
-headline admission verifies the monetary unit and scale. Source, integrated,
-calculated and prepared values have independent persistence/replay boundaries.
+Fund documents require reviewed field coordinates, anchors, units and dates.
+The three document series declare this scientific prerequisite explicitly;
+physical DOCX decoding alone does not establish economic interpretation. Legacy
+DOC conversion is a separate standard action with retained original evidence.
 
-- [Complete data route and contracts](../../../../docs/current-how/minfin-data-route.md)
-- [Canonical fiscal capabilities](../../../../docs/current-how/minfin-capability-migration.md)
-- [Executable offline route](../../../../examples/minfin_portable_route.py)
-- [Source and operation metadata](operations/source_catalog.py)
-- [Publication and table profiles](operations/bindings.py)
-
-Storage, scheduling, provider selection and delivery are consumer-owned. The
-same typed snapshots work with any admitted logical dataset store. Legacy DOC
-conversion uses an explicit versioned provider and retains original/converted
-identities. Ordered PDF/DOCX extraction retains explicit coverage qualifications;
-economic document fields require a reviewed source-qualified profile.
+HTTP, decoding, storage, execution, journals and notification delivery use the
+common core. This domain owns no operation builder, private executor or hidden
+save-and-notify pipeline.

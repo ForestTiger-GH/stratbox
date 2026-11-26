@@ -57,6 +57,7 @@ class MapCall:
     completion: str = 'all_selected'
     output_port: str = 'dataset'
     required: bool = True
+    condition: Condition | None = None
 
     def __post_init__(self):
         if self.max_items < 0 or self.window < 1 or self.completion not in {'all_selected', 'eligible_subset'}:
@@ -75,6 +76,7 @@ class RepeatUntil:
     max_passes: int = 100
     required: bool = True
     inputs: Mapping[str, object] = field(default_factory=dict)
+    condition: Condition | None = None
 
     def __post_init__(self):
         if self.max_passes < 1: raise ValueError('graph.invalid_repeat_limit')
@@ -84,6 +86,17 @@ class CollectCall:
     step_id: str
     items: tuple[object, ...]
     required: bool = True
+    condition: Condition | None = None
+    optional_items: frozenset[int] = frozenset()
+    min_items: int = 0
+
+    def __post_init__(self):
+        object.__setattr__(self, 'items', tuple(self.items))
+        object.__setattr__(self, 'optional_items', frozenset(self.optional_items))
+        if type(self.min_items) is not int or not 0<=self.min_items<=len(self.items):
+            raise ValueError('graph.invalid_collection_minimum')
+        if any(type(index) is not int or not 0<=index<len(self.items) for index in self.optional_items):
+            raise ValueError('graph.invalid_optional_member')
 
 @dataclass(frozen=True, slots=True)
 class GraphBody:
@@ -100,3 +113,17 @@ class GraphBody:
         if len(names) != len(set(names)): raise ValueError('graph.duplicate_step')
         for roots in (self.required_checks, self.required_effects, self.required_completions):
             if not set(roots) <= set(names): raise ValueError('graph.unknown_obligation')
+
+
+@dataclass(frozen=True, slots=True)
+class DispatchCall:
+    step_id: str
+    selector: object
+    alternatives: Mapping[str, str]
+    inputs: Mapping[str, object] = field(default_factory=dict)
+    parameters: Mapping[str, object] = field(default_factory=dict)
+    target: object = field(default_factory=TargetRef)
+    input_name: str = 'material'
+    output_port: str = 'dataset'
+    required: bool = True
+    condition: Condition | None = None

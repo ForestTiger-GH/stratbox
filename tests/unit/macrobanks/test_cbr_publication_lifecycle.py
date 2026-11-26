@@ -1,39 +1,20 @@
-"""Publication selection, observed updates and exact material handoffs."""
+"""Publication recognition and exact material effects retain separate evidence."""
 from dataclasses import replace
-from datetime import datetime, timezone
 from io import BytesIO
 from zipfile import ZipFile
 
+import pytest
 from openpyxl import Workbook
 
-from stratbox.core.execution.handoff import bind_request, project_output
-from stratbox.core.network import HttpResponse
-from stratbox.core.operations.materials.archive import archive_materials
-from stratbox.core.operations.materials.archive_definitions import ARCHIVE
-from stratbox.core.operations.source.original_definitions import OriginalDestination
+from stratbox.capabilities.model.targets import SeriesTarget
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.domains.cbr.operations.collection.materials import (
-    CollectMaterial, CollectMaterialsRequest, collect_materials,
-)
-from stratbox.domains.cbr.operations.publications import (
-    AcquirePublicationRequest, AssessUpdatesRequest, DiscoverRequest, IdentifyRequest,
-    SelectPublicationRequest, acquire, assess_updates, discover, identify, select,
-)
-from stratbox.domains.cbr.operations.publications.definitions import ACQUIRE, SELECT
-from stratbox.domains.cbr.publications.contracts import (
-    DestinationObservation, ProcessingCheckpoint,
-)
-from stratbox.shared.evidence import SourcePayload
-from stratbox.shared.identity import ByteIdentity
-from stratbox.shared.material_collections import decode_collection
+from stratbox.domains.cbr.domain import DOMAIN
+from stratbox.sdk import StrategyBox
+from stratbox.shared.data.values import FetchEvidence, Material, SourceClaim
+
 
 SERIES = "cbr.funding.funds_all"
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-
-
-def checked(result):
-    assert result.outcome == "succeeded", result.diagnostics
-    return result.value
 
 
 def workbook():
@@ -41,105 +22,115 @@ def workbook():
     book.active.append(["Published data", 1])
     stream = BytesIO()
     book.save(stream)
+    book.close()
     return stream.getvalue()
 
 
-class Transport:
+def required(result, output):
+    assert result.outcome == "succeeded", result.diagnostics
+    return result.output(output)
+
+
+class HTTP:
     def __init__(self, data):
         self.data, self.calls = data, []
 
-    def exchange(self, request, *, cancelled=None):
+    def fetch(self, request):
         self.calls.append(request)
-        return HttpResponse(200, self.data, {"content-type": XLSX},
-            datetime(2026, 11, 1, tzinfo=timezone.utc), "https://www.cbr.ru")
+        return Material(self.data, XLSX, request.source_id, metadata=request.metadata)
 
 
-def original(data=None, issue="2026-11-01", series=SERIES):
-    return checked(identify(IdentifyRequest(series, issue, SourcePayload(data or workbook(), XLSX), "xlsx")))
+def test_selected_fixed_asset_acquisition_retains_exact_request_and_content_evidence():
+    provider = HTTP(workbook())
+    with StrategyBox(providers={"http": provider}) as box:
+        target = SeriesTarget(SERIES)
+        listing = required(box.invoke("command.publication.scan",
+            inputs={"index": Material(b"<html>index</html>", "text/html", SERIES + ".index")}, target=target), "listing")
+        selection = required(box.invoke("command.issue.select", inputs={"listing": listing}, target=target), "selection")
+        asset, = selection.entries
+        acquired = box.invoke("operation.material.acquire", inputs={"locator": asset,
+            "claim": SourceClaim(SERIES, "2026-11-01")}, target=target)
+        identified = required(acquired, "material")
+        assert len(provider.calls) == 1
+        assert identified.material.data == provider.data
+        assert identified.claim.issue_id == "2026-11-01"
+        assert identified.identity == identified.material.identity
+        assert provider.calls[0].url == asset.locator
+        evidence, = (item for item in identified.material.lineage if isinstance(item, FetchEvidence))
+        assert evidence.material_identity == identified.identity and evidence.status_code == 200
+        assert evidence.request_identity and evidence.observation_id
 
 
-def test_typed_discovery_selection_acquisition_retains_exact_receipt():
-    inventory = discover(DiscoverRequest(SERIES))
-    selected = bind_request(SELECT, {"inventory": project_output(inventory, "inventory")}).invoke(select)
-    transport = Transport(workbook())
-    missing = bind_request(ACQUIRE, {"asset": project_output(selected, "asset")}).invoke(acquire, transport=transport)
-    assert missing.diagnostics[0].code == "cbr.publication.issue_context_required"
-    assert not transport.calls
-    received = bind_request(ACQUIRE, {"asset": project_output(selected, "asset")},
-        parameters={"issue_id": "2026-11-01"}).invoke(acquire, transport=transport)
-    value = checked(received)
-    assert len(transport.calls) == 1
-    assert value.payload.data == transport.data
-    assert value.acquisition.identity == value.payload.identity
-    assert value.acquisition.origin_assurance == "provider_reported"
-    assert value.lineage[0] in received.used_inputs
-    assert project_output(received, "artifact").value == value.artifact
-    assert value.artifact.representation.data == transport.data
+def test_selected_asset_context_cannot_be_replaced_by_another_series():
+    from stratbox.shared.data.values import PublicationAsset
+    source = DOMAIN.series[SERIES].publication
+    asset = PublicationAsset("cbr.funding.funds_clients", "2026-11-01", "main", source.locator, "xlsx")
+    spec = DOMAIN.series[SERIES].commands["command.request.prepare"]
+    from types import SimpleNamespace
+    with pytest.raises(ValueError, match="source|context|asset"):
+        spec.method.resolve()({"locator": asset}, spec.settings,
+            SimpleNamespace(parameters={}, checkpoint=lambda: None))
 
 
-def test_alternative_publication_routes_require_explicit_choice():
-    inventory = checked(discover(DiscoverRequest(SERIES)))
-    asset = replace(inventory.assets[0], alternative_urls=("https://www.cbr.ru/alternate.xlsx",))
-    inventory = replace(inventory, assets=(asset,))
-    failed = select(SelectPublicationRequest(inventory))
-    assert failed.diagnostics[0].code == "cbr.selection.publication_ambiguous"
-    chosen = checked(select(SelectPublicationRequest(inventory, url=asset.alternative_urls[0])))
-    assert chosen.url == asset.alternative_urls[0] and not chosen.alternative_urls
-    missing = select(SelectPublicationRequest(inventory, url="https://www.cbr.ru/absent.xlsx"))
-    assert missing.diagnostics[0].code == "cbr.selection.publication_missing"
+def test_same_bytes_and_different_processing_parameters_remain_distinct_evidence():
+    original = Material(workbook(), XLSX, SERIES)
+    with StrategyBox() as box:
+        same = required(box.invoke("command.source.assess",
+            inputs={"evidence": original, "baseline": original}, target=SeriesTarget(SERIES)), "assessment")
+        assert same.status == "unchanged" and same.basis == "exact_material_bytes"
+        first = box.prepare("command.workbook.decode", inputs={"material": original},
+            target=SeriesTarget(SERIES), parameters={"issue_id": "2026-11-01"})
+        changed = box.prepare("command.workbook.decode", inputs={"material": original},
+            target=SeriesTarget(SERIES), parameters={"issue_id": "2026-11-02"})
+        assert first.fingerprint != changed.fingerprint
+        assert required(box.invoke("command.source.assess",
+            inputs={"evidence": replace(original, data=original.data + b"revision"), "baseline": original},
+            target=SeriesTarget(SERIES)), "assessment").status == "changed"
 
 
-def test_updates_keep_source_method_and_destination_states_independent():
-    first = original()
-    method, result = ByteIdentity.of(b"mapping-1"), ByteIdentity.of(b"dataset-1")
-    checkpoint = ProcessingCheckpoint(first.asset, first.payload.identity, method, result)
-    destinations = (DestinationObservation("left", result), DestinationObservation("right"))
-    request = AssessUpdatesRequest(first, method, checkpoint, "processed", destinations)
-    same = checked(assess_updates(request))
-    assert same.source_state == "unchanged" and not same.processing_required
-    assert same.destination_actions == (("left", "confirmed"), ("right", "write_required"))
-    changed_method = checked(assess_updates(replace(request, processing_signature=ByteIdentity.of(b"mapping-2"))))
-    assert changed_method.source_state == "unchanged" and changed_method.processing_required
-    assert changed_method.destination_actions == (("left", "await_processing"), ("right", "await_processing"))
-    assert changed_method.checkpoint_candidate.result_identity is None
-    recapture = original(first.payload.data, issue="2026-11-02")
-    capture = checked(assess_updates(replace(request, original=recapture)))
-    assert capture.source_state == "new_capture_same_bytes" and not capture.processing_required
-    revised = replace(first, payload=SourcePayload(first.payload.data + b"revision", XLSX))
-    revision = checked(assess_updates(replace(request, original=revised)))
-    assert revision.source_state == "revised_bytes" and revision.processing_required
-    unchanged_original = checked(assess_updates(replace(request, target="original", destinations=(
-        DestinationObservation("source", first.payload.identity),), processing_signature=ByteIdentity.of(b"mapping-2"))))
-    assert unchanged_original.processing_required
-    assert unchanged_original.destination_actions == (("source", "confirmed"),)
+def test_same_material_bytes_keep_distinct_dated_issue_claims():
+    source = "cbr.project_finance.escrow"
+    original = Material(workbook(), XLSX, source)
+    with StrategyBox() as box:
+        claims = []
+        for issue in ("2026-10-01", "2026-11-01"):
+            claims.append(required(box.invoke("command.material.identify",
+                inputs={"material": original, "claim": SourceClaim(source, issue)},
+                target=SeriesTarget(source)), "material"))
+        assert claims[0].identity == claims[1].identity
+        assert claims[0].claim.issue_id != claims[1].claim.issue_id
+        first = box.prepare("operation.series.extract_workbook", inputs={"material": claims[0]},
+            parameters={"issue_id": claims[0].claim.issue_id}, target=SeriesTarget(source))
+        second = box.prepare("operation.series.extract_workbook", inputs={"material": claims[1]},
+            parameters={"issue_id": claims[1].claim.issue_id}, target=SeriesTarget(source))
+        assert first.fingerprint != second.fingerprint
 
 
-def test_dated_issue_context_requires_processing_even_when_bytes_agree():
-    first = original(series="cbr.project_finance.escrow", issue="2026-10-01")
-    method, result = ByteIdentity.of(b"method"), ByteIdentity.of(b"dataset")
-    checkpoint = ProcessingCheckpoint(first.asset, first.payload.identity, method, result)
-    next_issue = original(first.payload.data, series=first.asset.series_id, issue="2026-11-01")
-    plan = checked(assess_updates(AssessUpdatesRequest(next_issue, method, checkpoint)))
-    assert plan.source_state == "new_issue" and plan.processing_required
+def test_index_comparison_never_certifies_unchanged_asset_material():
+    from types import SimpleNamespace
+    spec = DOMAIN.series[SERIES].commands["command.publication.scan"]
+    context = SimpleNamespace(parameters={}, checkpoint=lambda: None)
+    listing = spec.method.resolve()({"index": Material(b"index", "text/html", SERIES)}, spec.settings, context)["listing"]
+    assess = DOMAIN.series[SERIES].commands["command.source.assess"]
+    result = assess.method.resolve()({"evidence": listing, "baseline": listing}, assess.settings, context)["assessment"]
+    assert result.status in {"unknown", "indeterminate"}
+    assert result.basis != "exact_material_bytes"
 
 
-def test_partial_collection_handoff_preserves_complete_selection_manifest(tmp_path):
-    data = workbook()
-    result = collect_materials(CollectMaterialsRequest((
-        CollectMaterial("good", SERIES, "2026-11-01", "xlsx", payload=SourcePayload(data, XLSX)),
-        CollectMaterial("bad", SERIES, "2026-11-02", "xlsx", payload=SourcePayload(b"broken")),
-        CollectMaterial("later", SERIES, "2026-11-03", "xlsx", payload=SourcePayload(data, XLSX)),
-    ), continue_on_error=False))
-    assert result.outcome == "partial", result.diagnostics
-    bound = bind_request(ARCHIVE, {
-        "members": project_output(result, "archive_members"),
-        "manifest": project_output(result, "manifest"),
-    }, parameters={"destination": OriginalDestination("retained.zip")})
-    store = LocalFileStore(str(tmp_path))
-    archived = checked(bound.invoke(archive_materials, output_store=store))
-    assert archived.manifest == result.value.manifest
-    with ZipFile(BytesIO(store.read_bytes("retained.zip"))) as value:
-        manifest = decode_collection(value.read("manifest.json"))
-        assert [item.status for item in manifest.dispositions] == ["completed", "failed", "not_attempted"]
-        assert value.read(manifest.members[0].name) == data
-        assert len(value.namelist()) == 2
+def test_selected_original_archive_uses_generic_pack_and_immutable_commit(tmp_path):
+    first = Material(workbook(), XLSX, SERIES, metadata={"member": "funds.xlsx"})
+    from stratbox.shared.data.values import canonical_tree
+    import json
+    dispositions = {"good": "completed", "bad": "failed", "later": "not_attempted"}
+    manifest = Material(json.dumps(canonical_tree(dispositions)).encode(), "application/json",
+        metadata={"member": "selection_manifest.json"})
+    with StrategyBox(providers={"filestore": LocalFileStore(str(tmp_path))}) as box:
+        archive = required(box.invoke("command.archive.pack", inputs={"members": (first, manifest)}), "material")
+        saved = required(box.invoke("command.artifact.commit",
+            inputs={"material": archive, "destination": "archives"}), "reference")
+        loaded = required(box.invoke("command.material.read", inputs={"location": saved}), "material")
+        assert loaded.identity == archive.identity
+        with ZipFile(BytesIO(loaded.data)) as value:
+            assert value.read("funds.xlsx") == first.data
+            assert value.read("selection_manifest.json") == manifest.data
+            assert len(value.namelist()) == 2

@@ -1,41 +1,7 @@
-# Core operation construction
+# Author a standard command
 
-**Scope and status.** The execution, data and provider interfaces below
-describe the implemented Stratbox library boundary. Application queues,
-RPC and durable outboxes remain consumer design concerns.
+Declare a `CommandDefinition` with semantic input and output ports, a `MethodRef` or required domain specification, resource demands, providers, effects and a reuse policy. A method accepts `(inputs, settings, context)` and returns named values or an explicit completion.
 
-```python
-PARSE = OperationDefinition(
-    "cbr.offices.parse", "cbr-offices-html",
-    ParseOfficesRequest, ParsedRelease,
-)
+Use direct immutable settings. Expose acquisition, decoding, interpretation, validation, calculation, rendering and effects as separate visible actions. Checks and required effects must belong to the prepared graph closure.
 
-def parse(request: ParseOfficesRequest, *, context=None):
-    return run(PARSE, request, _parse, context=context)
-```
-
-The method receives an `Invocation`. At the consuming boundary it registers
-the SHA-256, byte length and role of the actual source. It returns a
-domain value or raises a typed `OperationFailure`. For partial or uncertain
-results it returns `Completion` with a diagnostic. The runner supplies
-identity, safe events and outcome checks. Operation IDs and method IDs are stable,
-unversioned identities; data schema editions remain part of input/output contracts.
-
-A provider-dependent operation declares the required capability and passes
-the explicitly supplied provider to `run`. An effectful operation declares
-its effect types and records per-attempt outcomes. Source validators and
-comparators belong next to the domain entry point. Reusable byte and format commands belong in `core.storage`, `core.network`
-and `core.formats`. Returned outputs are accounted with
-`Invocation.account_output(identity, key=...)`; already charged publication
-coverage requires an explicit `covered_by` key. A provider requested through
-`Invocation.provider` must be declared required or optional. Runtime-scope
-providers resolved independently by a trusted runtime are described via
-`RuntimeDependency`, not invented as eager bindings.
-
-Definitions can additionally declare `OperationSemantics` with processing
-stages, editioned input/output contracts, qualifications and selection
-parameters. Keep those definitions independent of executable handlers so
-catalog inspection remains lightweight. See
-[processing contracts and qualified connections](processing-operation-catalog.md).
-
-[Runtime contracts](universal-business-core.md)
+Compose the command using `OperationDefinition`, `ScenarioDefinition` or `CascadeDefinition` and the common graph vocabulary. All execution goes through `ExecutionService`.

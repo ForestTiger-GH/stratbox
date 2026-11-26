@@ -82,7 +82,7 @@ def test_batch_matches_are_deterministic_and_preserve_raw_names():
     assert [decision.raw_name for decision in decisions] == ["Россия", "Москва", "Московская область"]
     assert [decision.status for decision in decisions] == ["alias", "alias", "exact"]
     assert decisions == resolver.resolve_many(["Россия", "Москва", "Московская область"])
-    assert len({decision.reference_edition_id for decision in decisions}) == 1
+    assert len({decision.reference_content_id for decision in decisions}) == 1
 
 
 def test_supplied_rules_have_distinct_digest_and_no_packaged_provenance():
@@ -96,8 +96,8 @@ def test_supplied_rules_have_distinct_digest_and_no_packaged_provenance():
     assert left.resolve("Alpha").provenance == "supplied"
     assert left.resolve("Alpha").reference_id is None
     assert left.resolve("Alpha").reference_snapshot_identity is None
-    assert left.resolve("Alpha").reference_edition_id != right.resolve("Alpha").reference_edition_id
-    with pytest.raises(ReferenceError):
+    assert left.resolve("Alpha").reference_content_id != right.resolve("Alpha").reference_content_id
+    with pytest.raises(TypeError):
         RegionNameResolver(edition_id="reviewed-2026-11", rules=(a,))
     with pytest.raises(ReferenceError):
         RegionNameResolver(rules=(a, a))

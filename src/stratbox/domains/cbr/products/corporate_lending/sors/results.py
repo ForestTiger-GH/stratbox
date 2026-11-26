@@ -4,10 +4,9 @@ from stratbox.shared.identity import ByteIdentity
 
 from dataclasses import dataclass
 
-from stratbox.shared.data.datasets import ComputationReceipt
 from stratbox.shared.data.source_context import SourceUse
 
-from stratbox.shared.data.representation import Representation
+from stratbox.shared.data.values import EncodedProduct, fingerprint
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -26,13 +25,13 @@ class SorsPivotResult:
     output_rows: int
     identified_cells: int
     unidentified_cells: int
-    evidence: ComputationReceipt | None = None
+    evidence: object | None = None
     source_uses: tuple[SourceUse, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
 class SorsWorkbookResult:
-    representation: Representation
+    representation: EncodedProduct
     sheet_names: tuple[str, ...]
     sheet_count: int
 
@@ -42,6 +41,12 @@ class SorsViewPack:
     """Prepared sheets, including audit tables, with no live solver dependency."""
     tables: tuple[tuple[str, pd.DataFrame], ...]
     source_identity: ByteIdentity | None = None
-    profile_id: str = "cbr.sors.views.v1"
-    evidence: ComputationReceipt | None = None
+    evidence: object | None = None
     source_uses: tuple[SourceUse, ...] = ()
+
+    @property
+    def fingerprint(self):
+        from stratbox.shared.data.tables import table_identity
+        from stratbox.shared.data.source_context import source_use_value
+        return fingerprint((table_identity(self.tables, allow_infinite=True),
+            self.source_identity, tuple(source_use_value(use) for use in self.source_uses)))

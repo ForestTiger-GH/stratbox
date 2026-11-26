@@ -1,77 +1,118 @@
-# Current HOW — SORS publication/latent restoration and the evidence ledger
+# SORS evidence, mathematical order and inference limits
 
-> This article preserves the explicitly pinned 0.8 analytical-method baseline.
-> The active operation API, complete source-input route and independently
-> replayable products are described in [SORS preparation and snapshots](cbr-sors-snapshots.md).
-> The analytical implementation now belongs to
-> `stratbox.domains.cbr.analytics.corporate_lending.sors`; its public operation
-> API belongs to `stratbox.domains.cbr.operations.corporate_lending.sors`.
+SORS reconstructs `CORPORATE_TOTAL × region × OKVED2 class × metric` from official
+corporate, SME and individual entrepreneur publications. The current action
+bindings live in `domains/cbr/calculations/sors/catalog.py`; the standard
+operation owns every loop. [Inputs and replay](cbr-sors-snapshots.md) describes
+the supported SDK route and retained values.
 
-**Evidence status:** static direct code reconstruction, pinned `stratbox@8459dc58922b7e8df853cf1d9e8131fa9e132580`; **no solver run or installed end-to-end conformance performed here**. Baseline owner: `src/stratbox/domains/cbr_sors_restoration`. The module's [direct README](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/README.md) is useful for conceptual intent; individual code paths below establish actual mechanisms at this revision.
+## Published values and latent quantities
 
-## 1. The problem is an underdetermined, rounding-constrained reconstruction
+With a publication step of one million rubles, a reported 6 means a latent amount
+in `[5.5, 6.5)`. It identifies a published bucket, while an exact latent point
+requires a separate proof. A publication zero similarly differs from exact zero.
+Source intervals retain lower/upper attainment, and the solver uses adjacent
+floating point bounds to respect open endpoints.
 
-The stated product target is **CORPORATE_TOTAL × region × OKVED2 class × metric**. Published tables carry integer millions of rubles. A published 6 at a step of one million means the latent amount lies within `[5.5, 6.5)`, *not* that latent economic reality equals 6. The [rounding implementation](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/publication/rounding.py) encodes a lower-attained and upper-excluded interval; it handles nonnegative publication values and has explicit precision controls. Never treat arithmetic on independently rounded published integers as exact latent arithmetic.
+The hard model distinguishes `SME_IE ≤ SME ≤ CORPORATE_TOTAL`, performing and
+overdue amounts, rubles and foreign currency, regional/district/national sums,
+and source category membership. Equal numbers in two portfolio scopes remain
+different source facts. The shared latent inequalities can constrain both.
 
-There are three distinct portfolios: `SME_IE ≤ SME ≤ CORPORATE_TOTAL`. Auxiliary SME/SME_IE sources constrain the latent corporate model through hard nested-scope inequalities. A number published in one scope is **not inherited as the same source fact** in another scope, even if numerically equal. Only the corporate total is an exported restoration target. The main [README](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/README.md) specifies ten mandatory publication books and a separately optional historical regional source; in particular, a “volume” flow sheet is not an outstanding-stock observation and is excluded from the one-period model.
+## Evidence strength
 
-## 2. Evidence strength and assumption tier have opposite orderings
+| Assumption tier | Meaning |
+| --- | --- |
+| 0 | Strict official publication and latent constraints |
+| 1 | Source-preserving direct published-value inheritance |
+| 2 | Identification on the globally rounding-optimal face |
+| 3 | Explicitly qualified rounding preference |
+| 4 | Jointly checked controlled selection |
 
-The [evidence map](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/evidence.py) records a tier ordered by **weakest assumption**: strict official 0, source-preserving 1, rounding optimum 2, rounding preference 3, controlled selection 4. **Higher tier = weaker evidential premise**. A separate `EVIDENCE_STRENGTH` priority chooses a current representative among facts with the *same published value*; higher strength means more preferred representative. Conflating them would silently promote a downstream selected value into an official fact.
+A higher assumption tier means a weaker premise. Ledger evidence strength is a
+separate ordering that chooses the preferred representative for the same
+published value. Closure and inheritance preserve the weakest supporting tier.
+A fact derived after an optimized or selected assumption keeps that assumption;
+it cannot acquire official-source status through an additional propagation step.
 
-Important evidence labels include `SOURCE_PUBLISHED`, `LATENT_POINT_IDENTIFIED`, `PUBLISHED_BUCKET_IDENTIFIED`, `PUBLISHED_VALUE_INHERITED`, `PUBLICATION_CLOSURE_IDENTIFIED`, `ROUNDING_OPTIMUM_IDENTIFIED`, `ROUNDING_PREFERRED`, `ROUNDING_SELECTED` and qualified closure derivatives. The [interval certification](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/strict/certification.py) distinguishes (a) a genuine exact latent point, (b) an interval wholly within one published bucket, and (c) a still nonunique publication value. It explicitly distinguishes an exact zero from zero **at publication precision**. A publication-bucket identification cannot be presented as an exact hidden monetary amount.
+The append-only ledger retains historical facts, current representatives,
+conflicts, source/relation/partition support, proof identifiers, optimization
+phase and global feasibility confirmation. An integer value alone conveys none
+of these qualifications.
 
-The [append-only publication ledger](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/publication/ledger.py) stores historical evidence events, current representatives, conflict checks, assumption tiers and a separate global feasibility confirmation. When recording a fact, the tier is maxed with the method tier; feedback from weaker optimized/selected assumptions cannot become a strict source proof through closure.
+## Command boundaries and fixed points
 
-## 3. Deterministic and solver phases
-
-The orchestration [`run_sors_restoration`](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/operations.py) creates one source bundle, validates/aligns observations and compiles the quantity/partition relations. The deterministic fixed point includes interval propagation, DOMINANCE, zero/single-bucket facts and source-preserving token inheritance. Cross-scope dominance enforces the nesting; overdue/debt and rubles/FX/total orderings provide additional hard constraints.
-
-The [quantity graph](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/strict/quantities.py) represents source observation bindings and latent relations. The [interval closure](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/strict/interval_closure.py) compiles a stable adjacency topology once for repeated seeded propagation instead of rebuilding it across every pass, important at hundreds of thousands of relations. This optimization does **not** justify relaxing mathematical constraints. The fixed-point safety fuse is explicit.
-
-Before solver-based promotion, [strict feasibility](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/strict/solver.py) must establish whether all source rounding intervals and hard relations can coexist. Missing solver dependency produces `SOLVER_UNAVAILABLE`, not fabricated successful feasibility. Infeasibility/incomplete outcomes preserve diagnostics/conflict data rather than silently accepting publication facts.
-
-For a feasible model, [optimization engine](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/optimization/engine.py) searches strict min/max target bounds, finds minimal source-rounding distortion (`L∞` then `L1`) and examines the optimal face for uniquely identified publication buckets. Remaining choices are **weaker**: global preference or jointly validated controlled selection. The [selection module](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/optimization/selection.py) checks candidate cluster compatibility jointly rather than accepting locally desirable mutually inconsistent buckets.
-
-After every new qualified solver promotion, the deterministic closure is re-run to a fixed point. Source input intervals remain hard; a user-configured L1 degradation allowance refers to the **global model objective**, not permission for a particular output to violate the original ±0.5 million source interval.
-
-## 4. What is actually exported and inspectable
-
-The [result dataclasses](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/results.py) expose source and validation grids, restored regional/category tables, components, publication evidence grids, solver rounds, fixed-point passes, conflicts and optimization diagnostics. The [summary](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/results.py) includes strict/solver status, counts of official/inherited/optimization facts, feasibility evidence, portfolio scopes, source/binding metrics, objective values and source/method identities; rich outputs are not just the last Excel.
-
-The consumer must check `strict_status`, `optimization_status`, `feasibility_confirmed` and evidence rows before claiming all desired values were identified. Model optimization can select a useful published representative while leaving the underlying latent quantity interval or source comparability unresolved. A parsed/produced workbook is a distinct artifact, not proof that the statistical inference was uniquely determined.
-
-## 5. Failure and negative vectors grounded in this code
-
-| Probe | Correct distinction | Direct mechanism |
+| Command | Consumes | Produces and guarantees |
 | --- | --- | --- |
-| Official 6 with hidden amount 6.4 | Published bucket 6; latent value not point-identified | [Rounding](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/publication/rounding.py), [certification](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/strict/certification.py) |
-| Parent=6, siblings=0 | Do not infer a child's published 6 by subtracting rounded integers | [Source-preserving publication intent](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/README.md) |
-| SME and corporate both report 6 | Separate published tokens; connect scopes only through latent dominance | [Portfolio source model](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/strict/quantities.py) |
-| Latent interval includes multiple bucket centers | Leave ambiguity or record explicitly weaker rounding preference/selection | [Evidence tier](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/evidence.py), [selection](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/optimization/selection.py) |
-| Source/latent constraints incompatible | Feasibility/diagnostic failure; no “all values confirmed” | [Strict solver](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/strict/solver.py), [operations](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/operations.py) |
-| Optimization-added fact feeds closure | Propagate its weaker `assumption_tier`, never rebrand as strict fact | [Ledger](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/publication/ledger.py), [optimization engine](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/optimization/engine.py) |
-| Solver library missing | `SOLVER_UNAVAILABLE` and explicit incomplete status | [Strict solver](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/strict/solver.py) |
-| Local bucket choices conflict when combined | Joint candidate batch validation, not individually picked “best” results | [Selection](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/src/stratbox/macrobanks/cbr_sors_restoration/optimization/selection.py) |
+| `command.model.inputs` | Full interpreted role vector or exact source bundle | Validated date, units, source content and coupled portfolio inputs |
+| `command.constraints.build` | Model inputs | Latent graph, publication partitions and initial inference state |
+| `command.bounds.propagate` | Graph and state | New interval state and explicit derivations |
+| `command.facts.inherit` | Graph and state | Source-preserving candidates tied to the exact input state |
+| `command.facts.reconcile` | State and candidates or optimization proposal | A new state, proof ledger and convergence assessment |
+| `command.model.compile` | Deterministically closed state | Data-only sparse problem with exact state basis |
+| `command.model.feasibility` | Compiled problem | Global feasibility for that exact problem and state |
+| `command.bounds.optimize` | Matching feasible problem | One qualified strict, rounding or selection phase proposal |
+| `command.values.certify` | Completed state and current feasibility | Qualified full scientific result |
+| `command.observations.assemble` | Certified values | Derived dataset retaining the full scientific result |
 
-## 6. Boundary of present proof
+The inner loop alternates interval propagation, direct inheritance and
+reconciliation until closure. A pass limit yields an explicit failure. Each
+command clones mutable numerical helpers before applying changes; public table
+accessors return copies, and no state retains a live solver handle.
 
-This is a **source-based HOW**, not a claim that the solver was run, every constraint has been independently mathematically proved, every source book remains available online or that every test passes in a modern installation. The actual methods are specialized SORS behavior and should be extrapolated to other statistical domains only as a proportional evidence pattern. Original-domain input assumptions, numerical tolerances, source variants and component-level failure conditions require the pinned code and corresponding tests during implementation conformance.
+Strict min/max, minimum rounding distortion and controlled selection run as
+separate phases. After a newly admitted fact, the standard outer loop reruns
+closure and global feasibility before the next phase. Certification rejects
+stale candidate, problem or feasibility fingerprints. Fingerprints include exact
+content and settings; observational pass numbering does not manufacture
+scientific progress.
 
-Scientific interpretation: [publication/latent inference](../science/data-and-knowledge/publication-rounding-and-claim-strength.md), [semantic promotion constraints](../science/data-and-knowledge/semantic-promotion-firewalls-and-bounded-reliance.md). **Reopen** on code revision, new source schema, changed method, numerical counterexample or actual solver results.
+Global feasibility precedes accepted facts. A missing solver or an incompatible
+source system cannot yield a successfully certified result. Source rounding
+intervals remain hard under every phase. A permitted global objective degradation
+is a qualified selection policy, rather than a change to an original interval.
 
-## 7. Direct pinned test evidence and conditional real-data witnesses
+## Conditional crosswalk
 
-Static primary reading of the following five test files at the same pinned source revision provides a **narrower and more checkable conformance perimeter** than the mere presence of `tests/`:
+The separate `cbr.sors.crosswalk` calculation retains explicit legacy atoms,
+source-node membership, allowed OKVED2 flow edges and configured mapping
+scenarios. Its constraint closure, model feasibility and optional target extrema
+are separate commands. Certification constructs an envelope across every
+configured resolved scenario. Proven infeasible scenarios remain visible in the
+assessment. Unknown, interrupted or unavailable scenarios keep the envelope
+incomplete.
 
-| Test source | Assertions present in frozen code | Execution qualification |
-| --- | --- | --- |
-| [`test_publication.py`](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/tests/cbr_sors_restoration/test_publication.py) | `[0,0.5)` is publishable zero, its closed upper endpoint is not; `PUBLISHED_BUCKET_IDENTIFIED` is not exact latent zero; solver-bound open endpoints; candidate buckets; `ROUNDING_PREFERRED` ledger admission | Directly read test source, not run |
-| [`test_result_grid_provenance.py`](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/tests/cbr_sors_restoration/test_result_grid_provenance.py) | Deterministic publication bucket has no LP-certification flags; actual min+max proofs differ from a joint-selected bucket's narrower proof status | Directly read test source, not run |
-| [`test_solver_dependency.py`](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/tests/cbr_sors_restoration/test_solver_dependency.py) | Absence of official HiGHS raises a dependency error; a crosswalk `SOLVER_UNAVAILABLE` branch does not promote new accepted facts; simulated solver session checks options and bound refresh | Directly read test source, includes mocks, not run |
-| [`test_real_20260701_multiscope.py`](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/tests/cbr_sors_restoration/test_real_20260701_multiscope.py) | Opt-in real source fixture: 18,266 source rows, 89,760 atomic quantities, SME/SME_IE/Corporate obligations, Udmurtia class 47 `overdue_fx` publication bucket 6 and latent interval `[5.5,6.5)` | Marked `pytest.mark.skipif` unless `STRATBOX_SORS_REAL_20260701_DIR` points to local inputs; no run performed here |
-| [`tests/integration/.../test_real_snapshot.py`](https://github.com/ForestTiger-GH/stratbox/blob/8459dc58922b7e8df853cf1d9e8131fa9e132580/tests/integration/cbr_sors_restoration/test_real_snapshot.py) | Opt-in June/July 2026 fixtures checking portfolio scopes, 85 atomic regions, 88 OKVED2 classes, quantity/strict-dominance counts and July publication 6 | Skipped unless `STRATBOX_SORS_REAL_DATA_DIR` is set; July additionally skips if exact July workbook is missing; no live run performed here |
+Crosswalk facts enter a conditional evidence layer. They preserve the mapping
+content fingerprint, scenarios, relations and feasibility status. An unresolved
+or multi-bucket interval carries bounds and status with an empty accepted value.
+A benchmark or selected representative remains qualified separately from an
+identified publication bucket.
 
-**Important non-implication:** a test function asserting an official-looking historical number is an executable *assertion*, not independent confirmation of the original regulatory publication or a passed contemporary solver run. Likewise a suite where live-data cases are skipped may provide useful synthetic/unit confidence but no live-vintage certification. A full release claim must report actual executed, passed, failed and skipped tests and exact input snapshot identities separately.
+## Interpreting outputs
 
-The direct tests strengthen the understanding of this domain-specific evidential model. They do not justify imposing a universal SORS solver or bespoke optimization semantics on every banking indicator in Strategy Box.
+The native result includes original sources and validation, primary regional
+observations, latent components, restored facts, ledger history, interval
+proofs, publication partitions, inherited tokens, optimization waves, solver
+records, conflicts and objective profiles. Selected products can expose this
+audit information alongside indicator pivots.
+
+Before asserting identification, inspect the fact's evidence method,
+`assumption_tier`, `feasibility_confirmed`, `value_precision` and bound/selection
+proof flags. A jointly selected bucket can have a valid joint feasibility proof
+without two independently certified min/max extrema. A deterministic bucket can
+be accepted after global feasibility without claiming LP identification.
+
+## Executable evidence and limits
+
+The synthetic suite checks the published six and half-open interval, rejects
+rounded-integer subtraction as a false inheritance proof, preserves distinct
+portfolio scopes and weaker assumption tiers, executes real HiGHS phases,
+checks joint selection, rejects stale continuation state, replays exact sparse
+problems, and reproduces crosswalk/pivots/workbooks after process exit.
+
+The opt-in July witness asserts 18,266 source rows, 89,760 atomic quantities and
+the Udmurtia class 47 overdue-FX publication bucket 6. The June/July integration
+fixtures assert full 85-region and 88-class coverage. These historical assertions
+are conditional on supplying their exact external fixtures. A run that skips
+them establishes synthetic numerical conformance only. It provides no evidence
+of live source availability, current source-layout coverage or full-model runtime.

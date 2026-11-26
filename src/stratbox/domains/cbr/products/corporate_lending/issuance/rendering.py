@@ -6,14 +6,14 @@ from openpyxl import Workbook
 from openpyxl.styles import Font
 
 from stratbox.core.formats.spreadsheets.workbook_bytes import openpyxl_bytes
-from stratbox.shared.data.representation import Representation
-from stratbox.shared.data.representation import XLSX
+from stratbox.shared.data.values import EncodedProduct
+XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 from stratbox.domains.cbr.products.corporate_lending.industry.rendering import _industry_table_dates
 from stratbox.domains.cbr.products.corporate_lending.industry.rendering import _write_cbr_industry_sheet
 
 from stratbox.domains.cbr.products.corporate_lending.issuance.contracts import IssuanceWorkbookResult
-from stratbox.domains.cbr.tables.corporate_lending.issuance.parser import _SHEETS
-from stratbox.domains.cbr.publications.corporate_lending.issuance_editions import reference_period
+from stratbox.domains.cbr.methods.tables.corporate_lending.issuance.parser import _SHEETS
+from stratbox.domains.cbr.methods.publications.corporate_lending.issuance_rules import reference_period
 
 
 def render_issuance_workbook(pivots, *, industry_code: str, industry_name_ru: str,
@@ -79,7 +79,7 @@ def render_issuance_workbook(pivots, *, industry_code: str, industry_name_ru: st
     names = tuple(("_Параметры",) if include_metadata_sheet else ()) + tuple(
         item.workbook_sheet_name for item in _SHEETS)
     return IssuanceWorkbookResult(
-        Representation("cbr.industries.0104a.industry-xlsx", 1, XLSX, data),
+        EncodedProduct(data, XLSX),
         industry_code, industry_name_ru, names, dates, actual_periods,
         pivots.tables[0].rows,
         source_uses=pivots.source_uses,

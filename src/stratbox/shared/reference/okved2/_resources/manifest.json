@@ -1,39 +1,32 @@
 {
-  "manifest_schema_version": 1,
   "reference_id": "reference.okved2",
-  "active_edition": "bundled-original-2026-11",
-  "editions": [
+  "publisher": "Rosstat",
+  "published_at": null,
+  "effective_from": null,
+  "assets": [
     {
-      "edition_id": "bundled-original-2026-11",
-      "publisher": "Rosstat",
-      "published_at": null,
-      "effective_from": null,
-      "assets": [
-        {
-          "role": "data",
-          "path": "data/data-20251101T1411-structure-20180402T1704.csv",
-          "sha256": "b9b05bb8d7edc6315d899978fe22ae46f4103ad7300625645d3ef8c9b8d4a280",
-          "size": 259822,
-          "media_type": "text/csv",
-          "required": true
-        },
-        {
-          "role": "meta",
-          "path": "data/meta.csv",
-          "sha256": "f62a642ed56d40e99a57d5c355326e911c091232e4d7d5948b5999500129fa40",
-          "size": 6804,
-          "media_type": "text/csv",
-          "required": true
-        },
-        {
-          "role": "structure",
-          "path": "data/structure-20180402T1704.csv",
-          "sha256": "62d9de91ece8ef0b5901a5024726da9c661dfdca708e7e3229802a6581691dfa",
-          "size": 726,
-          "media_type": "text/csv",
-          "required": true
-        }
-      ]
+      "role": "data",
+      "path": "data/data-20251101T1411-structure-20180402T1704.csv",
+      "sha256": "b9b05bb8d7edc6315d899978fe22ae46f4103ad7300625645d3ef8c9b8d4a280",
+      "size": 259822,
+      "media_type": "text/csv",
+      "required": true
+    },
+    {
+      "role": "meta",
+      "path": "data/meta.csv",
+      "sha256": "f62a642ed56d40e99a57d5c355326e911c091232e4d7d5948b5999500129fa40",
+      "size": 6804,
+      "media_type": "text/csv",
+      "required": true
+    },
+    {
+      "role": "structure",
+      "path": "data/structure-20180402T1704.csv",
+      "sha256": "62d9de91ece8ef0b5901a5024726da9c661dfdca708e7e3229802a6581691dfa",
+      "size": 726,
+      "media_type": "text/csv",
+      "required": true
     }
   ]
 }

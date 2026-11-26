@@ -17,7 +17,7 @@ Status may be `exact`, `alias`, `unmatched`, `ambiguous` or `out_of_scope`. The 
 A packaged result carries a verified reference snapshot and a content
 fingerprint of the full rule set. Programmatically supplied rules carry
 their own fingerprint and provenance kind; they cannot use the ID of a
-packaged edition. Source/perimeter/date-restricted rules fail closed when
+packaged reference. Source/perimeter/date-restricted rules fail closed when
 the corresponding context is absent. One validation routine applies to
 both CSV and supplied rules, and indexed matching remains independent of
 pandas.

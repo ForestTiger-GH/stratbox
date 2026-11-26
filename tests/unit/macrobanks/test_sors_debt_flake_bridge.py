@@ -5,47 +5,53 @@ import pandas as pd
 import pytest
 
 from stratbox.shared.evidence import SourcePayload
-import stratbox.domains.cbr.operations.corporate_lending.debt as debt
-from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.dependencies import original_input
-from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import RoundingPolicy
-from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.regional_traditional import parse_regional_traditional
-from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.regional_traditional import regional_traditional_from_flake
+from stratbox.domains.cbr.methods.tables.corporate_lending.industry.contracts import IndustrySelection
+from stratbox.domains.cbr.methods.tables.corporate_lending.debt.parser import parse_cbr_0105a_debt_corp_excel_bytes
+from stratbox.domains.cbr.common.contracts import SourceContentEvidence
+from stratbox.shared.data.tables import table_identity
+from stratbox.shared.evidence import UsedInputReceipt
+from stratbox.domains.cbr.calculations.sors.inputs.dependencies import original_input
+from stratbox.domains.cbr.calculations.sors.publication import RoundingPolicy
+from stratbox.domains.cbr.calculations.sors.inputs.regional_traditional import parse_regional_traditional
+from stratbox.domains.cbr.calculations.sors.inputs.regional_traditional import regional_traditional_from_flake
 
 from test_cbr_industries_0105a_debt_corp import _workbook_bytes
 
 
-def _parse(selection=debt.IndustrySelection()):
+def _parse(selection=IndustrySelection()):
     content = _workbook_bytes(report_date="01.02.2019", kemerovo_name="Кемеровская область")
-    parsed = debt.parse(debt.ParseIndustryRequest(SourcePayload(content),
-        "01_05_A_Debt_corp_20190201.xlsx", selection=selection))
-    assert parsed.outcome == "succeeded", parsed.diagnostics
-    return content, parsed.value
+    parsed = parse_cbr_0105a_debt_corp_excel_bytes(content,
+        source_name="01_05_A_Debt_corp_20190201.xlsx", selection=selection)
+    parsed = replace(parsed, evidence=SourceContentEvidence(table_identity((("stream",parsed.df_stream),)),
+        (UsedInputReceipt.for_payload(SourcePayload(content, source_id=parsed.source_id),"source_workbook"),)))
+    return content, parsed
 
 
 def test_retained_debt_flake_matches_direct_sors_source_projection():
     content, parsed = _parse()
-    snapshot = debt.build_flake_snapshot(debt.IndustrySnapshotRequest(parsed, "test.debt", "2019-02"))
-    assert snapshot.outcome == "succeeded", snapshot.diagnostics
-    restored = debt.read_flake_snapshot(debt.ReadIndustrySnapshotRequest(snapshot.value))
-    assert restored.outcome == "succeeded", restored.diagnostics
-    original = [receipt.identity for receipt in restored.value.evidence.inputs
+    from stratbox.domains.cbr.methods.actions.serialization import encode as value_encode, decode as value_decode
+    from types import SimpleNamespace
+    context = SimpleNamespace(checkpoint=lambda: None)
+    encoded = value_encode({"value": parsed}, None, context)["representation"]
+    retained = value_decode({"representation": encoded}, None, context)["value"]
+    original = [receipt.identity for receipt in retained.evidence.inputs
                 if receipt.identity.sha256 == parsed.source_sha256]
     assert len(original) == 1 and original[0].size == len(content)
-    reused = original_input(restored.value, "01_05_A")
+    reused = original_input(retained, "01_05_A")
     assert reused.identity == SourcePayload(content).identity
     assert reused.source_id == parsed.source_id
     assert reused.role == "01_05_A" and reused.availability == "reference_only"
     for step in (1.0, 0.1):
         policy = RoundingPolicy(step=step)
         direct = parse_regional_traditional(SourcePayload(content, source_id=parsed.source_id), "2019-02-01", policy)
-        replayed = regional_traditional_from_flake(restored.value, "2019-02-01", policy)
+        replayed = regional_traditional_from_flake(retained, "2019-02-01", policy)
         for expected, actual in zip(direct, replayed, strict=True):
             pd.testing.assert_frame_equal(expected, actual)
         assert set(replayed[0]["source_sha256"].dropna()) == {parsed.source_sha256}
 
 
 def test_sors_rejects_partial_edited_and_wrong_date_flakes():
-    _, partial = _parse(debt.IndustrySelection(("total",)))
+    _, partial = _parse(IndustrySelection(("total",)))
     with pytest.raises(ValueError, match="incomplete"):
         regional_traditional_from_flake(partial, "2019-02-01", RoundingPolicy())
     _, complete = _parse()

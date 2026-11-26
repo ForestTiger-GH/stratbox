@@ -4,8 +4,8 @@ from datetime import date
 
 import pytest
 
-from stratbox.shared.reference.geography.editions import TerritoryUnit, TerritoryEdition, territory_snapshot, territory_from_snapshot
-from stratbox.shared.data.snapshots import SnapshotCoverage
+from stratbox.shared.reference.geography.territories import TerritoryUnit, TerritoryDataset, territory_snapshot, territory_from_snapshot
+from stratbox.shared.data.coverage import SnapshotCoverage
 from stratbox.shared.evidence import SourcePayload, UsedInputReceipt
 
 
@@ -14,7 +14,7 @@ def edition():
     units=(TerritoryUnit("oktmo","01","Subject","subject",date(2020,1,1),None,None,None,"subject-p","row:1"),
         TerritoryUnit("oktmo","01001","Town","urban_okrug",date(2020,1,1),date(2025,12,31),"oktmo","01","old-p","row:2"),
         TerritoryUnit("oktmo","01001","Town","municipal_okrug",date(2026,1,1),None,"oktmo","01","new-p","row:3"))
-    return TerritoryEdition("example.territories","2026",units,(),
+    return TerritoryDataset("example.territories","2026",units,(),
         (UsedInputReceipt.for_payload(source,"reference"),),SnapshotCoverage("partial","An explicit reviewed subset."))
 
 

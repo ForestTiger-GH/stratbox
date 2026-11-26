@@ -1,1 +1,0 @@
-"""Canonical notifications state components."""

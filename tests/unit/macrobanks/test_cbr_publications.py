@@ -1,247 +1,174 @@
-from dataclasses import asdict, replace
-from datetime import datetime, timezone
+"""Publisher facts and source attribution use direct standard-command methods."""
+from dataclasses import replace
 from io import BytesIO
+from types import SimpleNamespace
 
 import pytest
 from openpyxl import Workbook
 
-from stratbox.core.execution import ExecutionContext
-from stratbox.core.execution.handoff import bind_request, project_output
-from stratbox.core.limits import ExecutionBudget
-from stratbox.core.network import HttpResponse
-from stratbox.core.operations.materials.definitions import ReadLocationRequest
-from stratbox.core.operations.materials.operations import read_location
-from stratbox.core.runtime.capabilities import CapabilityRequirement, ProviderBinding, ProviderSelection
+from stratbox.capabilities.model.targets import SeriesTarget
 from stratbox.core.storage.filestore import LocalFileStore
-from stratbox.domains.cbr.operations.publications import (
-    DiscoverRequest, IdentifyRequest, ListSourcesRequest, discover, identify, list_sources,
-)
-from stratbox.domains.cbr.operations.publications.definitions import IDENTIFY
-from stratbox.domains.cbr.publications.selection import CATALOG_SERIES
-from stratbox.domains.cbr.publications.catalog import all_sources
-from stratbox.domains.cbr.operations.bindings import validate_all_profiles as validate_profiles
-from stratbox.domains.cbr.operations.bindings import processing_profile
-from stratbox.domains.cbr.operations.collection.materials import CollectMaterial, CollectMaterialsRequest, collect_materials
-from stratbox.operations import operation_catalog
-from stratbox.shared.data.processing import DataRole
-from stratbox.shared.evidence import SourcePayload
-from stratbox.shared.identity import ByteIdentity
+from stratbox.domains.cbr.domain import DOMAIN
+from stratbox.sdk import StrategyBox
+from stratbox.shared.data.values import Material, SourceClaim
+
+
+FIXED = "cbr.corporate_lending.corp_debt_a"
+FORM = "cbr.reporting_forms.f101"
+ESCROW = "cbr.project_finance.escrow"
+
+
+def context(**parameters):
+    return SimpleNamespace(parameters=parameters, checkpoint=lambda: None)
+
+
+def call(source, command, inputs, **parameters):
+    spec = DOMAIN.series[source].commands[command]
+    return spec.method.resolve()(inputs, spec.settings, context(**parameters))
 
 
 def workbook():
-    value = Workbook()
-    value.active.append(["Published table", 1])
+    book = Workbook()
+    book.active.append(["Published table", 1])
     stream = BytesIO()
-    value.save(stream)
+    book.save(stream)
+    book.close()
     return stream.getvalue()
 
 
-def good(result):
-    assert result.outcome == "succeeded", result.diagnostics
-    return result.value
+def scan(source, html, **parameters):
+    return call(source, "command.publication.scan",
+        {"index": Material(html, "text/html", source + ".index")}, **parameters)["listing"]
 
 
-class StaticTransport:
-    def __init__(self, data, media_type="text/html"):
-        self.data, self.media_type, self.calls = data, media_type, []
-
-    def exchange(self, request, *, cancelled=None):
-        self.calls.append(request)
-        return HttpResponse(200, self.data, {"content-type": self.media_type},
-            datetime(2026, 11, 1, tzinfo=timezone.utc), "https://www.cbr.ru")
-
-
-def test_logical_registry_has_no_locations_and_unifies_collector_sources():
-    sources = good(list_sources(ListSourcesRequest()))
-    assert len(sources) == 57
-    assert len({item.series_id for item in sources}) == len(sources)
-    assert validate_profiles()
-    assert all("https://" not in str(asdict(item)) and "url" not in asdict(item) for item in sources)
-    fixed = {item.series_id for item in sources if item.issue_model == "rolling"}
-    assert set(CATALOG_SERIES.values()) <= fixed
-    escrow_accounts = next(item for item in sources if item.series_id == CATALOG_SERIES["escrow_accounts"])
-    escrow_project = next(item for item in sources if item.series_id == "cbr.project_finance.escrow")
-    assert escrow_accounts.family_id != escrow_project.family_id
-    operations = operation_catalog()
-    for series in sources:
-        for profile_id in (series.extraction_profile, series.normalization_profile):
-            if profile_id is not None:
-                profile = processing_profile(profile_id)
-                definition, handler, _ = operations.resolve(profile.operation_id)
-                assert definition.operation_id == profile.operation_id and callable(handler)
+def test_catalog_has_57_distinct_publications_with_shared_methods_and_explicit_source_constraints():
+    assert len(DOMAIN.series) == 57
+    assert len({item.publication.family_id for item in DOMAIN.series.values()}) == 12
+    for source, declaration in DOMAIN.series.items():
+        assert declaration.id == declaration.publication.series_id == source
+        for command in ("command.request.prepare", "command.publication.scan", "command.issue.select",
+                        "command.material.identify", "command.table.extract", "command.table.interpret"):
+            assert callable(declaration.commands[command].method.resolve())
+            assert declaration.commands[command].applicability.source_ids == {source}
+    assert DOMAIN.series["cbr.funding.escrow_accounts"].publication.family_id != DOMAIN.series[ESCROW].publication.family_id
 
 
-def test_dated_discovery_retains_source_only_forms_and_rejects_invalid_urls():
-    html = SourcePayload(b'''<html><a href="/vfs/credit/forms/803-20261001.rar">one</a>
-        <a href="/vfs/credit/forms/803-20260231.rar">invalid date</a>
-        <a href="https://other.example/803-20260901.rar">external</a></html>''', "text/html")
-    index = good(discover(DiscoverRequest("cbr.reporting_forms.f803", html)))
-    assert len(index.assets) == 1 and index.assets[0].issue_id == "2026-10-01"
-    assert index.assets[0].extraction_profile is not None
-    assert index.rejected_links == 2
-    assert index.coverage.status == "unknown"
-    invalid = discover(DiscoverRequest("cbr.reporting_forms.f101", SourcePayload(b"broken")))
-    assert invalid.outcome == "failed"  # Explicit offline input is never replaced by HTTP.
+@pytest.mark.parametrize("code", ("101", "102", "123", "134", "135", "802", "803", "805"))
+def test_dated_form_discovery_preserves_only_real_calendar_dates_and_official_urls(code):
+    source = "cbr.reporting_forms.f" + code
+    html = f'''<a href="/vfs/credit/forms/{code}-20261001.rar">one</a>
+      <a href="/vfs/credit/forms/{code}-20260231.rar">invalid date</a>
+      <a href="https://other.example/{code}-20260901.rar">external</a>'''.encode()
+    listing = scan(source, html)
+    assert len(listing.entries) == 1
+    assert listing.entries[0].issue_id == "2026-10-01"
+    assert listing.entries[0].format == "rar"
+    assert "observed_index_only" in listing.assessment.qualifications
 
 
-def test_escrow_html_is_an_explicit_unsupported_extraction_candidate():
-    html = SourcePayload(b'<a href="/analytics/finansirovanie-dolevogo-stroitelstva/2019-08-26/">2019</a>')
-    value = good(discover(DiscoverRequest("cbr.project_finance.escrow", html)))
-    assert value.assets[0].format == "html" and value.assets[0].recognition == "unsupported_layout"
-    original = good(identify(IdentifyRequest(value.series_id, "2019-08-26", SourcePayload(b"<html>original</html>", "text/html"), "html")))
-    assert original.artifact.contract.role is DataRole.ORIGINALS
+def test_explicit_broken_offline_index_never_falls_back_to_network():
+    class ForbiddenHTTP:
+        def fetch(self, request):
+            pytest.fail("A supplied index must not trigger network fallback")
+
+    with StrategyBox(providers={"http": ForbiddenHTTP()}) as box:
+        result = box.invoke("operation.source.check", inputs={"index": Material(b"broken", "text/html", FORM + ".index")},
+            target=SeriesTarget(FORM))
+        assert result.outcome == "succeeded", result.diagnostics
+        assert result.output("assessment").status in {"unknown", "indeterminate"}
+        assert result.output("selection").entries == ()
 
 
-def test_typed_neutral_read_can_be_admitted_with_explicit_source_context(tmp_path):
-    store = LocalFileStore(str(tmp_path))
+def test_historical_escrow_html_remains_original_only_until_geometry_is_reviewed():
+    listing = scan(ESCROW, b'<a href="/analytics/finansirovanie-dolevogo-stroitelstva/2019-08-26/">2019</a>')
+    asset, = listing.entries
+    assert asset.issue_id == "2019-08-26" and asset.format == "html"
+    original = Material(b"<html>original</html>", "text/html", ESCROW)
+    identified = call(ESCROW, "command.material.identify",
+        {"material": original, "claim": SourceClaim(ESCROW, asset.issue_id)})["material"]
+    assert identified.material.data == original.data
+    with pytest.raises(ValueError, match="physical_evidence_required"):
+        call(ESCROW, "command.table.extract", {"physical": original})
+
+
+def test_neutral_filestore_read_gets_explicit_source_and_issue_context(tmp_path):
     data = workbook()
+    store = LocalFileStore(str(tmp_path))
     store.write_bytes("renamed.xlsx", data)
-    loaded = read_location(ReadLocationRequest("renamed.xlsx"), store=store)
-    bound = bind_request(IDENTIFY, {"material": project_output(loaded, "source")},
-        parameters={"series_id": CATALOG_SERIES["corp_debt_a"], "issue_id": "2026-11-23", "format": "xlsx"})
-    admitted = good(bound.invoke(identify))
-    assert admitted.payload.data == data
-    assert admitted.asset.series_id == CATALOG_SERIES["corp_debt_a"]
-    assert admitted.identification == "caller_context_and_verified_format"
+    with StrategyBox(providers={"filestore": store}) as box:
+        read = box.invoke("command.material.read", inputs={"location": "renamed.xlsx"})
+        assert read.outcome == "succeeded", read.diagnostics
+        admitted = box.invoke("command.material.identify",
+            inputs={"material": read.output("material"), "claim": SourceClaim(FIXED, "2026-11-23")},
+            target=SeriesTarget(FIXED))
+        assert admitted.outcome == "succeeded", admitted.diagnostics
+        assert admitted.output("material").material.data == data
+        assert admitted.output("material").claim.issue_id == "2026-11-23"
 
 
-def test_mixed_collection_reads_independent_adapters_and_preserves_exact_originals(tmp_path):
-    data = workbook()
-    left, right = (LocalFileStore(str(tmp_path / name)) for name in ("left", "right"))
-    left.write_bytes("report", data)
-    right.write_bytes("report", b"wrong unrelated data")
-    reference = good(read_location(ReadLocationRequest("report"), store=left)).material
-    context = ExecutionContext(bindings=(
-        ProviderBinding("left", CapabilityRequirement("filestore"), "ready", left),
-        ProviderBinding("right", CapabilityRequirement("filestore"), "ready", right),
-    ))
-    result = good(collect_materials(CollectMaterialsRequest((
-        CollectMaterial("disk", CATALOG_SERIES["corp_debt_a"], "2026-11-23", "xlsx",
-                        material=reference, selection=ProviderSelection("left")),
-        CollectMaterial("inline", CATALOG_SERIES["corp_debt_c"], "2026-11-23", "xlsx", payload=SourcePayload(data)),
-    )), context=context))
-    assert result.manifest.complete and result.manifest.coverage.status == "unknown"
-    assert all(original.payload.data == data for _, original in result.originals)
-    assert all(member.identity == ByteIdentity.of(data) for member in result.manifest.members)
-    assert len({member.source_asset.series_id for member in result.manifest.members}) == 2
-
-
-def test_failed_explicit_material_never_falls_back_or_leaks_into_completed_set(tmp_path):
-    data = workbook()
-    store = LocalFileStore(str(tmp_path))
-    store.write_bytes("valid", data)
-    reference = good(read_location(ReadLocationRequest("valid"), store=store)).material
-    missing = replace(reference, locator="missing", revision=None, store_scope=store.storage_scope("missing"))
-    items = (
-        CollectMaterial("first", CATALOG_SERIES["corp_debt_a"], "2026-11-23", "xlsx", payload=SourcePayload(data)),
-        CollectMaterial("missing", CATALOG_SERIES["corp_debt_c"], "2026-11-23", "xlsx", material=missing),
-        CollectMaterial("last", CATALOG_SERIES["sme_debt"], "2026-11-23", "xlsx", payload=SourcePayload(data)),
-    )
-    result = collect_materials(CollectMaterialsRequest(items, continue_on_error=False), store=store)
-    assert result.outcome == "partial", result.diagnostics
-    assert [x.status for x in result.value.manifest.dispositions] == ["completed", "failed", "not_attempted"]
-    assert [x.key for x in result.value.manifest.members] == ["first"]
-    assert not result.effects
-
-
-def test_discovery_resolves_context_http_binding_and_preserves_alternative_routes():
+def test_alternative_urls_and_format_variants_are_preserved_without_silent_preference():
     first = "/vfs/credit/forms/101-20261001.rar"
     alternate = "/Collection/Collection/File/12345/101-20261001.rar"
     html = f'''<a href="{first}">one</a><a href="{alternate}">alternative</a>
-        <a href="{first}">duplicate anchor</a>
-        <a href="/vfs/credit/forms/101-20261001.zip">format variant</a>
-        <a href="https://[broken]/101-20261001.rar">broken URL</a>'''.encode()
-    chosen, unused = StaticTransport(html), StaticTransport(b"wrong")
-    context = ExecutionContext(bindings=(
-        ProviderBinding("chosen", CapabilityRequirement("http"), "ready", chosen),
-        ProviderBinding("unused", CapabilityRequirement("http"), "ready", unused),
-    ))
-    value = good(discover(DiscoverRequest("cbr.reporting_forms.f101"),
-        selection=ProviderSelection("chosen"), context=context))
-    assert len(chosen.calls) == 1 and not unused.calls
-    assert len(value.assets) == 2
-    assert value.assets[0].url.endswith(first)
-    assert value.assets[0].alternative_urls == ("https://www.cbr.ru" + alternate,)
-    assert value.assets[1].format == "zip" and not value.assets[1].alternative_urls
-    assert value.coverage.status == "unknown" and value.rejected_links == 1
+       <a href="{first}">duplicate</a><a href="/vfs/credit/forms/101-20261001.zip">format variant</a>
+       <a href="https://[broken]/101-20261001.rar">broken</a>'''.encode()
+    listing = scan(FORM, html)
+    assert len(listing.entries) == 3
+    selection = call(FORM, "command.issue.select",
+        {"listing": listing, "query": {"issue_id": "2026-10-01"}})["selection"]
+    assert selection.assessment.status == "conflicted"
+    assert len(selection.entries) == 3
+    chosen = call(FORM, "command.issue.select",
+        {"listing": listing, "query": {"issue_id": "2026-10-01", "locator": "https://www.cbr.ru" + alternate}})["selection"]
+    assert len(chosen.entries) == 1 and chosen.entries[0].locator.endswith(alternate)
 
 
-def test_fixed_source_binds_complete_workbook_extraction_and_rejects_empty_page_url():
-    payload = SourcePayload(b'<a href="/vfs/statistics/BankSector/Loans_to_corporations/01_02_A_Debt_corp_by_activity.xlsx">file</a>')
-    value = good(discover(DiscoverRequest(CATALOG_SERIES["corp_debt_a"], payload)))
-    assert value.assets[0].recognition == "registered_variant"
-    assert value.assets[0].extraction_profile == "cbr.workbook.flake"
-    invalid = discover(DiscoverRequest(CATALOG_SERIES["corp_debt_a"], payload, page_url=""))
-    assert invalid.outcome == "failed" and invalid.diagnostics[0].code == "request.source_url_invalid"
+def test_fixed_sources_keep_the_declared_locator_without_inventing_issue_dates():
+    listing = scan(FIXED, b"<html>Caller retained index evidence</html>")
+    asset, = listing.entries
+    assert asset.locator == DOMAIN.series[FIXED].publication.locator
+    assert asset.issue_id == "" and asset.format == "xlsx"
+    with pytest.raises(ValueError, match="source_url_invalid"):
+        call(FIXED, "command.request.prepare", {"locator": ""})
 
 
-@pytest.mark.parametrize("issue", ["20261001", "2026-W40-4"])
-def test_dated_identification_requires_one_canonical_issue_key(issue):
-    result = identify(IdentifyRequest("cbr.reporting_forms.f101", issue,
-        SourcePayload(b"PK\x03\x04test"), "zip"))
-    assert result.outcome == "failed" and result.diagnostics[0].code == "cbr.publication.issue_invalid"
+@pytest.mark.parametrize("issue", ("20261001", "2026-W40-4", "2026-02-31", ""))
+def test_dated_identification_requires_one_canonical_calendar_issue(issue):
+    with pytest.raises(ValueError, match="issue"):
+        call(FORM, "command.material.identify",
+            {"material": Material(b"Rar!\x1a\x07\x00synthetic", "application/x-rar-compressed"),
+             "claim": SourceClaim(FORM, issue)})
 
 
-def test_http_dbf_collection_retains_input_lineage_and_charges_returned_originals():
-    header = bytearray(65)
-    header[0:4] = bytes((3, 126, 10, 1))
-    header[4:8] = (1).to_bytes(4, "little")
-    header[8:10] = (65).to_bytes(2, "little")
-    header[10:12] = (2).to_bytes(2, "little")
-    header[32:37], header[43], header[48], header[64] = b"VALUE", ord("C"), 1, 13
-    data = bytes(header) + b" x\x1a"
-    transport = StaticTransport(data, "application/x-dbf")
-    result = collect_materials(CollectMaterialsRequest((CollectMaterial(
-        "dbf", "cbr.reporting_forms.f101", "2026-10-01", "dbf",
-        url="https://www.cbr.ru/vfs/credit/forms/101-20261001.dbf"),)), transport=transport)
-    value = good(result)
-    assert value.originals[0][1].payload.data == data
-    assert len(value.manifest.inputs) == 1
-    assert value.manifest.inputs[0].identity == ByteIdentity.of(data)
-    assert value.manifest.inputs[0].role == "original"
-    assert value.manifest.inputs[0].source_id == "cbr.reporting_forms.f101"
-    assert result.computation.inputs == value.manifest.inputs
-    assert dict(result.resources_used)["output_bytes"] == len(data)
+def test_claim_cannot_overwrite_another_known_source_or_forge_verified_attribution():
+    original = Material(workbook(), source_id=FIXED)
+    with pytest.raises(ValueError, match="source_mismatch"):
+        call("cbr.funding.funds_all", "command.material.identify",
+            {"material": original, "claim": SourceClaim("cbr.funding.funds_all", "2026-11-01")})
+    with pytest.raises(ValueError, match="verified_attribution_requires_evidence"):
+        call(FIXED, "command.material.identify",
+            {"material": replace(original, source_id=None), "claim": SourceClaim(FIXED, "2026-11-01", attribution="verified")})
 
 
-def test_collection_logical_identity_survives_inline_file_and_http_routes(tmp_path):
-    payload = SourcePayload(b"<html>Same exact supplied publication</html>", "text/html")
-    store = LocalFileStore(str(tmp_path))
-    store.write_bytes("page", payload.data)
-    material = good(read_location(ReadLocationRequest("page", "text/html"), store=store)).material
-    common = dict(key="release", series_id="cbr.service_network.bank_offices",
-                  issue_id="2026-11-23", format="html")
-    inline = good(collect_materials(CollectMaterialsRequest((CollectMaterial(**common, payload=payload),))))
-    retained = good(collect_materials(CollectMaterialsRequest((CollectMaterial(**common, material=material),)), store=store))
-    received = good(collect_materials(CollectMaterialsRequest((CollectMaterial(**common),)),
-                                      transport=StaticTransport(payload.data)))
-    assert inline.manifest.identity == retained.manifest.identity == received.manifest.identity
-    assert inline.manifest.members == retained.manifest.members == received.manifest.members
+def test_wrong_native_media_and_truncated_xlsx_are_rejected_at_attribution():
+    for material in (Material(b"not a workbook"), Material(b"<html>failure</html>", "application/zip"),
+                     Material(b"PK\x03\x04truncated")):
+        with pytest.raises(ValueError, match="signature|format|envelope"):
+            call(FIXED, "command.material.identify",
+                {"material": material, "claim": SourceClaim(FIXED, "2026-11-01")})
 
 
-def test_collection_output_budget_preserves_completed_members_and_stops_remaining():
-    data = workbook()
-    items = tuple(CollectMaterial(key, CATALOG_SERIES["corp_debt_a"], "2026-11-23", "xlsx",
-        payload=SourcePayload(data), name=key + ".xlsx") for key in ("first", "second", "third"))
-    result = collect_materials(CollectMaterialsRequest(items),
-        context=ExecutionContext(budget=ExecutionBudget(output_bytes=len(data))))
-    assert result.outcome == "partial", result.diagnostics
-    assert result.diagnostics[0].code == "budget.output_bytes"
-    assert [item.status for item in result.value.manifest.dispositions] == ["completed", "failed", "not_attempted"]
-    assert [key for key, _ in result.value.originals] == ["first"]
-    assert dict(result.resources_used)["output_bytes"] == len(data)
-    blocked = collect_materials(CollectMaterialsRequest(items),
-        context=ExecutionContext(budget=ExecutionBudget(output_bytes=0)))
-    assert blocked.outcome == "failed" and not blocked.value.originals
-    assert not blocked.value.manifest.members
+def test_bounded_index_interpretation_rejects_unbounded_anchor_sets():
+    html = b'<a href="/vfs/credit/forms/101-20261001.rar">one</a>' * 3
+    with pytest.raises(ValueError, match="index_link_limit"):
+        scan(FORM, html, max_links=2)
 
 
-def test_collection_rejects_explicit_empty_name_and_bad_key_without_internal_failure():
-    data = workbook()
-    item = CollectMaterial("a", CATALOG_SERIES["corp_debt_a"], "2026-11-23", "xlsx",
-        payload=SourcePayload(data), name="")
-    failed = collect_materials(CollectMaterialsRequest((item,)))
-    assert failed.outcome == "failed" and not failed.value.originals
-    assert failed.value.manifest.dispositions[0].diagnostic == "collection.name_invalid"
-    bad_key = collect_materials(CollectMaterialsRequest((replace(item, key=[]),)))
-    assert bad_key.outcome == "failed" and bad_key.diagnostics[0].code != "internal.error"
+def test_request_uses_shared_publisher_limits_and_explicit_dated_format():
+    request = call(FORM, "command.request.prepare", {"query": {"issue_id": "2026-10-01", "format": "dbf"}})["request"]
+    assert request.url == "https://www.cbr.ru/vfs/credit/forms/101-20261001.dbf"
+    assert request.max_bytes == DOMAIN.common["access"].max_response_bytes
+    assert request.timeout == DOMAIN.common["access"].deadline_seconds
+    assert request.source_id == FORM
+    with pytest.raises(ValueError, match="format_unavailable"):
+        call(FORM, "command.request.prepare", {"query": {"issue_id": "2026-10-01", "format": "xlsx"}})

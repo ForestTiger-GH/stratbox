@@ -1,4 +1,4 @@
-"""Versioned identities of tables and the computations that produced them."""
+"""Content identities of tables and the computations that produced them."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from pandas import DataFrame
 
 
-TABLE_ENCODING = "stratbox.tables.v1"
+TABLE_ENCODING = "stratbox.tables"
 TABLE_MEDIA_TYPE = "application/vnd.stratbox.tables"
 
 

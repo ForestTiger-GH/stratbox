@@ -11,8 +11,8 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 from stratbox.core.formats.spreadsheets.workbook_bytes import openpyxl_bytes
-from stratbox.shared.data.representation import Representation
-from stratbox.shared.data.representation import XLSX
+from stratbox.shared.data.values import EncodedProduct
+XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 from stratbox.domains.cbr.products.corporate_lending.industry.rendering import _excel_value
 from stratbox.domains.cbr.products.corporate_lending.industry.rendering import _format_report_date
 from stratbox.domains.cbr.products.corporate_lending.industry.rendering import _industry_table_dates
@@ -28,8 +28,8 @@ from stratbox.domains.cbr.products.corporate_lending.industry.contracts import I
 from stratbox.domains.cbr.products.corporate_lending.debt.contracts import Cbr0105ADebtCorpPivotWorkbookRequest
 from stratbox.domains.cbr.products.corporate_lending.debt.contracts import Cbr0105ADebtCorpPivotWorkbookResult
 from stratbox.domains.cbr.products.corporate_lending.industry.views import sanitize_excel_sheet_name
-from stratbox.domains.cbr.tables.corporate_lending.debt.schema import CBR_0105A_DEBT_CORP_SHEET_SPECS
-from stratbox.domains.cbr.tables.corporate_lending.industry.schema import CBR_0105A_DEBT_CORP_UNIT_NAME_RU
+from stratbox.domains.cbr.methods.tables.corporate_lending.debt.schema import CBR_0105A_DEBT_CORP_SHEET_SPECS
+from stratbox.domains.cbr.methods.tables.corporate_lending.industry.schema import CBR_0105A_DEBT_CORP_UNIT_NAME_RU
 
 
 _HEADER_FILL = PatternFill(fill_type="solid", fgColor="D9EAF7")
@@ -174,7 +174,7 @@ def render_cbr_0105a_debt_corp_pivot_workbook(
         + [table.suggested_sheet_name for table in pivot_set.tables]
     )
     return Cbr0105ADebtCorpPivotWorkbookResult(
-        representation=Representation("cbr.industries.pivot-xlsx", 1, XLSX, content),
+        representation=EncodedProduct(content, XLSX),
         sheet_names=sheet_names,
         sheet_count=len(sheet_names),
         source_uses=pivot_set.source_uses,
@@ -343,7 +343,7 @@ def render_cbr_0105a_debt_corp_industry_workbook(
     )
     rows_per_sheet = first_table.rows
     return Cbr0105ADebtCorpIndustryWorkbookResult(
-        representation=Representation("cbr.industries.industry-xlsx", 1, XLSX, content),
+        representation=EncodedProduct(content, XLSX),
         industry_code=request.industry_code,
         industry_name_ru=industry_name_ru,
         sheet_names=sheet_names,

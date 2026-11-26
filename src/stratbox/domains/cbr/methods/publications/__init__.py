@@ -1,1 +1,1 @@
-"""Direct Bank of Russia technical methods."""
+"""Pure CBR publication address and date interpretation helpers."""

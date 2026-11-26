@@ -3,10 +3,10 @@ from __future__ import annotations
 import pandas as pd
 
 from stratbox.domains.cbr.products.corporate_lending.sors.contracts import SorsPivotRequest
-from stratbox.domains.cbr.analytics.corporate_lending.sors.results import SorsCrosswalkResult
+from stratbox.domains.cbr.calculations.sors.results import SorsCrosswalkResult
 from stratbox.domains.cbr.products.corporate_lending.sors.results import SorsPivotResult
-from stratbox.domains.cbr.analytics.corporate_lending.sors.identity import source_uses
-from stratbox.domains.cbr.analytics.corporate_lending.sors.results import SorsRestorationResult
+from stratbox.domains.cbr.calculations.sors.identity import source_uses
+from stratbox.domains.cbr.calculations.sors.results import SorsRestorationResult
 
 
 def _resolve_region(frame: pd.DataFrame, request: SorsPivotRequest) -> tuple[str, str]:

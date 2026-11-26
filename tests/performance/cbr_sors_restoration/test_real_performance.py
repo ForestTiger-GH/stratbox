@@ -6,22 +6,17 @@ from pathlib import Path
 from time import perf_counter
 
 import pytest
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "cbr_sors_restoration"))
+from support import interpreted_sources, execute_model_methods
+from stratbox.domains.cbr.calculations.sors.inputs.loader import parse_source_inputs
 
-from stratbox.core.storage.filestore import LocalFileStore
 
-from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsCrosswalkConfig
-from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsOptimizationConfig
-from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsRunConfig
-from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.contracts import SorsSourceFiles
+from stratbox.domains.cbr.calculations.sors.contracts import SorsCrosswalkConfig
+from stratbox.domains.cbr.calculations.sors.contracts import SorsOptimizationConfig
+from stratbox.domains.cbr.calculations.sors.contracts import SorsRunConfig
+from types import SimpleNamespace
 from stratbox.domains.cbr.products.corporate_lending.sors.contracts import SorsWorkbookRequest
-from stratbox.domains.cbr.operations.corporate_lending.sors.definitions import CrosswalkSorsRequest
-from stratbox.domains.cbr.operations.corporate_lending.sors.definitions import RenderSorsRequest
-from stratbox.domains.cbr.operations.corporate_lending.sors.definitions import RestoreSorsRequest
-from stratbox.domains.cbr.operations.corporate_lending.sors.api import run_crosswalk
-from stratbox.domains.cbr.operations.corporate_lending.sors.api import read_source_files
-from stratbox.domains.cbr.operations.corporate_lending.sors.api import build_views, render_views, prepare_from_originals
-from stratbox.domains.cbr.operations.corporate_lending.sors.definitions import BuildSorsViewsRequest, PrepareSorsOriginalsRequest
-from stratbox.domains.cbr.operations.corporate_lending.sors.api import restore
 
 _REAL_ROOT = os.environ.get('STRATBOX_SORS_REAL_DATA_DIR')
 _RUN_PERFORMANCE = os.environ.get('STRATBOX_SORS_RUN_PERFORMANCE') == '1'
@@ -36,9 +31,9 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def _files() -> SorsSourceFiles:
+def _files() -> SimpleNamespace:
     root = Path(str(_REAL_ROOT))
-    return SorsSourceFiles(
+    return SimpleNamespace(
         regional_traditional=root / '01_05_A_Debt_corp_20260601.xlsx',
         national_okved2=root / '01_02_C_Debt_corp_by_activity.xlsx',
         federal_district_okved2=(
@@ -59,16 +54,8 @@ def _files() -> SorsSourceFiles:
 
 def test_full_structural_pass_and_workbook(tmp_path: Path) -> None:
     started = perf_counter()
-    inputs = read_source_files(_files(), store=LocalFileStore())
-    assert inputs.outcome == "succeeded", inputs.diagnostics
-    bundle = prepare_from_originals(PrepareSorsOriginalsRequest(inputs.value, SorsRunConfig(as_of_date="2026-06-01")))
-    assert bundle.outcome == "succeeded", bundle.diagnostics
-    operation = restore(RestoreSorsRequest(
-        bundle.value,
-        SorsRunConfig(as_of_date='2026-06-01'),
-    ))
-    assert operation.outcome == "succeeded", operation.diagnostics
-    result = operation.value
+    bundle = parse_source_inputs(interpreted_sources(_files()), "2026-06-01")
+    result = execute_model_methods(bundle, SorsRunConfig(as_of_date='2026-06-01'))
     structural_seconds = perf_counter() - started
     assert structural_seconds < 120
     assert len(result.regional_okved2_grid) == 44_880
@@ -76,11 +63,9 @@ def test_full_structural_pass_and_workbook(tmp_path: Path) -> None:
     assert int(component_zeros['published_value'].astype(float).eq(0.0).sum()) == 11_274
 
     started = perf_counter()
-    views = build_views(BuildSorsViewsRequest(result, SorsWorkbookRequest()))
-    assert views.outcome == "succeeded", views.diagnostics
-    exported = render_views(RenderSorsRequest(views.value))
-    assert exported.outcome == "succeeded", exported.diagnostics
-    workbook = exported.value
+    from stratbox.domains.cbr.products.corporate_lending.sors.pack import build_sors_views
+    from stratbox.domains.cbr.products.corporate_lending.sors.rendering import render_sors_views
+    workbook = render_sors_views(build_sors_views(result, SorsWorkbookRequest()))
     assert perf_counter() - started < 60
     assert workbook.representation.identity.size > 0
 
@@ -92,12 +77,9 @@ def test_full_structural_pass_and_workbook(tmp_path: Path) -> None:
 )
 def test_strict_target_budget(target_budget: int, maximum_seconds: int) -> None:
     started = perf_counter()
-    inputs = read_source_files(_files(), store=LocalFileStore())
-    assert inputs.outcome == "succeeded", inputs.diagnostics
-    bundle = prepare_from_originals(PrepareSorsOriginalsRequest(inputs.value, SorsRunConfig(as_of_date="2026-06-01")))
-    assert bundle.outcome == "succeeded", bundle.diagnostics
-    operation = restore(RestoreSorsRequest(
-        bundle.value,
+    bundle = parse_source_inputs(interpreted_sources(_files()), "2026-06-01")
+    result = execute_model_methods(
+        bundle,
         SorsRunConfig(
             as_of_date='2026-06-01',
             optimization=SorsOptimizationConfig(
@@ -106,30 +88,24 @@ def test_strict_target_budget(target_budget: int, maximum_seconds: int) -> None:
                 per_solve_time_limit_seconds=30,
             ),
         ),
-    ))
-    assert operation.outcome == "succeeded", operation.diagnostics
-    result = operation.value
+    )
     assert perf_counter() - started < maximum_seconds
     assert result.summary.strict_status == 'OPTIMAL'
-    assert result.summary.optimization_targets_attempted <= target_budget
+    assert result.target_bounds_grid.groupby("optimization_round").size().le(target_budget).all()
 
 
 @pytest.mark.skipif(not _HAS_HIGHSPY, reason='official highspy is unavailable')
 def test_crosswalk_feasibility_gate() -> None:
-    inputs = read_source_files(_files(), store=LocalFileStore())
-    assert inputs.outcome == "succeeded", inputs.diagnostics
-    bundle = prepare_from_originals(PrepareSorsOriginalsRequest(inputs.value, SorsRunConfig(as_of_date="2026-06-01")))
-    assert bundle.outcome == "succeeded", bundle.diagnostics
-    strict = restore(RestoreSorsRequest(bundle.value, SorsRunConfig(as_of_date="2026-06-01")))
-    assert strict.outcome == "succeeded", strict.diagnostics
+    bundle = parse_source_inputs(interpreted_sources(_files()), "2026-06-01")
+    strict = execute_model_methods(bundle, SorsRunConfig(as_of_date="2026-06-01"))
     started = perf_counter()
-    operation = run_crosswalk(CrosswalkSorsRequest(
-        strict.value,
+    result = execute_model_methods(
+        strict,
         SorsCrosswalkConfig(
             mode='feasibility',
             per_solve_time_limit_seconds=1_800,
         ),
-    ))
-    assert operation.outcome == "succeeded", operation.diagnostics
+        crosswalk=True,
+    )
     assert perf_counter() - started < 3_600
-    assert operation.value.status in {'OPTIMAL', 'PARTIAL'}
+    assert result.status in {'OPTIMAL', 'PARTIAL'}

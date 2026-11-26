@@ -1,26 +1,13 @@
-name: Stratbox industry core regression
+name: Stratbox local acceptance parity
 
 on:
   pull_request:
     paths:
-      - 'src/stratbox/domains/cbr/corporate_lending/industries/**'
-      - 'src/stratbox/domains/registry.py'
-      - 'src/stratbox/core/**'
-      - 'src/stratbox/shared/**'
-      - 'tests/unit/registry/**'
-      - 'tests/unit/shared/**'
-      - 'tests/cbr_sors_restoration/**'
-      - 'scripts/reference_editions.py'
-      - 'scripts/inspect_reference_wheel.py'
-      - 'src/stratbox/__init__.py'
+      - 'src/**'
+      - 'tests/**'
+      - 'scripts/**'
       - 'pyproject.toml'
-      - 'scripts/check_internal_imports.py'
-      - 'scripts/check_release_integrity.py'
-      - 'tests/unit/architecture/**'
-      - 'tests/unit/rendering/**'
-      - 'tests/fixtures/operation_contracts_0_14.json'
-      - 'tests/unit/macrobanks/test_cbr_industries*'
-      - 'benchmarks/cbr_industries_history.py'
+      - 'MANIFEST.in'
       - '.github/workflows/industries-core-tests.yml'
   workflow_dispatch:
 
@@ -28,29 +15,7 @@ permissions:
   contents: read
 
 jobs:
-  industries:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install focused test dependencies
-        run: python -m pip install -e '.[http,dataframe,excel]' pytest
-      - name: Source and packaging checks
-        run: |
-          python -B scripts/check_release_integrity.py
-          python -B scripts/check_internal_imports.py
-      - name: Industry debt and issuance regressions
-        run: |
-          python -B -m pytest -q tests/unit/macrobanks/test_cbr_industries_0105a_debt_corp.py tests/unit/macrobanks/test_cbr_industries_0104a_issuance.py
-      - name: Shared computation and admission regressions
-        run: |
-          python -B -m pytest -q tests/integration/universal_core/test_computation_evidence.py tests/integration/universal_core/test_contract_admission.py tests/unit/test_runtime_providers.py tests/smoke/test_core_imports.py tests/unit/registry/test_domain_registration.py
-
-  full-core:
-    name: Full suite and distribution packaging (Python ${{ matrix.python-version }})
+  package:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -62,106 +27,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install complete core test dependencies and package builders
+      - name: Install local verification dependencies
         run: python -m pip install -e '.[test]' build
-      - name: Full core regression suite
-        run: python -B -m pytest -q
-      - name: Build wheel and source distribution
-        run: python -m build --sdist --wheel --outdir dist
-      - name: Verify all reference editions and actual wheel resources
-        shell: bash
-        run: |
-          python -B scripts/reference_editions.py verify --reference all
-          for artifact in dist/stratbox-*.whl dist/stratbox-*.tar.gz; do
-            python -B scripts/inspect_reference_wheel.py "$artifact"
-          done
-      - name: Validate installed base wheel without optional dependencies
-        shell: bash
-        run: |
-          python -m pip install --no-deps --target "$RUNNER_TEMP/stratbox-base" dist/stratbox-*.whl
-          python -I -S - "$RUNNER_TEMP/stratbox-base" <<'PY'
-          import importlib
-          from importlib.metadata import version
-          from pathlib import Path
-          import sys
-
-          root = Path(sys.argv[1]).resolve()
-          sys.path.insert(0, str(root))
-          for name in (
-              "stratbox", "stratbox.core", "stratbox.core.runtime",
-              "stratbox.core.storage", "stratbox.core.network",
-              "stratbox.core.formats", "stratbox.core.execution",
-              "stratbox.core.observability", "stratbox.core.notifications",
-              "stratbox.core.rendering.excel", "stratbox.shared", "stratbox.domains",
-          ):
-              module = importlib.import_module(name)
-              assert Path(module.__file__).resolve().is_relative_to(root), name
-          from stratbox.core.rendering.excel import BUILTIN_STYLES, list_available_presets
-          assert list_available_presets(registry=BUILTIN_STYLES)
-          from stratbox.core.runtime.dependencies import MissingExtra
-          from stratbox.core.rendering.excel import apply_preset
-          try:
-              apply_preset(object(), "DEFAULT", registry=BUILTIN_STYLES)
-          except MissingExtra as exc:
-              assert exc.extra == "excel"
-          else:
-              raise AssertionError("Excel rendering requires the optional engine")
-          import stratbox
-          assert stratbox.__version__ == version("stratbox")
-          print("OK minimal wheel imports, lazy Excel metadata and version")
-          PY
-      - name: Validate isolated installed wheel and packaged resources
-        shell: bash
-        run: |
-          python -m pip install --no-deps --target "$RUNNER_TEMP/stratbox-wheel" dist/stratbox-*.whl
-          python -I -B - "$RUNNER_TEMP/stratbox-wheel" <<'PY'
-          from pathlib import Path
-          import hashlib
-          import json
-          import sys
-          sys.path.insert(0, sys.argv[1])
-          import stratbox
-          from stratbox.shared.reference.assets import load_reference
-          from stratbox.domains.registry import operation_catalog
-          from stratbox.domains.cbr.reporting_forms.common.models import load_models
-          from stratbox.domains.cbr.corporate_lending.sors_restoration.crosswalk.mapping import read_crosswalk_manifest
-          root = Path(stratbox.__file__).resolve().parent
-          assert root.is_relative_to(Path(sys.argv[1]).resolve()), root
-          catalog = operation_catalog()
-          assert len(catalog.list_refs()) == len(catalog.describe())
-          baseline = json.loads((Path.cwd() / "tests/fixtures/operation_contracts_0_14.json").read_text())
-          assert {tuple(x) for x in baseline} <= {
-              (r.operation_id, r.contract_version) for r in catalog.list_refs()
-          }
-          assert {("cbr.offices.parse", 1), ("cbr.offices.compare", 2), ("frg.plan_cleanup", 1)} <= {
-              (r.operation_id, r.contract_version) for r in catalog.list_refs() if r.wire_codec_ref
-          }
-          for reference in ("banks", "okved2", "geography"):
-              load_reference("stratbox.shared.reference." + reference).validate_all()
-          assert len(list((root / "domains/cbr/reporting_forms/models").glob("form*.csv"))) >= 6
-          assert not load_models().empty
-          manifest = read_crosswalk_manifest()
-          assert isinstance(manifest, dict) and manifest.get("mapping_version")
-          original = Path.cwd() / "src/stratbox"
-          groups = (
-              "domains/cbr/reporting_forms/models",
-              "domains/cbr/corporate_lending/sors_restoration/crosswalk/_resources",
-          )
-          for group in groups:
-              expected = {
-                  p.relative_to(original / group): hashlib.sha256(p.read_bytes()).hexdigest()
-                  for p in (original / group).rglob("*") if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc"
-              }
-              installed = {
-                  p.relative_to(root / group): hashlib.sha256(p.read_bytes()).hexdigest()
-                  for p in (root / group).rglob("*") if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc"
-              }
-              assert expected and installed == expected, (
-                  group,
-                  sorted(set(expected) - set(installed)),
-                  sorted(set(installed) - set(expected)),
-                  sorted(path for path in expected.keys() & installed.keys()
-                         if expected[path] != installed[path]),
-              )
-          print("OK isolated wheel, published contracts and byte-exact resource groups")
-          PY
+      - name: Run the same acceptance as local development
+        run: python -B scripts/local_release_check.py --report release-check.json

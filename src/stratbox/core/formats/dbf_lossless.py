@@ -14,6 +14,7 @@ from struct import unpack_from
 from typing import Callable
 
 from stratbox.shared.identity import ByteIdentity
+from stratbox.shared.data.values import DBFField, DBFRecord
 
 PROFILE = "dbf.classic-text.v1"
 VERSIONS = frozenset({0x03, 0x83})
@@ -24,20 +25,8 @@ class DBFDecodeError(ValueError):
     """A stable format diagnostic; unsupported input never becomes guessed data."""
 
 
-@dataclass(frozen=True, slots=True)
-class DBFField:
-    name: str
-    field_type: str
-    length: int
-    decimals: int
-    offset: int
 
 
-@dataclass(frozen=True, slots=True)
-class DBFRecord:
-    ordinal: int
-    deleted: bool
-    values: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)

@@ -7,10 +7,10 @@ from stratbox.domains.cbr.operations.corporate_lending import (
     debt as debt_0105a, issuance as issuance_0104,
 )
 import stratbox.domains.cbr.operations.corporate_lending.industry.operation_helpers as operation_helpers
-import stratbox.domains.cbr.tables.corporate_lending.industry.parsing as parsing
-import stratbox.domains.cbr.tables.corporate_lending.industry.normalization as normalization
-import stratbox.domains.cbr.tables.corporate_lending.industry.contracts as contracts
-import stratbox.domains.cbr.tables.corporate_lending.industry.streams as streams
+import stratbox.domains.cbr.methods.tables.corporate_lending.industry.parsing as parsing
+import stratbox.domains.cbr.methods.tables.corporate_lending.industry.normalization as normalization
+import stratbox.domains.cbr.methods.tables.corporate_lending.industry.contracts as contracts
+import stratbox.domains.cbr.methods.tables.corporate_lending.industry.streams as streams
 import stratbox.domains.cbr.products.corporate_lending.industry.rendering as rendering
 import stratbox.domains.cbr.operations.corporate_lending.debt.operations as debt_operations
 import stratbox.domains.cbr.operations.corporate_lending.issuance.operations as issuance_operations
@@ -90,9 +90,9 @@ def test_shared_grid_date_columns_reject_ambiguous_multi_value_columns():
         rendering._industry_table_dates(sheet)
 
 def test_both_series_share_exact_industry_selection_semantics():
-    import stratbox.domains.cbr.tables.corporate_lending.industry.selection as shared_selection
-    import stratbox.domains.cbr.tables.corporate_lending.debt.selection as stock_selection
-    import stratbox.domains.cbr.tables.corporate_lending.issuance.selection as flow_selection
+    import stratbox.domains.cbr.methods.tables.corporate_lending.industry.selection as shared_selection
+    import stratbox.domains.cbr.methods.tables.corporate_lending.debt.selection as stock_selection
+    import stratbox.domains.cbr.methods.tables.corporate_lending.issuance.selection as flow_selection
 
     chosen = contracts.IndustrySelection(("apk", "total"))
     assert stock_selection.resolve_industry_codes(chosen) == (
@@ -111,8 +111,8 @@ def test_both_series_share_exact_industry_selection_semantics():
 
 
 def test_common_structural_types_are_owned_by_family_not_by_stock_series():
-    import stratbox.domains.cbr.tables.corporate_lending.debt.contracts as stock
-    import stratbox.domains.cbr.tables.corporate_lending.issuance.contracts as flow
+    import stratbox.domains.cbr.methods.tables.corporate_lending.debt.contracts as stock
+    import stratbox.domains.cbr.methods.tables.corporate_lending.issuance.contracts as flow
 
     assert stock.Cbr0105ADebtCorpIndustrySpec is contracts.IndustrySpec
     assert stock.Cbr0105ADebtCorpRegionSpec is contracts.IndustryRegionSpec
@@ -137,13 +137,13 @@ def test_issuance_uses_shared_contracts_without_debt_private_types():
                      "operations/corporate_lending/issuance/operations.py"):
         tree = ast.parse((root / relative).read_text(encoding="utf-8"))
         imports = [node.module for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)]
-        assert "stratbox.domains.cbr.tables.corporate_lending.debt.contracts" not in imports
+        assert "stratbox.domains.cbr.methods.tables.corporate_lending.debt.contracts" not in imports
 
 
 def test_series_implementations_use_direct_family_helpers():
-    import stratbox.domains.cbr.tables.corporate_lending.debt.parser as stock_parser
+    import stratbox.domains.cbr.methods.tables.corporate_lending.debt.parser as stock_parser
     import stratbox.domains.cbr.analytics.corporate_lending.industry.apk as stock_derived
-    import stratbox.domains.cbr.tables.corporate_lending.issuance.parser as flow_parser
+    import stratbox.domains.cbr.methods.tables.corporate_lending.issuance.parser as flow_parser
 
     assert stock_parser.optimize_industry_stream_dtypes is streams.optimize_industry_stream_dtypes
     assert stock_derived.concat_industry_streams is streams.concat_industry_streams

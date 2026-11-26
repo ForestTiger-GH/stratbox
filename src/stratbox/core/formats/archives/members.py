@@ -82,6 +82,10 @@ def validate_members(members: tuple[ArchiveMember, ...], limits: ArchiveLimits) 
         for member in members
     ):
         raise ArchiveError("archive.unsafe_member")
+    files = {name for name, member in zip(names, members) if not member.directory}
+    if any("/".join(name.split("/")[:index]) in files
+           for name in names for index in range(1, len(name.split("/")))):
+        raise ArchiveError("archive.file_parent_conflict")
 
 
 def zip_members(archive: ZipFile) -> tuple[ArchiveMember, ...]:

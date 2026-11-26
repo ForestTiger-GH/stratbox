@@ -1,89 +1,66 @@
-# Calling commands, operations, scenarios and cascades
+# Direct calls, prepared plans and result lifetime
 
-`StrategyBox` resolves canonical definitions, prepares a command plan and
-submits it to one bounded session. The same client accepts direct IDs, typed
-requests and temporary typed definitions.
+`stratbox.sdk.StrategyBox` provides one entry for commands, operations, scenarios
+and cascades. Discovery reads standard metadata; preparation selects exact
+methods/settings and required work; the execution service owns a multicall
+session and its resources.
+
+This page describes the common call path. Source and numerical methods still
+apply their explicit format, semantic and provider requirements.
+
+## Contents
+
+1. Discovery — inspect standard definitions and continuing source records.
+2. Invocation — prepare, run and submit through the same service.
+3. Results — named accepted values and independent outcomes.
+4. Providers — explicit infrastructure and caller ownership.
+
+## 1. Discovery
 
 ```python
 from stratbox.sdk import StrategyBox
-from stratbox.composition.requests import InvocationRequest
 
 with StrategyBox() as box:
-    request = InvocationRequest("material.read", inputs={"material": b"source data"})
-    result = box.run(request)
-    assert result.outcome == "succeeded"
-    payload = result.output("value")
-
-# The returned result owns its retained values until close().
-assert payload.data == b"source data"
-result.close()
+    page = box.discover(kind="command", limit=20)
+    definition = box.describe("command.table.interpret")
+    source = box.sources.source("fns.sme")
 ```
 
-## Inspecting the prepared route
+The page contains an offset, total and optional next offset. Source records are
+continuing table declarations, not downloaded issues or individual numerical
+histories. `box.sources.list(domain_id="fns")` returns the selected source records.
 
-`box.prepare(id, inputs=..., parameters=...)` returns an `ExecutionPlan`.
-`plan.explain()` reports the root kind, selected bindings, semantic scopes,
-physical command work and logical uses. `plan.to_dict()` provides a versioned
-projection for supported portable inputs. Nonportable values require a host
-reference or a supported typed snapshot rather than arbitrary object loading.
+## 2. Preparation and execution
 
-Use `outputs=(...)` to request named outputs. Required checks and effects remain
-in the closure. `supplied_outputs` cuts upstream work at a qualified named
-output while preserving independent obligations. Use an actual projected or
-prepared value with its contract and qualification when passing results
-between invocations.
+`box.prepare(capability_id, inputs=..., parameters=..., target=..., outputs=...)`
+returns a prepared plan. `box.run(plan)` executes it. `box.invoke(...)` performs
+the same preparation and run. `box.submit(...)` returns a handle with result,
+status and cancellation controls. A caller-authored root definition can be
+prepared against a catalog containing its dependencies.
 
-`box.invoke("extract.observations", inputs={"material": payload},
-parameters={"profile": profile})` uses the standard row interpretation method.
-Profiles describe sheet selection, source axes, periods, units and cell
-coordinates. `method_id`, `profile_id` and `group_id` select registered
-specializations explicitly. Missing or ambiguous bindings fail preparation.
+The target can identify a source series, calculation model or product. Input
+values are supplied explicitly. Unsupported layouts and source contradictions
+are diagnosed; a parser does not silently substitute other material.
 
-`extract.observations` has three coherent outputs: `observations`, `coverage`
-and `findings`. Selecting observations keeps the complete assessment in the
-required closure. `convert.readable` returns a READABLE artifact; rendered
-analytical representations have the PRODUCTS role. The
-[assessment and calculation guide](extraction-assessments-and-analytical-pairs.md)
-describes actual evidence, exact-coordinate coverage and explicit ratio pairs.
+## 3. Accepted outputs and lifetime
 
-Use `selection={...}` on exact invocations or `GoalRequest` to carry source,
-representation and edition constraints through group, method and recipe
-resolution. Prepared plans pin all used bindings, including processing groups
-and goal recipes, and recheck those identities before execution.
+`RunResult.outcome` describes the task result. `outputs` contains named accepted
+values, `scopes` preserves logical composition outcomes, and diagnostics retain
+failure or incomplete-work findings. `result.output(name)` reads a selected
+output; a single output can be read using the default name.
 
-## Local definitions and goal requests
+The caller closes retained results after use and closes the client to release
+its service resources. Accepted values and required effects have separate
+outcomes. An optional delivery failure does not invalidate the accepted data.
+Shared producer cancellation follows the remaining logical demand.
 
-An `OperationDefinition` contains a `GraphBody` of command calls. Scenarios
-contain operations or reusable scenarios; cascades coordinate scenarios.
-Passing a local definition to `box.prepare` or `box.invoke` admits it through
-the same catalog rules. Its identity is then addressable in that client.
-Replacing a live definition under the same ID is rejected; use a distinct ID
-for a different definition.
+## 4. Infrastructure providers
 
-For a group of local definitions and profiles, create a `CatalogContribution`
-and use `catalog_snapshot().overlay(contribution)` as the `capabilities=`
-constructor argument. A `RecipeDefinition` binds a goal to a capability.
-`GoalRequest` and `box.prepare_goal` use that registered recipe and the same
-exact preparation path.
+Providers are supplied explicitly through `StrategyBox(providers={...})`.
+The HTTP, file, dataset, document-conversion and seasonal-adjustment roles have
+different contracts. An unused backend is not required by another independent
+route. A numerical history already obtained from a database needs no publisher
+HTTP access or workbook decoder.
 
-The [offline example](../../examples/capability_session.py) uses standard-library
-data and a temporary operation. The [ownership description](../architecture/capability-execution.md)
-explains dependency rules and the migration boundary for existing domains.
-
-## Provider and result lifetime
-
-Supply provider instances through `StrategyBox(providers={...})`.
-`http.acquire` requires `http`; `store.commit` requires `output_filestore`.
-Acquisition is explicit. Extraction from supplied material opens no source
-connection. Save is an explicit effect with a destination and revision policy.
-
-Submit independent plans with `box.submit(plan)` to share one resource ledger.
-Call `handle.snapshot()`, `handle.output(name)` or `handle.result(timeout)`.
-`result.scopes` preserves independent scenario and operation outcomes.
-Accepted output release can precede unrelated unfinished scopes. A failed
-operation's rejected value remains unavailable.
-
-Close retained results explicitly when finished. A read lease preserves an
-already acquired reader across result closure; its bytes remain charged until
-the reader releases them. Temporary spill is process-local. Durable restart
-recovery belongs to a host implementing the recovery ports.
+The library owns the common meaning and controls. A platform host owns actual
+schedules, protocol-server transport and its durable application lifecycle.

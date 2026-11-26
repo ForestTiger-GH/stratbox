@@ -1,56 +1,41 @@
 # Stratbox
 
-Stratbox provides reusable Python operations for acquiring, interpreting and
-presenting banking and economic data. Applications pass dates and
-destinations and can choose their own infrastructure providers.
+Stratbox provides standard, composable actions for statistical publications and
+numerical data. The same command contracts serve notebooks, applications and
+machine clients. Domain records supply the methods and exact rules for each
+continuing table series.
 
-The package organizes neutral execution and infrastructure under `stratbox.core`,
-shared data contracts and reference resources under `stratbox.shared`,
-business packages and source declarations under `stratbox.domains`, and
-typed command, operation, scenario and cascade definitions under
-`stratbox.capabilities`. Each domain contributes typed command, operation and
-scenario metadata from its own capability owner. Source goals select those
-contributions through exact recipes and processing groups.
-The public `stratbox.sdk.StrategyBox` facade prepares all four kinds through
-`stratbox.composition` and executes them in one bounded session.
+The package has five owners:
 
-- [Capability definitions, preparation and execution ownership](docs/architecture/capability-execution.md)
-- [Independent standard processing stages and semantic replay](docs/current-how/standard-data-stages.md)
-- [Supplied tasks, pinned membership and coherent releases](docs/current-how/supplied-tasks-and-releases.md)
-- [Direct capability calls, temporary graphs and retained results](docs/current-how/capability-session.md)
-- [Extraction evidence, exact coverage and analytical pairs](docs/current-how/extraction-assessments-and-analytical-pairs.md)
-- [Independent domain routes, source cards and portable replay](docs/current-how/independent-domain-data-routes.md)
-- [Shared semantic owners and reference editions](docs/architecture/shared-ownership.md)
-- [Geography name matching](docs/current-how/geography-name-resolution.md)
-- [Operation discovery and source templates](docs/current-how/domain-operation-registry.md)
-- [Executable scenarios, shared resources and the SDK](docs/current-how/executable-composition.md)
-- [Processing roles, bounded catalog discovery and domain coverage](docs/current-how/processing-operation-catalog.md)
-- [Core API and domain operations](docs/current-how/universal-business-core.md)
-- [Universal material flow, named adapters and typed operation handoff](docs/current-how/universal-data-flow.md)
-- [Logical dataset snapshots in memory, files and distributed stores](docs/current-how/logical-dataset-snapshots.md)
-- [CBR publication registry, collection and independent processing routes](docs/current-how/cbr-data-pipeline.md)
-- [CBR statistical workbooks, semantic mappings and retained products](docs/current-how/cbr-statistical-workbooks.md)
-- [Execution, admission and recovery](docs/current-how/core-execution-and-admission.md)
-- [Execution finalization and effect integrity](docs/architecture/execution-finalization.md)
-- [Installation and offline quickstart](docs/how/install-and-run-core.md)
-- [Execution and storage boundaries](docs/architecture/core-operation-boundaries.md)
-- [Observability: qualified events, journals and recovery](docs/architecture/observability.md)
-- [Notification subscriptions and recovery](docs/current-how/notifications.md)
-- [Journal subscriptions for capability outputs and completion](docs/current-how/capability-notifications.md)
-- [Rosstat publisher original acquisition and revision evidence](docs/current-how/rosstat-publications.md)
-- [Strategy Box Knowledge Product](docs/README.md)
+- `capabilities`: standard commands, operations, scenarios, cascades, preparation
+  and plans.
+- `core`: direct execution, bounded resources, technical providers, effects,
+  journals and notification delivery.
+- `domains`: explicit immutable publisher catalogs and narrow scientific methods.
+- `shared`: values, identity, dates, qualifications and reference contents.
+- `sdk`: one public discovery and invocation facade.
+
+```python
+from stratbox.sdk import StrategyBox
+
+with StrategyBox() as box:
+    commands = box.discover(kind="command", limit=20)
+    escrow = box.sources.source("cbr.project_finance.escrow")
+```
+
+- [Standard definitions and execution ownership](docs/architecture/capability-execution.md)
+- [Direct calls, prepared plans and result lifetime](docs/current-how/capability-session.md)
+- [Independent typed processing stages](docs/current-how/standard-data-stages.md)
+- [Static domain catalogs and scientific coverage](docs/current-how/independent-domain-data-routes.md)
+- [Installation and local verification](docs/how/install-and-run-core.md)
+- [Maintained analytical knowledge](docs/README.md)
 
 ```sh
-python -m pip install .
-python -m pip install -e ".[test]"
-python -B scripts/check_release_integrity.py
-python -B scripts/check_internal_imports.py
-python -B scripts/admit_registry.py --level executable
-python -B scripts/check_capability_migration.py
-python -B scripts/reference_editions.py verify --reference all
-python -B -m pytest -q
-# Offline regression and distribution admission (requires build, pytest, wheel):
-# python -B scripts/local_release_check.py
-# After local wheel build, verify the exact distribution bytes:
-# python -B scripts/inspect_reference_wheel.py dist/stratbox-0.24.0-py3-none-any.whl
+python -m pip install -e ".[test]" build
+python scripts/check_release_integrity.py
+python scripts/check_internal_imports.py
+python scripts/check_readme_links.py
+python scripts/reference_assets.py --reference all
+python -m pytest -q
+python scripts/local_release_check.py
 ```

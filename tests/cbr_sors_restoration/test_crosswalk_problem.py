@@ -3,16 +3,16 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from stratbox.domains.cbr.analytics.corporate_lending.sors.contracts import SorsCrosswalkConfig
-from stratbox.domains.cbr.analytics.corporate_lending.sors.inputs.contracts import SorsSourceBundle
-from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.problem import CrosswalkCompilation
-from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.problem import compile_crosswalk_problem
-from stratbox.domains.cbr.analytics.corporate_lending.sors.linear.contracts import CsrMatrixData
-from stratbox.domains.cbr.analytics.corporate_lending.sors.linear.contracts import SorsLinearProblem
-from stratbox.domains.cbr.analytics.corporate_lending.sors.publication import RoundingPolicy
-from stratbox.domains.cbr.analytics.corporate_lending.sors.registries.okved2 import read_okved2_classes
-from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.operations import _base_scenario_grid
-from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.operations import _target_outer_bounds
+from stratbox.domains.cbr.calculations.sors.contracts import SorsCrosswalkConfig
+from stratbox.domains.cbr.calculations.sors.inputs.contracts import SorsSourceBundle
+from stratbox.domains.cbr.calculations.sors.crosswalk.problem import CrosswalkCompilation
+from stratbox.domains.cbr.calculations.sors.crosswalk.problem import compile_crosswalk_problem
+from stratbox.domains.cbr.calculations.sors.linear.contracts import CsrMatrixData
+from stratbox.domains.cbr.calculations.sors.linear.contracts import SorsLinearProblem
+from stratbox.domains.cbr.calculations.sors.publication import RoundingPolicy
+from stratbox.domains.cbr.calculations.sors.registries.okved2 import read_okved2_classes
+from stratbox.domains.cbr.calculations.sors.crosswalk.analysis import _base_scenario_grid
+from stratbox.domains.cbr.calculations.sors.crosswalk.analysis import _target_outer_bounds
 
 
 def _empty_bundle() -> SorsSourceBundle:
@@ -225,7 +225,7 @@ def test_agriculture_crosswalk_equations_identify_01_and_02_by_residual() -> Non
         SorsCrosswalkConfig(mode='feasibility'),
         'core',
     )
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.closure import close_crosswalk_bounds
+    from stratbox.domains.cbr.calculations.sors.crosswalk.closure import close_crosswalk_bounds
 
     closed = close_crosswalk_bounds(
         compilation.problem,
@@ -248,8 +248,8 @@ def test_agriculture_crosswalk_equations_identify_01_and_02_by_residual() -> Non
 def test_scenario_envelope_is_not_accepted_when_coverage_is_incomplete(
     small_result,
 ) -> None:
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.operations import _ScenarioExecution
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.operations import _robust_envelope
+    from stratbox.domains.cbr.calculations.sors.crosswalk.analysis import _ScenarioExecution
+    from stratbox.domains.cbr.calculations.sors.crosswalk.analysis import _robust_envelope
 
     compilation = _acceptance_compilation(small_result)
     optimal_grid = _base_scenario_grid(
@@ -305,8 +305,8 @@ def test_scenario_envelope_is_not_accepted_when_coverage_is_incomplete(
 
 
 def test_one_sided_lp_tightening_can_safely_identify_bucket(small_result) -> None:
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.operations import _apply_target_results
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.linear.highs import SolveResult
+    from stratbox.domains.cbr.calculations.sors.crosswalk.analysis import _apply_target_results
+    from stratbox.domains.cbr.calculations.sors.linear.highs import SolveResult
 
     compilation = _acceptance_compilation(small_result)
     grid = _base_scenario_grid(
@@ -414,7 +414,7 @@ def test_broad_agriculture_scenario_preserves_mapping_uncertainty() -> None:
         SorsCrosswalkConfig(mode='feasibility'),
         'broad',
     )
-    from stratbox.domains.cbr.analytics.corporate_lending.sors.crosswalk.closure import close_crosswalk_bounds
+    from stratbox.domains.cbr.calculations.sors.crosswalk.closure import close_crosswalk_bounds
 
     closed = close_crosswalk_bounds(compilation.problem, tolerance=1e-9)
     compilation = CrosswalkCompilation(

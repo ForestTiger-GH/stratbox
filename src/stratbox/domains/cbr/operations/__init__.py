@@ -1,1 +1,0 @@
-"""CBR operations functional owner."""
