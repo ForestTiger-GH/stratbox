@@ -1,95 +1,33 @@
-"""Authoring graphs independent of compilation and execution state."""
-from __future__ import annotations
-
+"""Authoring graphs; control structures carry no publisher implementation."""
 from dataclasses import dataclass, field
-from types import MappingProxyType
-from typing import Mapping
-
-from stratbox.shared.identifiers import safe_token
-
-
-def _freeze(value):
-    if isinstance(value, Mapping):
-        return frozen_mapping(value)
-    if isinstance(value, (tuple, list)):
-        return tuple(_freeze(item) for item in value)
-    if isinstance(value, (set, frozenset)):
-        return frozenset(_freeze(item) for item in value)
-    return value
-
-
-def frozen_mapping(value):
-    if not isinstance(value, Mapping) or any(not isinstance(key, str) for key in value):
-        raise ValueError("capability.invalid_mapping")
-    return MappingProxyType({key: _freeze(item) for key, item in value.items()})
-
+from collections.abc import Mapping
+from .immutable import freeze
 
 @dataclass(frozen=True, slots=True)
 class InputRef:
     name: str
-
-    def __post_init__(self):
-        safe_token(self.name)
-
+    path: str = ''
 
 @dataclass(frozen=True, slots=True)
 class ParameterRef:
     name: str
-    path: str = ""
+    path: str = ''
 
-    def __post_init__(self):
-        safe_token(self.name)
-        if not isinstance(self.path, str) or any(not name.isidentifier() or name.startswith("_")
-                for name in self.path.split(".") if self.path):
-            raise ValueError("capability.invalid_parameter_path")
-
+@dataclass(frozen=True, slots=True)
+class TargetRef:
+    name: str = 'target'
 
 @dataclass(frozen=True, slots=True)
 class OutputRef:
     step: str
-    port: str = "value"
-
-    def __post_init__(self):
-        safe_token(self.step)
-        safe_token(self.port)
-
-    @property
-    def task(self):
-        return self.step
-
+    port: str = 'value'
+    path: str = ''
 
 @dataclass(frozen=True, slots=True)
 class Condition:
-    step: str
-    port: str = "value"
-    field: str = ""
+    value: object
     equals: object = True
-    statuses: tuple[str, ...] = ()
-
-    def __post_init__(self):
-        safe_token(self.step)
-        safe_token(self.port)
-        object.__setattr__(self, "equals", _freeze(self.equals))
-        if (not isinstance(self.statuses, tuple) or any(status not in {
-                "succeeded", "partial", "failed", "cancelled", "unknown", "blocked", "skipped"
-                } for status in self.statuses)):
-            raise ValueError("capability.invalid_condition_status")
-        if not isinstance(self.field, str):
-            raise ValueError("capability.invalid_condition")
-        if any(not part.isidentifier() or part.startswith("_") for part in self.field.split(".") if self.field):
-            raise ValueError("capability.invalid_condition")
-
-
-@dataclass(frozen=True, slots=True)
-class RetryPolicy:
-    max_attempts: int = 1
-    delay: float = 0.0
-    retry_codes: tuple[str, ...] = ()
-
-    def __post_init__(self):
-        if type(self.max_attempts) is not int or self.max_attempts < 1 or self.delay < 0:
-            raise ValueError("capability.invalid_retry")
-
+    path: str = ''
 
 @dataclass(frozen=True, slots=True)
 class Call:
@@ -97,177 +35,68 @@ class Call:
     capability_id: str
     inputs: Mapping[str, object] = field(default_factory=dict)
     parameters: Mapping[str, object] = field(default_factory=dict)
+    target: object = field(default_factory=TargetRef)
     depends_on: tuple[str, ...] = ()
     condition: Condition | None = None
     required: bool = True
-    method_id: str | None = None
-    profile_id: str | None = None
-    group_id: str | None = None
-    selection: Mapping[str, object] = field(default_factory=dict)
-    reference: object | None = None
-    binding_identities: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(self):
-        safe_token(self.step_id)
-        safe_token(self.capability_id)
-        object.__setattr__(self, "inputs", frozen_mapping(self.inputs))
-        object.__setattr__(self, "parameters", frozen_mapping(self.parameters))
-        object.__setattr__(self, "selection", frozen_mapping(self.selection))
-        object.__setattr__(self, "binding_identities", frozen_mapping(self.binding_identities))
-        if any(not isinstance(value, str) or not value for value in self.binding_identities.values()):
-            raise ValueError("capability.invalid_binding_identities")
-        if self.reference is not None:
-            from .definitions import CapabilityRef
-            if not isinstance(self.reference, CapabilityRef) or self.reference.capability_id != self.capability_id:
-                raise ValueError("capability.invalid_definition_reference")
-        if not isinstance(self.depends_on, tuple) or type(self.required) is not bool:
-            raise ValueError("capability.invalid_call")
-        for dependency in self.depends_on:
-            safe_token(dependency)
-        if self.condition is not None and not isinstance(self.condition, Condition):
-            raise ValueError("capability.invalid_condition")
+        for name in ('inputs', 'parameters'): object.__setattr__(self, name, freeze(getattr(self, name)))
 
+@dataclass(frozen=True, slots=True)
+class MapCall:
+    step_id: str
+    capability_id: str
+    items: object
+    item_input: str = 'item'
+    inputs: Mapping[str, object] = field(default_factory=dict)
+    parameters: Mapping[str, object] = field(default_factory=dict)
+    target: object = field(default_factory=TargetRef)
+    max_items: int = 10000
+    window: int = 4
+    completion: str = 'all_selected'
+    output_port: str = 'dataset'
+    required: bool = True
+
+    def __post_init__(self):
+        if self.max_items < 0 or self.window < 1 or self.completion not in {'all_selected', 'eligible_subset'}:
+            raise ValueError('graph.invalid_map')
+        object.__setattr__(self, 'inputs', freeze(self.inputs))
+        object.__setattr__(self, 'parameters', freeze(self.parameters))
+
+@dataclass(frozen=True, slots=True)
+class RepeatUntil:
+    step_id: str
+    body: object
+    initial: object
+    state_input: str = 'state'
+    state_output: str = 'state'
+    stop: object = None
+    max_passes: int = 100
+    required: bool = True
+    inputs: Mapping[str, object] = field(default_factory=dict)
+
+    def __post_init__(self):
+        if self.max_passes < 1: raise ValueError('graph.invalid_repeat_limit')
+
+@dataclass(frozen=True, slots=True)
+class CollectCall:
+    step_id: str
+    items: tuple[object, ...]
+    required: bool = True
 
 @dataclass(frozen=True, slots=True)
 class GraphBody:
-    steps: tuple[Call | MapCall | CollectCall | FoldCall, ...]
+    steps: tuple[object, ...]
     outputs: Mapping[str, object] = field(default_factory=dict)
     required_checks: tuple[str, ...] = ()
     required_effects: tuple[str, ...] = ()
     required_completions: tuple[str, ...] = ()
 
     def __post_init__(self):
-        if not isinstance(self.steps, tuple) or any(not isinstance(step, (Call, MapCall, CollectCall, FoldCall)) for step in self.steps):
-            raise ValueError("capability.invalid_graph")
-        names = {step.step_id for step in self.steps}
-        if len(names) != len(self.steps):
-            raise ValueError("capability.duplicate_step")
+        object.__setattr__(self, 'steps', tuple(self.steps))
+        object.__setattr__(self, 'outputs', freeze(self.outputs))
+        names = tuple(step.step_id for step in self.steps)
+        if len(names) != len(set(names)): raise ValueError('graph.duplicate_step')
         for roots in (self.required_checks, self.required_effects, self.required_completions):
-            if not isinstance(roots, tuple) or not set(roots) <= names:
-                raise ValueError("capability.invalid_obligation_root")
-        if any(not step.required for step in self.steps if step.step_id in self.required_completions):
-            raise ValueError("capability.optional_completion_root")
-        object.__setattr__(self, "outputs", frozen_mapping(self.outputs))
-
-
-@dataclass(frozen=True, slots=True)
-class MethodSlot:
-    slot_id: str
-    allowed_effects: frozenset[str] = frozenset()
-
-    def __post_init__(self):
-        safe_token(self.slot_id)
-
-
-@dataclass(frozen=True, slots=True)
-class MapCall:
-    """Bounded expansion over a frozen item source; the coordinator owns waiting."""
-    step_id: str
-    capability_id: str
-    items: object
-    item_input: str = "item"
-    inputs: Mapping[str, object] = field(default_factory=dict)
-    parameters: Mapping[str, object] = field(default_factory=dict)
-    window: int | None = None
-    key_field: str | None = None
-    required: bool = True
-    allow_partial: bool = False
-    depends_on: tuple[str, ...] = ()
-    contract: object | None = None
-    max_items: int | None = None
-    selection: Mapping[str, object] = field(default_factory=dict)
-    condition: Condition | None = None
-
-    def __post_init__(self):
-        safe_token(self.step_id)
-        safe_token(self.capability_id)
-        safe_token(self.item_input)
-        object.__setattr__(self, "inputs", frozen_mapping(self.inputs))
-        object.__setattr__(self, "parameters", frozen_mapping(self.parameters))
-        object.__setattr__(self, "items", _freeze(self.items))
-        object.__setattr__(self, "selection", frozen_mapping(self.selection))
-        if self.window is not None and (type(self.window) is not int or self.window < 1):
-            raise ValueError("capability.invalid_map_window")
-        if self.max_items is not None and (type(self.max_items) is not int or self.max_items < 0):
-            raise ValueError("capability.invalid_map_limit")
-        if self.condition is not None and not isinstance(self.condition, Condition):
-            raise ValueError("capability.invalid_condition")
-        if type(self.required) is not bool or type(self.allow_partial) is not bool or not isinstance(self.depends_on, tuple):
-            raise ValueError("capability.invalid_map")
-        if self.key_field is not None and (not self.key_field.isidentifier() or self.key_field.startswith("_")):
-            raise ValueError("capability.invalid_map_key")
-        from .definitions import PortContract
-        if self.contract is not None and (not isinstance(self.contract, PortContract) or not self.contract.collection):
-            raise ValueError("capability.map_collection_contract_required")
-
-
-@dataclass(frozen=True, slots=True)
-class CollectCall:
-    """Structural collection preserves membership without semantic aggregation."""
-    step_id: str
-    inputs: tuple[OutputRef, ...]
-    contract: object
-    element_contract: object
-    allow_partial: bool = False
-    allow_empty: bool = False
-    depends_on: tuple[str, ...] = ()
-    required: bool = True
-    condition: Condition | None = None
-
-    def __post_init__(self):
-        safe_token(self.step_id)
-        from .definitions import PortContract
-        if (not isinstance(self.inputs, tuple) or any(not isinstance(ref, OutputRef) for ref in self.inputs)
-                or not isinstance(self.contract, PortContract) or not self.contract.collection
-                or not isinstance(self.element_contract, PortContract)):
-            raise ValueError("capability.invalid_collection")
-        if not self.inputs and not self.allow_empty:
-            raise ValueError("capability.empty_collection")
-        if any(type(value) is not bool for value in (self.allow_partial, self.allow_empty, self.required)):
-            raise ValueError("capability.invalid_collection")
-        if not isinstance(self.depends_on, tuple):
-            raise ValueError("capability.invalid_collection")
-        if self.condition is not None and not isinstance(self.condition, Condition):
-            raise ValueError("capability.invalid_condition")
-
-
-@dataclass(frozen=True, slots=True)
-class FoldCall:
-    """Finite ordered state transitions lowered to ordinary scenario occurrences.
-
-    Membership is supplied before preparation. Runtime-discovered membership
-    requires a separately admitted continuation rather than implicit iteration.
-    """
-    step_id: str
-    capability_id: str
-    items: object
-    initial: object
-    contract: object
-    item_input: str = 'item'
-    state_input: str = 'state'
-    state_output: str = 'value'
-    inputs: Mapping[str, object] = field(default_factory=dict)
-    parameters: Mapping[str, object] = field(default_factory=dict)
-    selection: Mapping[str, object] = field(default_factory=dict)
-    retry: object = None
-    max_items: int = 100000
-    required: bool = True
-    depends_on: tuple[str, ...] = ()
-    condition: Condition | None = None
-
-    def __post_init__(self):
-        for token in (self.step_id, self.capability_id, self.item_input, self.state_input, self.state_output):
-            safe_token(token)
-        if self.item_input == self.state_input or self.item_input in self.inputs or self.state_input in self.inputs:
-            raise ValueError('capability.fold_input_conflict')
-        from .definitions import PortContract
-        if not isinstance(self.contract, PortContract):
-            raise ValueError('capability.fold_contract_required')
-        for name in ('inputs', 'parameters', 'selection'):
-            object.__setattr__(self, name, frozen_mapping(getattr(self, name)))
-        for name in ('items', 'initial', 'retry'):
-            object.__setattr__(self, name, _freeze(getattr(self, name)))
-        if type(self.max_items) is not int or self.max_items < 0 or type(self.required) is not bool:
-            raise ValueError('capability.invalid_fold')
-        if not isinstance(self.depends_on, tuple) or self.condition is not None and not isinstance(self.condition, Condition):
-            raise ValueError('capability.invalid_fold')
+            if not set(roots) <= set(names): raise ValueError('graph.unknown_obligation')

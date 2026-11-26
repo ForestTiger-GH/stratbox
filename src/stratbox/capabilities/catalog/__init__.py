@@ -1,6 +1,3 @@
-"""Canonical metadata snapshots; executable adapters belong to bootstrap."""
-from .descriptors import (
-    CatalogContribution, MethodDefinition, ProcessingGroup, ProfileDefinition,
-    RecipeDefinition, ReferenceDefinition, SchemaDefinition,
-)
-from .snapshot import CatalogError, CatalogSnapshot, CatalogView, Readiness, ResolvedBinding
+"""Standard definitions and direct static domain records."""
+from .definitions import Catalog, standard_catalog
+from .domains import DomainCatalog, load_domains, DOMAINS

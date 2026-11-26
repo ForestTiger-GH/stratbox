@@ -1,157 +1,19 @@
-"""Exact work identity shared by preparation and execution coordinators."""
-from __future__ import annotations
-
-from dataclasses import dataclass, fields, is_dataclass
-from hashlib import sha256
-from json import dumps
-from collections.abc import Mapping
-from enum import Enum
-
-
-def canonical(value):
-    """Return a stable typed JSON tree; reject opaque values conservatively."""
-    if value is None or type(value) in {str, bool, int}:
-        return value
-    if type(value) is float:
-        if value != value or value in {float("inf"), float("-inf")}:
-            raise ValueError("reuse.nonfinite_identity")
-        return {"float": value.hex()}
-    if isinstance(value, Enum):
-        return {"enum": type(value).__module__ + "." + type(value).__qualname__, "value": canonical(value.value)}
-    if isinstance(value, bytes):
-        return {"bytes": sha256(value).hexdigest(), "length": len(value)}
-    if isinstance(value, Mapping):
-        if any(not isinstance(key, str) for key in value):
-            raise ValueError("reuse.string_mapping_keys_required")
-        return {key: canonical(item) for key, item in sorted(value.items())}
-    if isinstance(value, (tuple, list)):
-        return {type(value).__name__: [canonical(item) for item in value]}
-    if isinstance(value, (set, frozenset)):
-        return {type(value).__name__: sorted((canonical(item) for item in value), key=lambda item: dumps(item, sort_keys=True))}
-    if is_dataclass(value):
-        return {"type": type(value).__module__ + "." + type(value).__qualname__,
-                "fields": {item.name: canonical(getattr(value, item.name)) for item in fields(value) if item.compare}}
-    raise ValueError("reuse.opaque_identity")
-
-
-def fingerprint(value) -> str:
-    return sha256(dumps(canonical(value), sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
-
-
-@dataclass(frozen=True, slots=True)
-class WorkIdentity:
-    command_id: str
-    implementation_revision: str
-    input_identities: tuple[tuple[str, str], ...] = ()
-    parameters_fingerprint: str = ""
-    method_fingerprint: str = ""
-    profile_fingerprint: str = ""
-    schema_fingerprint: str = ""
-    reference_fingerprints: tuple[str, ...] = ()
-    access_scope: str = ""
-    freshness: str = ""
-    observation: str = ""
-    state_epoch: str = ""
-    binding_fingerprints: tuple[tuple[str, str], ...] = ()
-    input_evidence_fingerprints: tuple[tuple[str, str], ...] = ()
-
-    def __post_init__(self):
-        if not self.command_id or not self.implementation_revision:
-            raise ValueError("reuse.incomplete_identity")
-        names = [name for name, _ in self.input_identities]
-        if len(names) != len(set(names)):
-            raise ValueError("reuse.duplicate_input_identity")
-        for name in ("input_identities", "binding_fingerprints", "input_evidence_fingerprints"):
-            values = getattr(self, name)
-            if (not isinstance(values, tuple)
-                    or any(not isinstance(item, tuple) or len(item) != 2
-                           or not all(isinstance(part, str) for part in item) for item in values)
-                    or len({key for key, _ in values}) != len(values)):
-                raise ValueError("reuse.invalid_identity_fields")
-            object.__setattr__(self, name, tuple(sorted(values)))
-
-    @property
-    def fingerprint(self):
-        return fingerprint(self)
-
+"""Reuse permission and exact dependency fingerprints."""
+from dataclasses import dataclass
+from .immutable import fingerprint
 
 @dataclass(frozen=True, slots=True)
 class ReuseContract:
     deterministic: bool = True
     shareable: bool = True
     completed: bool = True
-    mutation: str = "isolated"
-    effects: frozenset[str] = frozenset()
-    significant_parameters: tuple[str, ...] = ()
+    mutation: str = 'immutable'
     observation_scoped: bool = False
-
-    def __post_init__(self):
-        if self.mutation not in {"isolated", "immutable", "exclusive"}:
-            raise ValueError("reuse.invalid_mutation_contract")
-        if any(type(value) is not bool for value in (self.deterministic, self.shareable, self.completed, self.observation_scoped)):
-            raise ValueError("reuse.invalid_contract")
-        if (not isinstance(self.effects, frozenset) or any(not isinstance(item, str) for item in self.effects)
-                or not isinstance(self.significant_parameters, tuple)
-                or any(not isinstance(item, str) for item in self.significant_parameters)):
-            raise ValueError("reuse.invalid_contract")
 
     @property
     def inflight_eligible(self):
-        return ((self.deterministic or self.observation_scoped) and self.shareable
-                and self.mutation != "exclusive"
-                and (not self.effects or self.observation_scoped and self.effects <= {"network.receive"}))
+        return self.shareable and (self.deterministic or self.observation_scoped) and self.mutation != 'exclusive'
 
     @property
     def completed_eligible(self):
         return self.inflight_eligible and self.completed
-
-    @property
-    def eligible(self):
-        """Eligibility to join a producer; completed reuse is a separate policy."""
-        return self.inflight_eligible
-
-
-@dataclass(frozen=True, slots=True)
-class ConsumerEligibility:
-    allow_network: bool = True
-    access_scope: str = ""
-    freshness: str = ""
-    observation: str = ""
-    state_epoch: str = ""
-
-    def __post_init__(self):
-        if type(self.allow_network) is not bool or any(not isinstance(getattr(self, key), str)
-                for key in ("access_scope", "freshness", "observation", "state_epoch")):
-            raise ValueError("reuse.invalid_consumer")
-
-    def eligible_for(self, identity: WorkIdentity, effects=frozenset()):
-        return (not (not self.allow_network and "network.receive" in effects)
-                and all(getattr(self, key) == getattr(identity, key)
-                        for key in ("access_scope", "freshness", "observation", "state_epoch")))
-
-
-def build_work_identity(command_id: str, implementation_revision: str, *,
-                        input_identities=(), parameters_fingerprint="",
-                        binding_identities=None, schema_fingerprint="",
-                        input_evidence_fingerprints=(), access_scope="", freshness="",
-                        observation="", state_epoch="") -> WorkIdentity:
-    """Use the same semantic basis before and after references become concrete.
-
-    Binding identities contain only declarations significant to this command.
-    A parent interpretation profile does not affect an independent decoder;
-    its pinned identity remains with the parent's selected binding instead.
-    Runtime replaces reference-based inputs and context while retaining every
-    exact declaration, schema, profile and reference fingerprint in this basis.
-    """
-    bindings = dict(binding_identities or {})
-    return WorkIdentity(command_id, implementation_revision,
-        tuple(input_identities), parameters_fingerprint,
-        method_fingerprint=bindings.get("method", bindings.get("specialization.method", bindings.get("implementation", ""))),
-        profile_fingerprint=bindings.get("profile", bindings.get("specialization.profile", "")),
-        schema_fingerprint=schema_fingerprint,
-        reference_fingerprints=tuple(value for key, value in sorted(bindings.items())
-                                     if key.split(".")[-1].startswith("reference:")),
-        access_scope=access_scope, freshness=freshness,
-        observation=observation, state_epoch=state_epoch,
-        binding_fingerprints=tuple(sorted(bindings.items())),
-        input_evidence_fingerprints=tuple(input_evidence_fingerprints))

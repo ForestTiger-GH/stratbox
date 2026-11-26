@@ -1,16 +1,12 @@
-"""The portable Strategy Box entry point for discovery and execution."""
-
-from .client import StrategyBox
-from stratbox.core.execution.session import ExecutionSettings
-from stratbox.composition import (
-    CascadeDefinition, CollectSpec, CollectStep, Condition, InputRef, MapStep,
-    OperationStep, PlanOutputRef, RetryPolicy, ScenarioDefinition, ScenarioStep,
-    SourceSelection,
+"""Portable discovery, explicit authoring and one invocation facade."""
+from .client import StrategyBox, CatalogPage
+from stratbox.capabilities.model import (
+    CommandDefinition, OperationDefinition, ScenarioDefinition, CascadeDefinition,
+    GraphBody, Call, InputRef, OutputRef, ParameterRef, TargetRef, MapCall, RepeatUntil,
 )
 
 __all__ = (
-    "StrategyBox", "ExecutionSettings", "CascadeDefinition", "CollectSpec",
-    "CollectStep", "Condition", "InputRef", "MapStep", "OperationStep",
-    "PlanOutputRef", "RetryPolicy", "ScenarioDefinition", "ScenarioStep",
-    "SourceSelection",
+    'StrategyBox', 'CatalogPage', 'CommandDefinition', 'OperationDefinition',
+    'ScenarioDefinition', 'CascadeDefinition', 'GraphBody', 'Call', 'InputRef',
+    'OutputRef', 'ParameterRef', 'TargetRef', 'MapCall', 'RepeatUntil',
 )

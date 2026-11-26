@@ -1,8 +1,8 @@
-"""Portable definitions, authoring graphs and exact work identity."""
-from .definitions import (
-    AcceptanceContract, CapabilityDefinition, CapabilityRef, CompletionState, CascadeDefinition, CollectionMembership,
-    CommandDefinition, OperationDefinition, PortContract, ScenarioDefinition,
-    SemanticPredicate, ValueSemantics, declaration_fingerprint, declaration_tree,
-)
-from .graph import Call, CollectCall, Condition, FoldCall, GraphBody, MapCall, InputRef, MethodSlot, OutputRef, ParameterRef, RetryPolicy
-from .reuse import ConsumerEligibility, ReuseContract, WorkIdentity, fingerprint
+"""Pure callable, graph and static domain models."""
+from .contracts import PortContract, SourceRequirement, SemanticPredicate, AcceptanceContract
+from .definitions import CapabilityDefinition, CommandDefinition, OperationDefinition, ScenarioDefinition, CascadeDefinition
+from .domains import DomainSpec, SeriesSpec, CommandSpec, PublicationSpec, ObservationSemantics, CalculationSpec, ProductSpec, Applicability
+from .methods import MethodRef
+from .graph import InputRef, ParameterRef, TargetRef, OutputRef, Condition, Call, MapCall, CollectCall, RepeatUntil, GraphBody
+from .reuse import ReuseContract
+from .immutable import freeze, fingerprint

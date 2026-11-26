@@ -1,1 +1,1 @@
-"""Pure capability definitions and lazy catalog discovery."""
+"""Standard actions, static specializations and one preparation model."""

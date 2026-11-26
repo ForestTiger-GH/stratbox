@@ -1,233 +1,161 @@
-"""A thin facade over the canonical catalogs, compiler and execution session."""
+"""One discovery, preparation and execution path for every callable kind."""
 from __future__ import annotations
 
-from dataclasses import replace
-from threading import RLock
 from collections.abc import Mapping
+from dataclasses import dataclass
+from threading import RLock
 
-from stratbox.core.execution.contracts import ExecutionContext
-from stratbox.core.runtime.capabilities import CapabilityRequirement, ProviderBinding
 
-
-def _context(context, providers):
-    context = context or ExecutionContext()
-    if providers is None:
-        return context
-    from stratbox.core.runtime.providers import Providers
-    if isinstance(providers, Providers):
-        providers = {
-            "http": providers.http, "filestore": providers.filestore,
-            "output_filestore": providers.filestore, "secrets": providers.secrets,
-        }
-    if not isinstance(providers, Mapping):
-        raise TypeError("sdk.providers_mapping_required")
-    bindings = list(context.bindings)
-    existing = {binding.capability.role for binding in bindings}
-    for role, provider in providers.items():
-        if role in existing:
-            raise ValueError("sdk.provider_conflict")
-        if isinstance(provider, ProviderBinding):
-            if provider.capability.role != role:
-                raise ValueError("sdk.provider_role_mismatch")
-            bindings.append(provider)
-        else:
-            bindings.append(ProviderBinding("sdk", CapabilityRequirement(role), "ready", provider))
-    return replace(context, bindings=tuple(bindings))
+@dataclass(frozen=True)
+class CatalogPage:
+    entries: tuple[object, ...]
+    offset: int
+    total: int
+    next_offset: int | None
 
 
 class SourceAPI:
-    """Source discovery and supplied workflows share one canonical catalog."""
-
-    def __init__(self, operations):
-        self.operations = operations
-        self.catalog = operations.source_catalog()
+    """Read-only access to the explicit continuing-series declarations."""
+    def __init__(self, box):
+        self._box = box
 
     def source(self, series_id):
-        return self.catalog.source(series_id)
+        matches = [domain.series[series_id] for domain in self._box.domains.domains.values()
+                   if series_id in domain.series]
+        if len(matches) != 1:
+            raise KeyError('source.unknown_or_ambiguous:' + str(series_id))
+        return matches[0]
 
-    def select(self, **filters):
-        return self.catalog.select(**filters)
+    def list(self, *, domain_id=None, query=None):
+        values = []
+        for key, domain in self._box.domains.domains.items():
+            if domain_id is not None and key != domain_id:
+                continue
+            values.extend(series for series in domain.series.values()
+                          if query is None or query.casefold() in series.id.casefold())
+        return tuple(sorted(values, key=lambda value: value.id))
 
-    def describe(self, series_id, **options):
-        return self.catalog.describe(series_id, operations=self.operations, **options)
-
-    def bind(self, series_id, **options):
-        return self.operations.bind_source(series_id, **options)
-
-    def workflow(self, series_id, **options):
-        from stratbox.composition.source import source_workflow
-        options.setdefault("catalog", self.operations)
-        return source_workflow(series_id, **options)
+    def describe(self, series_id):
+        from .machine import project
+        return project(self.source(series_id), max_items=200)
 
 
 class StrategyBox:
-    """Own one execution session for scripts, notebooks and application hosts.
-
-    Catalog discovery does not start workers. A submitted run retains its
-    qualified operation results; ``invoke`` returns the same graph result as
-    ``run``. User-provided adapters remain owned by the caller.
-    """
-
-    def __init__(self, *, settings=None, providers=None, context=None, catalog=None,
-                 capabilities=None, observer=None, result_resolver=None, operation_options=None):
-        from stratbox.operations import operation_catalog
-        from stratbox.core.execution.session import ExecutionSettings
-        from .bootstrap import CapabilityRuntimeCatalog, default_snapshot
-        self.capabilities = capabilities if capabilities is not None else default_snapshot()
-        domains = catalog if catalog is not None else operation_catalog()
-        self.operations = CapabilityRuntimeCatalog(self.capabilities, domains)
-        self.commands = self.capabilities.commands
-        self.scenarios = self.capabilities.scenarios
-        self.cascades = self.capabilities.cascades
-        self.sources = SourceAPI(self.operations)
-        self.settings = settings if settings is not None else ExecutionSettings()
-        self.context = _context(context, providers)
+    """Own one bounded multicall service with lazy providers and backend imports."""
+    def __init__(self, *, settings=None, providers=None, catalog=None, domains=None,
+                 observer=None, journal=None, build_identity=None):
+        from .bootstrap import default_catalog
+        self.catalog = catalog if catalog is not None else default_catalog()
+        self._domains = domains
+        self.settings = settings
+        self.providers = dict(providers or {})
         self.observer = observer
-        self.result_resolver = result_resolver
-        self.operation_options = dict(operation_options or {})
+        self.journal = journal
+        self._build_identity = build_identity
         self._session = None
         self._closed = False
         self._lock = RLock()
+        self.sources = SourceAPI(self)
 
     def _check_open(self):
         if self._closed:
-            raise RuntimeError("sdk.closed")
+            raise RuntimeError('sdk.closed')
+
+    @property
+    def domains(self):
+        with self._lock:
+            self._check_open()
+            if self._domains is None:
+                from .bootstrap import default_domains
+                self._domains = default_domains()
+            return self._domains
 
     @property
     def session(self):
         with self._lock:
             self._check_open()
             if self._session is None:
-                from stratbox.core.execution.session import ExecutionSession
-                options = {"context": self.context, "observer": self.observer,
-                           "result_resolver": self.result_resolver,
-                           "operation_options": self.operation_options}
-                if self.settings is not None:
-                    options["settings"] = self.settings
-                self._session = ExecutionSession(self.operations, **options)
+                from stratbox.core.execution.service import ExecutionService
+                self._session = ExecutionService(providers=self.providers, settings=self.settings,
+                                                 observer=self.observer, journal=self.journal)
             return self._session
 
-    def prepare(self, capability, *, inputs=None, parameters=None, outputs=None,
-                supplied_outputs=None, method_id=None, profile_id=None, group_id=None, selection=None, recipe_id=None):
-        """Resolve a canonical exact invocation and its complete obligations."""
-        from stratbox.composition.prepare import prepare_invocation
-        self._check_open()
-        from stratbox.capabilities.model import CapabilityDefinition
-        if isinstance(capability, CapabilityDefinition):
-            self.operations.admit_local(capability)
-            self.capabilities = self.operations.snapshot
-            self.commands = self.capabilities.commands
-            self.scenarios = self.capabilities.scenarios
-            self.cascades = self.capabilities.cascades
-        return prepare_invocation(capability, self.capabilities, self.operations,
-            inputs=inputs, parameters=parameters, outputs=outputs,
-            supplied_outputs=supplied_outputs, method_id=method_id,
-            profile_id=profile_id, group_id=group_id, selection=selection, recipe_id=recipe_id)
+    def prepare(self, capability, *, inputs=None, parameters=None, target=None, outputs=None):
+        from stratbox.capabilities.preparation import prepare
+        from stratbox.capabilities.model.definitions import CapabilityDefinition
+        with self._lock:
+            self._check_open()
+            catalog = self.catalog
+            if isinstance(capability, CapabilityDefinition):
+                catalog = catalog.with_definitions(capability)
+                identifier = capability.id
+            elif isinstance(capability, str):
+                identifier = capability
+            else:
+                raise TypeError('sdk.capability_required')
+            if self._build_identity is None:
+                from .bootstrap import implementation_identity
+                self._build_identity = implementation_identity()
+            return prepare(identifier, inputs=inputs, parameters=parameters, target=target,
+                           outputs=tuple(outputs) if outputs is not None else None,
+                           catalog=catalog, domains=self.domains, build_identity=self._build_identity)
 
-    def discover(self, **filters):
-        """Browse one metadata projection with explicit migration readiness."""
+    def invoke(self, capability, *, inputs=None, parameters=None, target=None, outputs=None, timeout=None):
+        plan = self.prepare(capability, inputs=inputs, parameters=parameters, target=target, outputs=outputs)
+        return self.session.run(plan, timeout=timeout)
+
+    def run(self, plan, *, timeout=None):
         self._check_open()
-        return self.operations.discover(**filters)
+        return self.session.run(plan, timeout=timeout)
+
+    def submit(self, capability_or_plan, *, inputs=None, parameters=None, target=None, outputs=None, timeout=None):
+        from stratbox.capabilities.plan import PreparedPlan
+        if isinstance(capability_or_plan, PreparedPlan):
+            if any(value is not None for value in (inputs, parameters, target, outputs)):
+                raise ValueError('sdk.prepared_plan_arguments')
+            plan = capability_or_plan
+        else:
+            plan = self.prepare(capability_or_plan, inputs=inputs, parameters=parameters, target=target, outputs=outputs)
+        return self.session.submit(plan, timeout=timeout)
 
     def describe(self, capability_id):
         self._check_open()
-        return self.operations.describe(capability_id)
-
-    def prepare_goal(self, goal, **options):
-        from stratbox.composition.prepare import prepare_goal
-        self._check_open()
-        return prepare_goal(goal, self.capabilities, self.operations, **options)
-
-    def compile(self, definition, *, inputs=None, parameters=None, outputs=None, selection=None):
-        from stratbox.composition import compile_workflow
-        from stratbox.capabilities.model import CapabilityDefinition
-        from stratbox.composition.requests import InvocationRequest, GoalRequest
-        self._check_open()
-        if isinstance(definition, GoalRequest):
-            if any(value is not None for value in (inputs, parameters, outputs, selection)):
-                raise ValueError("composition.request_already_bound")
-            return self.prepare_goal(definition)
-        if isinstance(definition, (str, CapabilityDefinition, InvocationRequest)):
-            return self.prepare(definition, inputs=inputs, parameters=parameters, outputs=outputs, selection=selection)
-        if selection is not None:
-            raise ValueError("composition.canonical_selection_required")
-        return compile_workflow(definition, self.operations, inputs=inputs,
-                                parameters=parameters, outputs=outputs)
-
-    def submit(self, definition, *, inputs=None, parameters=None, outputs=None, selection=None, execution_timeout=None):
-        from stratbox.composition import ExecutionPlan
-        self._check_open()
-        if isinstance(definition, ExecutionPlan):
-            if any(value is not None for value in (inputs, parameters, outputs, selection)):
-                raise ValueError("sdk.compiled_plan_already_bound")
-            plan = definition
-        else:
-            plan = self.compile(definition, inputs=inputs, parameters=parameters, outputs=outputs, selection=selection)
-        return self.session.submit(plan, execution_timeout=execution_timeout)
-
-    def run(self, definition, *, inputs=None, parameters=None, outputs=None, timeout=None, selection=None, execution_timeout=None):
-        """Wait up to timeout; execution_timeout separately bounds the live run."""
-        return self.submit(definition, inputs=inputs, parameters=parameters,
-                           outputs=outputs, selection=selection, execution_timeout=execution_timeout).result(timeout)
-
-    def workflow(self, operation_id, *, inputs=None, parameters=None):
-        """Bind a callable capability as a reusable explicit scenario."""
-        from stratbox.composition.requests import InvocationRequest
-        self._check_open()
+        from .machine import project
         try:
-            self.capabilities.definition(operation_id)
-        except (KeyError, ValueError):
-            pass
-        else:
-            return InvocationRequest(operation_id, inputs=inputs or {}, parameters=parameters or {})
-        from stratbox.composition import OperationStep, PlanOutputRef, ScenarioDefinition
-        self._check_open()
-        call = self.operations.bind(operation_id, inputs=inputs, parameters=parameters)
-        processing = call.definition.processing
-        outputs = {port.name: PlanOutputRef("call", port.name)
-                   for port in processing.outputs} if processing else {}
-        return ScenarioDefinition("invoke", (
-            OperationStep("call", operation_id, inputs=inputs or {}, parameters=parameters or {}),
-        ), outputs=outputs)
+            definition = self.catalog.definitions[capability_id]
+        except KeyError:
+            raise KeyError('capability.unknown:' + str(capability_id)) from None
+        result = project(definition, max_items=200)
+        result['kind'] = definition.kind
+        return result
 
-    def invoke(self, operation_id, *, inputs=None, parameters=None, timeout=None, execution_timeout=None,
-               outputs=None, supplied_outputs=None, method_id=None, profile_id=None, group_id=None, selection=None, recipe_id=None):
-        """Invoke any canonical kind through the common session service."""
-        from stratbox.capabilities.model import CapabilityDefinition
-        from stratbox.composition.requests import InvocationRequest, GoalRequest
-        if isinstance(operation_id, GoalRequest):
-            if any(value is not None for value in (inputs, parameters, outputs, supplied_outputs, method_id, profile_id, group_id, selection, recipe_id)):
-                raise ValueError("composition.request_already_bound")
-            return self.run(self.prepare_goal(operation_id), timeout=timeout, execution_timeout=execution_timeout)
-        canonical = isinstance(operation_id, (CapabilityDefinition, InvocationRequest))
-        if isinstance(operation_id, str):
-            try:
-                self.capabilities.definition(operation_id)
-                canonical = True
-            except (KeyError, ValueError):
-                pass
-        if canonical:
-            plan = self.prepare(operation_id, inputs=inputs, parameters=parameters, outputs=outputs,
-                supplied_outputs=supplied_outputs, method_id=method_id, profile_id=profile_id, group_id=group_id,
-                selection=selection, recipe_id=recipe_id)
-            return self.run(plan, timeout=timeout, execution_timeout=execution_timeout)
-        if any(value is not None for value in (selection, recipe_id, method_id, profile_id, group_id, supplied_outputs, outputs)):
-            raise ValueError("composition.canonical_binding_required")
-        return self.run(self.workflow(operation_id, inputs=inputs, parameters=parameters),
-                        timeout=timeout, execution_timeout=execution_timeout)
+    def discover(self, *, kind=None, query=None, offset=0, limit=100):
+        self._check_open()
+        if kind not in {None, 'command', 'operation', 'scenario', 'cascade'}:
+            raise ValueError('sdk.kind_invalid')
+        if type(offset) is not int or offset < 0 or type(limit) is not int or not 1 <= limit <= 200:
+            raise ValueError('sdk.page_invalid')
+        if query is not None and not isinstance(query, str):
+            raise TypeError('sdk.query_invalid')
+        selected = [definition for _, definition in sorted(self.catalog.definitions.items())
+                    if (kind is None or definition.kind == kind)
+                    and (query is None or query.casefold() in (definition.id + ' ' + definition.summary).casefold())]
+        stop = min(offset + limit, len(selected))
+        return CatalogPage(tuple(self.describe(value.id) for value in selected[offset:stop]),
+                           offset, len(selected), stop if stop < len(selected) else None)
 
     def close(self, *, wait=True, cancel=False):
         with self._lock:
             if self._closed:
                 return
             self._closed = True
-            session = self._session
-        if session is not None:
-            session.close(wait=wait, cancel=cancel)
+            service = self._session
+        if service is not None:
+            service.close(wait=wait, cancel=cancel)
 
     def __enter__(self):
         self._check_open()
         return self
 
-    def __exit__(self, exc_type, exc, tb):
-        self.close(cancel=exc_type is not None)
+    def __exit__(self, *exc):
+        self.close()
