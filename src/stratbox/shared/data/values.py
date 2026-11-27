@@ -102,8 +102,7 @@ def _codec_types():
     from .dbf import DBFHeaderEvidence, DBFEncodingOverride, DBFPreservationPolicy
     from .selection import (SourceQuery, SourceSelection, IssueQuery, SelectionReport,
                             SubjectChoice, ObservationQuery, MemberOutcome)
-    from .history import (ValidationCertificate, HistoryMember, RevisionDecision,
-                          HistoryMembership, RevisionPolicy)
+    from .history import PORTABLE_TYPES as HISTORY_TYPES
     from .processing import (SourceStateKey, SourceObservation, RetainedOutput,
         StateProjectionCheckpoint, SourceStateSnapshot, ProcessingRequirement,
         ProcessingGoal, ProcessingBasis, ReferenceAvailability, ProcessingPolicy,
@@ -111,8 +110,7 @@ def _codec_types():
     for cls in (*PORTABLE_TYPES, ArchiveMemberSelection, ArchiveInventoryMember,
                 ArchiveInventory, DBFHeaderEvidence, DBFEncodingOverride, DBFPreservationPolicy,
                 SourceQuery, SourceSelection, IssueQuery, SelectionReport, SubjectChoice,
-                ObservationQuery, MemberOutcome, ValidationCertificate, HistoryMember,
-                RevisionDecision, HistoryMembership, RevisionPolicy,
+                ObservationQuery, MemberOutcome, *HISTORY_TYPES,
                 SourceStateKey, SourceObservation, RetainedOutput, StateProjectionCheckpoint,
                 SourceStateSnapshot, ProcessingRequirement, ProcessingGoal, ProcessingBasis,
                 ReferenceAvailability, ProcessingPolicy, ProcessingDecision, ProcessingAssessment):
@@ -211,7 +209,14 @@ def restore_tree(value, *, admitted_types=None):
                 raise ValueError("codec.session_local_value")
             cls = known.get(item["type"])
             if cls is None: raise ValueError("codec.type_not_admitted:" + str(item["type"]))
-            return cls(**{key: decode(part) for key, part in item["fields"].items()})
+            if (item["type"] == "stratbox.shared.data.history:HistoryMembership"
+                    and "schema" not in item["fields"]):
+                raise ValueError("history.unsupported_schema")
+            result = cls(**{key: decode(part) for key, part in item["fields"].items()})
+            if isinstance(result, SourceDataset) and result.history_membership is not None:
+                from .history import validate_history_view
+                validate_history_view(result)
+            return result
         if set(item) == {"dataframe"}:
             import pandas as pd
             from .frame_codec import _unatom, _axis_from, _dtype_from
@@ -576,7 +581,11 @@ def select_dataset(dataset, rows):
     assessment = replace(dataset.assessment, status="partial", observed=(), coverage=coverage,
         findings=(*dataset.assessment.findings, "Selected rows do not establish the full input coverage."),
         qualifications=dataset.assessment.qualifications | frozenset({"selected_rows"}))
-    return replace(dataset, rows=rows, native=None, assessment=assessment, lineage=(*dataset.lineage, dataset.identity))
+    from .history import project_history, history_view_labels, history_value_identity
+    membership = project_history(dataset, rows, query_identity=fingerprint(("selected_rows", rows)))
+    source_id, issue_id = history_view_labels(membership)
+    return replace(dataset, rows=rows, source_id=source_id, issue_id=issue_id, native=None, assessment=assessment,
+        lineage=(*dataset.lineage, history_value_identity(dataset)), history_membership=membership)
 
 
 @dataclass(frozen=True)

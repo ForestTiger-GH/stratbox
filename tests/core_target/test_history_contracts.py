@@ -26,7 +26,7 @@ def validated(value):
 def test_equal_duplicates_coalesce_and_keep_contributing_members():
     result, decisions = resolve_revisions((dataset('jan'), dataset('feb')), RevisionPolicy())
     assert len(result.rows) == 1 and len(result.history_membership.members) == 2
-    assert decisions[0].rule == 'equal' and len(decisions[0].selected_inputs) == 2
+    assert decisions[0].rule == 'equal' and len(decisions[0].selected_candidates) == 2
 
 
 def test_conflicts_require_explicit_order_and_retain_rejected_values():
@@ -36,7 +36,9 @@ def test_conflicts_require_explicit_order_and_retain_rejected_values():
     policy = RevisionPolicy(conflicts='latest', ordered_issues=('jan', 'feb'), ordering_basis='publisher.release_order')
     result, decisions = resolve_revisions(values, policy)
     assert result.rows[0]['value'] == Decimal('2')
-    assert decisions[0].alternative_rows[0]['value'] == Decimal('1')
+    candidates = {item.identity: item for item in result.history_membership.candidates}
+    rows = {item.identity: item.value for item in result.history_membership.rows}
+    assert rows[candidates[decisions[0].alternative_candidates[0]].row_identity]['value'] == Decimal('1')
     with pytest.raises(ValueError, match='revision_order_required'):
         RevisionPolicy(conflicts='latest')
 

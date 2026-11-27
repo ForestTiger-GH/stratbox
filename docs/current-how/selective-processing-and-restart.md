@@ -141,13 +141,42 @@ Reapplying the exact plan reuses confirmed effect identities, verifies current p
 
 ## Portable history and revision evidence
 
-An original issue, the periods measured in its rows and its publication revision are independent coordinates. `RevisionPolicy` supplies the observation grain, treatment of equal duplicates, treatment of conflicting values, explicit issue ordering and optional as-of boundary. Latest or earliest conflict resolution requires an ordering basis; local acquisition time is not a publisher revision order. Ambiguous same-revision values fail even when a latest policy was requested.
+The reference period measured by an observation, its reporting issue, its publication revision and the installation's observation order are independent coordinates. `RevisionPolicy` declares the observation grain, equal-value treatment, conflict rule, ordering basis, expected scope and optional as-of boundary. An issue-order policy uses `ordered_issues`. Revisions inside one issue require explicit `PublicationRevision` bindings and `ordered_revisions`; local observation order must be identified as local evidence rather than publisher chronology. Unequal values at the same admitted revision remain ambiguous.
 
-Resolved histories keep `HistoryMembership`, original issue members, missing expected issues and `RevisionDecision` alternatives. Equal duplicate values can coalesce while preserving their source membership. Rejected vintage rows remain available so a later as-of query over an already resolved history can reconstruct the selected earlier vintage. Cross-source merges require explicit policy and compatible semantics.
+```python
+from stratbox.shared.data.history import (
+    PublicationRevision, RevisionPolicy, bind_publication_revision,
+)
 
-`ValidationCertificate` binds exact portable source content, stable semantics, source/issue scope, competent rule/method/build, material identities and row hashes. Native parser objects are not a restart authority. Fresh domain validation produces accepted certificates; restored or selected history must prove accepted certificate authority through the runtime or durable projection. Matching only an observation coordinate is insufficient: changing a value under the same period/subject/metric key, relabelling the source or changing a dataset-level unit fails the binding. A cross-source assembly requires its own competent aggregate validation before it can claim a single source's certificate authority.
+initial = PublicationRevision("example.series", "2026-01", "initial")
+correction = PublicationRevision("example.series", "2026-01", "correction")
+parts = (
+    bind_publication_revision(initial_dataset, initial),
+    bind_publication_revision(corrected_dataset, correction),
+)
+policy = RevisionPolicy(
+    conflicts="latest",
+    ordered_revisions=(initial.identity, correction.identity),
+    ordering_basis="publisher.correction_notices",
+    as_of=initial.identity,
+)
+```
 
-The generic validator verifies supplied portable evidence; it cannot bless a caller-constructed domain certificate. A partial or unresolved source check remains visible after merge, selection, calculation and rendering. Row-hash membership uses indexed sets, preserving exact verification without a row-by-row scan over all member coordinates.
+The binding helper consumes an original dataset, preserves its content and attaches the declared revision coordinate. It supplies no publisher-order or validation authority by itself. An asset-specific revision must agree with the dataset's source-use asset. A qualified `occurrence_id` can preserve an observed A → B → A sequence while its two A occurrences share exact row payloads. Repeated checks of unchanged A do not automatically establish another publisher revision.
+
+`SourceDataset.rows` is the selected view. Its versioned `HistoryMembership` separately retains original members, exact `HistoryRow` payloads, `HistoryCandidate` bindings, an active coordinate scope, `RevisionDecision` candidate IDs, scoped expectations and validation references. Equal economic values can coalesce in the view while every exact source row remains bound to its real member. Unknown row fields remain part of the equality comparison; `provenance_fields` declares the recognized provenance projection, and economic value/grain fields cannot be excluded through it.
+
+Resolution preserves every retained candidate in the active scope, including candidates beyond an earlier cutoff. Latest → earlier → latest therefore restores the same supported values and evidence. Strict merge requires disjoint visible coordinates, including when overlapping values are equal. It unions their evidence and preserves the selected decisions; explicit revision resolution owns overlap. For compatible disjoint scopes and the same policy, resolving a merge gives the same values, candidate provenance and coverage as merging the separately resolved views.
+
+Selection freezes its coordinate scope and records its parent coverage separately. A later resolution cannot reopen an excluded coordinate through an alternative row. A value filter uses literal operation order: selecting positive latest values and then resolving an earlier vintage can expose negative earlier values at those selected coordinates. Apply the filter again after resolution to ask for positivity at the earlier vintage. Selected scope records survive merge and portable replay. Optional parser-native objects are omitted from the history/selection identity basis; exact execution work keys remain independently responsible for methods that consume native objects.
+
+`HistoryExpectation` binds expected membership to a source, issue, optional asset/revision and optional coordinate scope. Another source or asset with the same issue label cannot fulfill that expectation. `RevisionPolicy.expected_issues` is a convenience expanded across the admitted source/asset scopes; `expected_members` supplies explicit qualified expectations. A new resolution recomputes its policy-specific expectation and cutoff findings from that policy. Source qualifications and explicit validation requirements remain inherited. A partial finding caused only by an earlier cutoff does not permanently contaminate a later complete vintage. Missing active coordinates remain explicit even when no eligible candidate exists at the requested cutoff.
+
+`ValidationCertificate` binds exact portable source content, stable semantics, source/issue scope, competent rule/method/build, material identities and row hashes. Candidate content identity excludes validation attachments, so a second competent rule can add a witness without changing the historical candidate. The verifier checks exact member-to-candidate-to-row bindings and accepted authority for the retained active evidence. Matching a coordinate alone cannot authorize another value, another member's provenance or a relabelled source. Restored history also validates that its displayed rows are exactly the representatives declared by its ledger. Aggregate comparability and purpose-specific scientific checks remain separate obligations.
+
+`HistoryLimits` bounds members, all candidates, unique payload bytes, witness references, active coordinates and encoded ledger size. `RevisionPolicy.max_rows` additionally bounds displayed output rows. A single visible row with many revisions consumes the full candidate budget. Portable encoding and retained dataset providers apply their independent total byte limits. The initial representation is an inline normalized ledger; resolution performs no hidden storage reads.
+
+The canonical codec and memory/file dataset stores round-trip the ledger, active scope, candidates and witness references without native parser state. History envelopes without the exact candidate schema fail with `history.unsupported_schema`. Rebuild from competent retained originals when earlier values cannot be reconstructed exactly; hashes and issue labels cannot recreate missing rows. A usable latest-only artifact never acquires unsupported vintage authority through a format change. The generic validator checks supplied portable evidence and cannot bless a caller-constructed domain certificate. Partial source checks remain visible through composition.
 
 ## Mapping the seven notebook workloads
 

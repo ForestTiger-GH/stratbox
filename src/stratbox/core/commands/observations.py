@@ -1,10 +1,11 @@
 """Select, qualify, align and combine semantic observation values."""
 from __future__ import annotations
+from collections.abc import Mapping
 from stratbox.core.execution.service import ExecutionFailure
 from stratbox.shared.data.values import Assessment, IntegratedDataset, SourceDataset, TableEvidenceSet
 from stratbox.shared.data.selection import select_observations
-from stratbox.shared.data.history import (HistoryMembership, history_members, history_certificates,
-    stable_semantics, resolve_revisions, verify_history_certificates)
+from stratbox.shared.data.history import (HistoryLimits, history_grain, merge_histories, resolve_revisions,
+    set_history_expectations, validate_history_view, verify_history_certificates)
 from ._settings import _get, _option
 from ._values import OBSERVATION_GRAIN, _grain_key, _rows
 
@@ -22,7 +23,8 @@ def table_interpret(inputs, settings, context):
 
 def observations_validate(inputs, settings, context):
     dataset = inputs["dataset"]
-    keys, grain = set(), _get(settings, "grain", ('period', *OBSERVATION_GRAIN))
+    validate_history_view(dataset)
+    keys, grain = set(), _option(context, settings, "grain", history_grain(dataset) or ('period', *OBSERVATION_GRAIN))
     for row in _rows(dataset):
         key = _grain_key(row,grain)
         if key in keys:
@@ -33,17 +35,9 @@ def observations_validate(inputs, settings, context):
         if not verify_history_certificates(dataset, verify):
             raise ExecutionFailure("validation.history_evidence_unverified")
     expected = tuple(_option(context, settings, "expected_issues", ()))
-    if expected:
-        from dataclasses import replace
-        members = history_members((dataset,))
-        actual = tuple(dict.fromkeys(member.issue_id for member in members))
-        missing = tuple(issue for issue in expected if issue not in actual)
-        previous = getattr(dataset, "history_membership", None)
-        membership = HistoryMembership(members, expected, missing,
-            previous.revisions if isinstance(previous, HistoryMembership) else (),
-            previous.policy_identity if isinstance(previous, HistoryMembership) else None)
-        dataset = replace(dataset, history_membership=membership, assessment=replace(dataset.assessment,
-            status="partial" if missing else dataset.assessment.status, expected=expected, observed=actual))
+    expected_members = tuple(_option(context, settings, "expected_members", ()))
+    if expected or expected_members:
+        dataset = set_history_expectations(dataset, expected, expected_members)
     return {"dataset": dataset, "assessment": dataset.assessment}
 
 
@@ -87,25 +81,10 @@ def observations_merge(inputs, settings, context):
     datasets = inputs["datasets"]
     if not datasets or any(not isinstance(item, SourceDataset) for item in datasets):
         raise ExecutionFailure("observations.datasets_required")
-    if len(datasets) == 1:
-        return {"dataset": datasets[0], "assessment": datasets[0].assessment}
-    source_ids = {item.source_id for item in datasets}
-    if len(source_ids) != 1 and not _get(settings, "allow_cross_source", False):
-        raise ExecutionFailure("observations.source_mismatch")
-    if any(stable_semantics(item) != stable_semantics(datasets[0]) for item in datasets):
-        raise ExecutionFailure("observations.semantic_mismatch")
-    members = history_members(datasets)
-    issues = tuple(dict.fromkeys(member.issue_id for member in members))
-    semantics = stable_semantics(datasets[0])
-    assessments = tuple(item.assessment for item in datasets)
-    assessment = Assessment("complete" if all(item.complete for item in assessments) else "partial",
-        tuple(dict.fromkeys(f for item in assessments for f in item.findings)),
-        qualifications=frozenset.intersection(*(item.qualifications for item in assessments))
-        | frozenset({"partitioned_input_coverage"}))
-    result = SourceDataset(datasets[0].source_id, tuple(row for item in datasets for row in item.rows),
-        semantics, issue_id=issues[0] if len(issues) == 1 else "multi_issue_history", lineage=tuple(item.identity for item in datasets),
-        assessment=assessment,
-        source_uses=tuple(dict.fromkeys(use for item in datasets for use in item.source_uses)),
-        validation_certificates=history_certificates(datasets), history_membership=HistoryMembership(members))
+    limits = _option(context, settings, "history_limits", HistoryLimits())
+    if isinstance(limits, Mapping):
+        limits = HistoryLimits(**limits)
+    result = merge_histories(datasets, allow_cross_source=_option(context, settings, "allow_cross_source", False),
+        grain=_option(context, settings, "grain", ()), limits=limits)
     observations_validate({"dataset": result}, settings, context)
     return {"dataset": result, "assessment": result.assessment}

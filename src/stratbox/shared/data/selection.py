@@ -470,9 +470,11 @@ def select_observations(dataset, query):
         rows.sort(key=lambda row: subject_order[(str(row.get("subject_namespace")), str(row.get("subject")))])
     if query.limit is not None:
         rows = rows[:query.limit]
-    selected = tuple(dict.fromkeys(observation_key(row) for row in rows))
+    from .history import history_grain, history_value_identity
+    grain = history_grain(dataset)
+    selected = tuple(dict.fromkeys(observation_key(row, grain or None) for row in rows))
     missing = tuple(key for key in query.expected_members if key not in selected)
-    parent_identity = dataset.identity
+    parent_identity = history_value_identity(dataset)
     coverage = SelectedScopeCoverage(parent_identity, query.identity, query.expected_members or selected, selected,
         missing, dataset.assessment, membership_closed=True)
     # The selection proves its own membership, not stronger scientific validity
@@ -480,11 +482,14 @@ def select_observations(dataset, query):
     status = "complete" if dataset.assessment.complete and not missing else "partial"
     assessment = Assessment(status, dataset.assessment.findings, query.expected_members or selected, selected,
         dataset.assessment.qualifications | frozenset({"selected_scope"}), coverage)
-    membership = getattr(dataset, "history_membership", None)
-    if membership is None and getattr(dataset, "validation_certificates", ()):
-        from .history import HistoryMembership, member_for
-        membership = HistoryMembership((member_for(dataset),))
-    return replace(dataset, rows=tuple(rows), native=None, assessment=assessment,
+    from .history import project_history, history_view_labels
+    membership = project_history(dataset, rows, query_identity=query.identity,
+        expected_coordinates=query.expected_members)
+    scopes = {fingerprint(value): value for value in (*membership.selection_scopes, coverage)}
+    membership = replace(membership, selection_coverage=coverage,
+        selection_scopes=tuple(scopes[key] for key in sorted(scopes)))
+    source_id, issue_id = history_view_labels(membership)
+    return replace(dataset, rows=tuple(rows), source_id=source_id, issue_id=issue_id, native=None, assessment=assessment,
         lineage=(*dataset.lineage, parent_identity), history_membership=membership)
 
 
