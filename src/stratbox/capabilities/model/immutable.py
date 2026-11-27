@@ -88,13 +88,15 @@ def canonical(value, *, _runtime=False):
             raise ValueError('metadata.nonfinite')
         return {'float': value.hex()}
     if type(value).__module__.startswith(('pandas.', 'numpy.')):
-        from stratbox.shared.data.values import canonical_tree
-        return canonical_tree(value)
+        from stratbox.shared.data.values import fingerprint as value_fingerprint
+        return {'runtime_value': type(value).__module__ + ':' + type(value).__qualname__,
+                'content_identity': value_fingerprint(value)}
     if is_dataclass(value) and type(value).__module__.startswith('stratbox.shared.data.'):
         # Shared data carriers have their own exact runtime canonicalization,
         # including typed coordinate maps and scientific missing values.
-        from stratbox.shared.data.values import canonical_tree
-        return canonical_tree(value)
+        from stratbox.shared.data.values import fingerprint as value_fingerprint
+        return {'runtime_value': type(value).__module__ + ':' + type(value).__qualname__,
+                'content_identity': value_fingerprint(value)}
     if is_dataclass(value):
         runtime_fields = {
             'CommandTask': {'inputs'}, 'InputGuard': {'value'},

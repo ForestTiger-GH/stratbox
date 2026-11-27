@@ -93,7 +93,8 @@ def test_rejected_foreign_unknown_effect_does_not_contaminate_this_run(tmp_path,
     from stratbox.core.execution.service import EffectReceipt
     state=FileEffectState(tmp_path/'effects')
     original=EffectReceipt('effect-0',kind,'unknown',resource=resource)
-    state.begin(original)
+    original, claimed = state.begin(original)
+    assert claimed
     command=direct('effect_then_return')
     with box(command,providers={'effect_state':state}) as client:
         result=client.invoke(command.id,inputs={'value':1})

@@ -66,7 +66,7 @@ class SourceAPI:
 class StrategyBox:
     """Own one bounded multicall service with lazy providers and backend imports."""
     def __init__(self, *, settings=None, providers=None, catalog=None, domains=None,
-                 observer=None, journal=None, build_identity=None):
+                 observer=None, journal=None, build_identity=None, admission_guard=None):
         from .bootstrap import default_catalog
         self.catalog = catalog if catalog is not None else default_catalog()
         self._domains = domains
@@ -74,6 +74,7 @@ class StrategyBox:
         self.providers = dict(providers or {})
         self.observer = observer
         self.journal = journal
+        self.admission_guard = admission_guard
         self._build_identity = build_identity
         self._session = None
         self._closed = False
@@ -100,7 +101,8 @@ class StrategyBox:
             if self._session is None:
                 from stratbox.core.execution.service import ExecutionService
                 self._session = ExecutionService(providers=self.providers, settings=self.settings,
-                                                 observer=self.observer, journal=self.journal)
+                                                 observer=self.observer, journal=self.journal,
+                                                 admission_guard=self.admission_guard)
             return self._session
 
     def prepare(self, capability, *, inputs=None, parameters=None, target=None, outputs=None):
@@ -126,6 +128,19 @@ class StrategyBox:
     def invoke(self, capability, *, inputs=None, parameters=None, target=None, outputs=None, timeout=None):
         plan = self.prepare(capability, inputs=inputs, parameters=parameters, target=target, outputs=outputs)
         return self.session.run(plan, timeout=timeout)
+
+    def preflight(self, capability, *, inputs=None, parameters=None, target=None, outputs=None, resolve_methods=True):
+        """Inspect a selected request without network access or external mutation."""
+        self._check_open()
+        from .readiness import preflight
+        return preflight(self, capability, inputs=inputs, parameters=parameters, target=target,
+                         outputs=outputs, resolve_methods=resolve_methods)
+
+    def export_recovery(self, destination, *, timeout=60, limits=None, retained_references=()):
+        self._check_open()
+        from stratbox.core.recovery import export_recovery_package
+        return export_recovery_package(self, destination, timeout=timeout, limits=limits,
+                                       retained_references=retained_references)
 
     def processing_basis(self, capability, *, inputs=None, parameters=None, target=None):
         """Compare a direct command's desired work without executing it.

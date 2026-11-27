@@ -318,7 +318,10 @@ def test_run_budget_is_shared_by_sibling_work_and_a_new_run_has_its_own_budget()
 def test_live_retained_output_fails_new_admission_promptly_then_close_releases_capacity():
     work = command("bytes_result", settings={"size": 600}, outputs={"value": PortContract("bytes", bytes)})
     task = plan((CommandTask("bytes", work, {"value": 1}),))
-    with ExecutionService(settings=ExecutionSettings(max_workers=1, max_retained_bytes=1100)) as service:
+    # The limit includes the private input and both physical/logical output
+    # containers as well as retained bytes. One result fits; overlapping live
+    # ownership of a second independent 600-byte result does not.
+    with ExecutionService(settings=ExecutionSettings(max_workers=1, max_retained_bytes=1800)) as service:
         first = service.run(task, timeout=2)
         assert first.outcome == "succeeded", first.diagnostics
         retained_value = first.output()

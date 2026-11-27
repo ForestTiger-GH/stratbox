@@ -1,15 +1,45 @@
 """Owned payload measurement, scientific cell counts and private reader copies."""
-from dataclasses import fields, is_dataclass, replace
+from dataclasses import dataclass, fields, is_dataclass, replace
 from typing import Mapping
 import copy
 import sys
 import re
-from types import MemberDescriptorType
-from datetime import date,time,timedelta
+from types import MemberDescriptorType, MappingProxyType
+from datetime import date,datetime,time,timedelta
 from decimal import Decimal
 from enum import Enum
 
 from stratbox.shared.data.values import fingerprint
+
+_COPY_BUDGET = object()
+
+
+class _CopyBudget:
+    def __init__(self, max_bytes, max_nodes=1000000):
+        self.remaining, self.nodes = max_bytes, max_nodes
+
+    def reserve(self, value):
+        self.nodes -= 1
+        if self.nodes < 0:
+            raise ValueError('value.copy_object_limit')
+        if type(value).__module__.startswith('numpy') and hasattr(value, 'nbytes'):
+            amount = int(value.nbytes) + 64
+        elif type(value).__module__.startswith('pandas') and hasattr(value, 'memory_usage'):
+            usage = value.memory_usage(deep=False)
+            amount = int(usage.sum() if hasattr(usage, 'sum') else usage) + 256
+        elif isinstance(value, Mapping):
+            amount = 64 + len(value) * 48
+        elif isinstance(value, (tuple, list, set, frozenset)):
+            amount = 64 + len(value) * 16
+        else:
+            amount = sys.getsizeof(value) + 16
+        self.remaining -= amount
+        if self.remaining < 0:
+            raise ValueError('value.copy_bytes_limit')
+
+
+def copy_memo(max_bytes):
+    return {_COPY_BUDGET: _CopyBudget(max_bytes)}
 
 def _size(value, seen=None):
     seen = set() if seen is None else seen
@@ -77,17 +107,52 @@ def _cells(value):
     return 0
 
 
-def _isolate(value, memo=None):
+def _isolate(value, memo=None, *, max_bytes=None):
     """Give mutable tabular payloads a private owner without copying immutable bytes."""
-    memo = {} if memo is None else memo
+    memo = (copy_memo(max_bytes) if max_bytes is not None else {}) if memo is None else memo
     if id(value) in memo: return memo[id(value)]
-    if isinstance(value,(date,time,timedelta,Decimal,Enum,re.Pattern)): return value
+    if value is None or type(value) in {str, bytes, bool, int, float, complex, type, range, object}:
+        return value
+    if type(value) in {date, datetime, time, timedelta, Decimal, re.Pattern}:
+        return value
+    if isinstance(value, Enum):
+        if type(value.value) not in {str, bytes, bool, int, float, type(None)}:
+            raise ValueError('value.mutable_enum_not_admitted')
+        return value
+    if type(value).__module__.startswith('numpy'):
+        import numpy as np
+        # NumPy scalars also expose .flat. Numeric/text/time scalar kinds are
+        # immutable; structured void scalars and object storage are not.
+        if isinstance(value, np.generic) and value.dtype.kind in 'biufcmMSU':
+            return value
+    if type(value).__module__.startswith('pandas') and type(value).__name__ in {'Timestamp', 'Timedelta', 'Period', 'Interval', 'NaTType', 'NAType'}:
+        return value
+    # Immutable leaves are retained by reference, so repeated labels and small
+    # scalar cells do not spend the copy budget or its compound-object limit.
+    if _COPY_BUDGET in memo:
+        memo[_COPY_BUDGET].reserve(value)
+    from array import array
+    from collections import deque
+    if isinstance(value, (array, deque)):
+        # Unsupported native container semantics must not bypass recursive
+        # ownership, staged-reference discovery or the portable value boundary.
+        raise ValueError('value.native_container_not_admitted:' + type(value).__name__)
     if isinstance(value,bytearray):
         result = bytearray(value); memo[id(value)] = result; return result
     if isinstance(value,memoryview):
         result = memoryview(value.tobytes()).cast(value.format,shape=value.shape)
         memo[id(value)] = result; return result
-    if hasattr(value, "memory_usage") and hasattr(value, "copy"):
+    if type(value).__module__.startswith('pandas') and hasattr(value, 'memory_usage') and hasattr(value, 'copy'):
+        # Pandas deep-copy owns numeric blocks and object cells below. Axis
+        # labels must belong to its admitted scalar vocabulary; arbitrary
+        # mutable hashable labels otherwise remain aliased inside Index.
+        from stratbox.shared.data.frame_codec import _axis_value
+        try:
+            _axis_value(value.index)
+            if hasattr(value, 'columns'):
+                _axis_value(value.columns)
+        except (TypeError, ValueError) as error:
+            raise ValueError('value.axis_not_admitted') from error
         result = value.copy(deep=True); memo[id(value)] = result
         if hasattr(result,"columns"):
             for position,dtype in enumerate(result.dtypes):
@@ -104,7 +169,10 @@ def _isolate(value, memo=None):
         return result
     if isinstance(value, Mapping):
         result = {}; memo[id(value)] = result
-        result.update({key: _isolate(item, memo) for key, item in value.items()}); return result
+        result.update({_isolate(key, memo): _isolate(item, memo) for key, item in value.items()})
+        if isinstance(value, MappingProxyType):
+            result = MappingProxyType(result); memo[id(value)] = result
+        return result
     if isinstance(value, tuple):
         result = tuple(_isolate(item, memo) for item in value); memo[id(value)] = result; return result
     if isinstance(value, list):
@@ -115,11 +183,10 @@ def _isolate(value, memo=None):
         memo[id(value)]=result
         return result
     if is_dataclass(value) and not isinstance(value,type):
-        updates = {item.name: _isolate(getattr(value, item.name), memo) for item in fields(value)}
-        try:
-            result = replace(value, **updates); memo[id(value)] = result; return result
-        except (TypeError, ValueError):
-            return copy.deepcopy(value)
+        result = object.__new__(type(value)); memo[id(value)] = result
+        for item in fields(value):
+            object.__setattr__(result, item.name, _isolate(getattr(value, item.name), memo))
+        return result
     if type(value).__module__ not in {"builtins","datetime","decimal","enum","zoneinfo"}:
         try: attributes = object.__getattribute__(value,"__dict__")
         except AttributeError: attributes = None
@@ -136,7 +203,9 @@ def _isolate(value, memo=None):
                 except AttributeError: continue
                 object.__setattr__(result,name,_isolate(item,memo))
             return result
-    return value
+    if type(value).__module__ in {'zoneinfo', 'datetime'}:
+        return value
+    raise ValueError('value.opaque_owner_not_admitted:' + type(value).__name__)
 
 
 
@@ -164,3 +233,260 @@ def _value_keys(values):
         try: keys.add(fingerprint(value))
         except (ValueError,TypeError): pass
     return keys
+
+
+@dataclass(frozen=True)
+class OwnedValueDescriptor:
+    value_id: str
+    exact_identity: str | None
+    processing_identity: str | None
+    resident_bytes: int
+    cells: int
+    staged_references: tuple
+    input_material_bytes: int
+    expressions: bool = False
+    physical_identity: object = None
+
+
+@dataclass
+class _OwnedEntry:
+    payload: object
+    descriptor: OwnedValueDescriptor
+    children: tuple[int, ...]
+    own_bytes: int
+    owners: set
+
+
+class OwnedValues:
+    """Private, sealed payloads with cached identities and exact owner release.
+
+    Object addresses are used only to locate payloads already detached and held
+    by this registry. Public object identities and arbitrary digest attributes
+    never grant admission. Mutable working copies are deliberately unregistered.
+    """
+    def __init__(self, *, max_bytes, max_objects=1000000):
+        from threading import RLock
+        self._lock = RLock()
+        self._entries, self._owners = {}, {}
+        self._working = {}
+        self.max_bytes, self.max_objects = max_bytes, max_objects
+        self.resident_bytes = self.working_bytes = 0
+        self.identity_passes = self.sealed_values = 0
+
+    def descriptor(self, value):
+        with self._lock:
+            entry = self._entries.get(id(value))
+            return entry.descriptor if entry is not None and entry.payload is value else None
+
+    def reserve_working(self, owner, amount):
+        with self._lock:
+            if self.resident_bytes + self.working_bytes + amount > self.max_bytes:
+                raise ValueError('value.retention_capacity_exhausted')
+            if owner in self._working:
+                raise ValueError('value.duplicate_working_owner')
+            self._working[owner] = amount
+            self.working_bytes += amount
+
+    def release_working(self, owner):
+        with self._lock:
+            self.working_bytes -= self._working.pop(owner, 0)
+
+    def identity(self, value):
+        descriptor = self.descriptor(value)
+        return descriptor.exact_identity if descriptor is not None else None
+
+    def processing_identity(self, value):
+        descriptor = self.descriptor(value)
+        if descriptor is None or descriptor.processing_identity is None:
+            raise ValueError('value.unsealed_processing_input')
+        return descriptor.processing_identity
+
+    def keys(self, values):
+        return {key for value in input_values(values) if (key := self.identity(value)) is not None}
+
+    def described(self, value):
+        """Inspect graph metadata only, leaving unknown typed projections opaque."""
+        if self.descriptor(value) is not None:
+            return True
+        if isinstance(value, Mapping):
+            return all(self.described(part) for pair in value.items() for part in pair)
+        if isinstance(value, (tuple, list)):
+            return all(self.described(part) for part in value)
+        return value is None or type(value) in {str, bytes, bool, int, float}
+
+    def work_identity(self, value):
+        """A compact work basis over named/ordered graph containers."""
+        known = self.identity(value)
+        if known is not None:
+            return known
+        if isinstance(value, Mapping):
+            return ('mapping', tuple(sorted((self.work_identity(key), self.work_identity(item)) for key, item in value.items())))
+        if isinstance(value, (tuple, list)):
+            return ('tuple', tuple(self.work_identity(item) for item in value))
+        if known is None:
+            # Only bounded control literals may bypass a payload descriptor.
+            if value is None or type(value) in {str, int, float, bool, bytes}:
+                return fingerprint(value)
+            raise ValueError('value.unsealed_work_input')
+        return known
+
+    def seal(self, value, owner, *, detach=False, as_bundle=False):
+        """Compute descriptors off the coordinator, then publish one owner.
+
+        The caller has reserved the snapshot/working-set budget. Opaque values
+        retain ownership and isolation but never acquire fabricated hash keys.
+        """
+        from uuid import uuid4
+        from stratbox.shared.data.materials import staged_references
+        from stratbox.shared.data.processing import processing_input_identity
+        from .boundary_accounting import _input_materials
+        if detach:
+            value = _isolate(value, max_bytes=self.max_bytes)
+        candidates, active = {}, set()
+
+        def visit(item, *, bundle=False):
+            key = id(item)
+            with self._lock:
+                previous = self._entries.get(key)
+                if previous is not None and previous.payload is item:
+                    return previous.descriptor
+            if key in candidates:
+                return candidates[key].descriptor
+            if key in active:
+                raise ValueError('value.cyclic_owner')
+            if len(candidates) >= self.max_objects:
+                raise ValueError('value.owner_objects_exhausted')
+            active.add(key)
+            children = tuple(part for pair in item.items() for part in pair) if isinstance(item, Mapping) else tuple(item) if isinstance(item, (tuple, list)) else ()
+            child_descriptors = tuple(visit(child) for child in children)
+            # Graph containers have additive ownership; a scientific carrier is
+            # one sealed payload and is inspected once at its own boundary.
+            child_sizes = {id(child): descriptor.resident_bytes for child, descriptor in zip(children, child_descriptors)}
+            size = _size(item) if not children else sys.getsizeof(item) + sum(child_sizes.values())
+            if size > self.max_bytes:
+                raise ValueError('value.retention_capacity_exhausted')
+            try:
+                exact = None if bundle else fingerprint(item)
+                if not bundle:
+                    self.identity_passes += 1
+            except (ValueError, TypeError):
+                exact = None
+            try:
+                processing = None if bundle else processing_input_identity(item)
+            except (ValueError, TypeError):
+                processing = exact
+            from stratbox.shared.data.values import Material, EncodedProduct, IdentifiedMaterial, ImmutableMaterialRef, RequestSpec, request_identity
+            from stratbox.shared.data.materials import StagedMaterialRef
+            physical = item.material if isinstance(item, IdentifiedMaterial) else item
+            physical_identity = (physical.identity if isinstance(physical, (Material, EncodedProduct, ImmutableMaterialRef, StagedMaterialRef))
+                else request_identity(item) if isinstance(item, RequestSpec) else None)
+            descriptor = OwnedValueDescriptor(uuid4().hex, exact, processing, size,
+                _cells(item), tuple(staged_references(item)),
+                sum(reference.identity.size for reference in _input_materials(item)),
+                type(item).__module__ == 'stratbox.capabilities.plan.models' and type(item).__name__ in {'ValueRef', 'TemplateInput'}
+                    or any(descriptor.expressions for descriptor in child_descriptors), physical_identity)
+            own = max(0, size - sum(child_sizes.values()))
+            candidates[key] = _OwnedEntry(item, descriptor, tuple(id(child) for child in children), own, set())
+            active.remove(key)
+            return descriptor
+
+        visit(value, bundle=as_bundle)
+        with self._lock:
+            incoming = {key: entry for key, entry in candidates.items() if key not in self._entries}
+            if len(self._entries) + len(incoming) > self.max_objects:
+                raise ValueError('value.owner_objects_exhausted')
+            amount = sum(entry.own_bytes for entry in incoming.values())
+            if self.resident_bytes + self.working_bytes + amount > self.max_bytes:
+                raise ValueError('value.retention_capacity_exhausted')
+            self._entries.update(incoming)
+            self.resident_bytes += amount
+            self.sealed_values += len(incoming)
+            self._pin(value, owner)
+        return value
+
+    def _pin(self, value, owner):
+        owned = self._owners.setdefault(owner, set())
+        pending = [id(value)]
+        while pending:
+            key = pending.pop()
+            if key in owned:
+                continue
+            entry = self._entries.get(key)
+            if entry is None:
+                raise ValueError('value.unsealed_owner')
+            owned.add(key)
+            entry.owners.add(owner)
+            pending.extend(entry.children)
+
+    def pin(self, value, owner):
+        with self._lock:
+            self._pin(value, owner)
+
+    def pin_graph(self, value, owner):
+        with self._lock:
+            if self.descriptor(value) is not None:
+                self._pin(value, owner)
+            elif isinstance(value, Mapping):
+                for item in value.values(): self.pin_graph(item, owner)
+            elif isinstance(value, (tuple, list)):
+                for item in value: self.pin_graph(item, owner)
+    def release(self, owner):
+        with self._lock:
+            for key in self._owners.pop(owner, ()):
+                entry = self._entries.get(key)
+                if entry is not None:
+                    entry.owners.discard(owner)
+                    if not entry.owners:
+                        self.resident_bytes -= entry.own_bytes
+                        self._entries.pop(key)
+
+    def size(self, value):
+        descriptor = self.descriptor(value)
+        if descriptor is not None:
+            return descriptor.resident_bytes
+        if isinstance(value, Mapping):
+            return sys.getsizeof(value) + sum(self.size(part) for pair in value.items() for part in pair)
+        if isinstance(value, (tuple, list)):
+            return sys.getsizeof(value) + sum(self.size(item) for item in value)
+        if value is None or type(value) in {str, int, float, bool, bytes}:
+            return _size(value)
+        from stratbox.shared.data.selection import MemberOutcome
+        if isinstance(value, MemberOutcome):
+            return _size(value)
+        raise ValueError('value.unsealed_owner')
+
+    def references(self, value):
+        descriptor = self.descriptor(value)
+        if descriptor is not None:
+            return descriptor.staged_references
+        from stratbox.shared.data.selection import MemberOutcome
+        if isinstance(value, MemberOutcome):
+            from stratbox.shared.data.materials import staged_references
+            return tuple(staged_references(value.references))
+        values = value.values() if isinstance(value, Mapping) else value if isinstance(value, (tuple, list)) else ()
+        return tuple(reference for item in values for reference in self.references(item))
+
+
+def seal_plan_inputs(registry, plan, owner):
+    """Seal literals once while a submitted plan is still private to admission."""
+    seen = set()
+    def visit(current):
+        if id(current) in seen:
+            return
+        seen.add(id(current))
+        registry.seal(current.outputs, owner, as_bundle=True)
+        registry.seal(current.target, owner)
+        for task in current.tasks:
+            for name in ('inputs', 'items', 'initial', 'selector', 'forwarded'):
+                if hasattr(task, name):
+                    value = getattr(task, name)
+                    registry.seal(value, owner, as_bundle=name == 'inputs')
+            if hasattr(task, 'command'):
+                registry.seal(task.command.parameters, owner)
+                registry.seal(task.command.settings, owner)
+                registry.seal(task.command.target, owner)
+            if getattr(task, 'template', None) is not None:
+                visit(task.template)
+            for template in getattr(task, 'alternatives', {}).values():
+                visit(template)
+    visit(plan)

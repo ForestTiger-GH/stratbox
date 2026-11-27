@@ -50,15 +50,25 @@ are diagnosed; a parser does not silently substitute other material.
 
 ## 3. Accepted outputs and lifetime
 
-`RunResult.outcome` describes the task result. `outputs` contains named accepted
+`RunResult.outcome` describes the task result. `outputs` contains named available
 values, `scopes` preserves logical composition outcomes, and diagnostics retain
 failure or incomplete-work findings. `result.output(name)` reads a selected
 output; a single output can be read using the default name.
+
+An output port can explicitly retain a reported diagnostic from a failed,
+unknown or cancelled producer. Its presence does not establish successful
+analytical completion. Collection member outcomes and journal output-use facts
+preserve this distinction through wrappers and maps. See
+[output use and member completion](core-execution-and-admission.md#output-use-and-member-completion).
 
 The caller closes retained results after use and closes the client to release
 its service resources. Accepted values and required effects have separate
 outcomes. An optional delivery failure does not invalidate the accepted data.
 Shared producer cancellation follows the remaining logical demand.
+Reading a supported mutable output returns a private copy. Closing a result
+releases its retained ownership; an independently admitted consumer or cache
+keeps its own pin. An open completed result does not extend the deadline of a
+new physical generation.
 
 ## 4. Infrastructure providers
 

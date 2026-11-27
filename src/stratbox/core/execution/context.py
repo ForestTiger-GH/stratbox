@@ -23,34 +23,55 @@ class _LockedMeter:
         return locked
 
 
+class _ProducerMeter(_LockedMeter):
+    """Cumulative resources with the exact generation's live-demand clock."""
+    def __init__(self, service, run, task):
+        super().__init__(run.meter, service._condition)
+        self._service, self._task = service, task
+
+    def seconds_left(self):
+        return self._service._remaining_seconds(self._task)
+
+    def checkpoint(self):
+        if self.seconds_left() <= 0:
+            raise ExecutionFailure('execution.deadline', outcome='cancelled')
+
+    def __getattr__(self, name):
+        value = super().__getattr__(name)
+        if name not in {'check', 'charge', 'account_output'}:
+            return value
+        def active(*args, **kwargs):
+            if not kwargs.get('completed', False):
+                self.checkpoint()
+            return value(*args, **kwargs)
+        return active
+
+
 class CommandContext:
     def __init__(self, service, run, task, inputs):
         self.service, self.run, self.task = service, run, task
         self.run_id, self.task_id = run.run_id, task.spec.task_id
-        self.parameters = _isolate(service._resolve(run, task.spec.command.parameters))
-        self.target = task.spec.command.target if task.spec.command.target is not None else getattr(run.plan, "target", None)
+        self.parameters = _isolate(task.bound_parameters,
+            max_bytes=service.settings.max_retained_bytes)
+        self.target = _isolate(task.spec.command.target if task.spec.command.target is not None else getattr(run.plan, "target", None),
+            max_bytes=service.settings.max_retained_bytes)
         self.inputs = inputs
         self.evidence = []
         self.effect_receipts = {}
         self._active_effects = set()
-        self.budget = _LockedMeter(run.meter, service._condition)
+        self.budget = _ProducerMeter(service, run, task)
 
     def spend(self, resource, amount):
         self.budget.charge(resource, amount)
 
     def remaining_seconds(self):
         self.checkpoint()
-        with self.service._condition:
-            consumers = [(run, task) for run in self.service._runs.values() for task in run.tasks.values()
-                if task is self.task or self.task.work_key is not None and task.work_key == self.task.work_key]
-            deadlines = [float("inf") if run.deadline is None else max(0.0,run.deadline-monotonic())
-                for run,task in consumers if not run.cancel.is_set() and not task.cancelled]
-        return max(deadlines, default=0.0)
+        return self.service._remaining_seconds(self.task)
 
     def accepted_input(self, name):
         if name not in self.inputs:
             return None
-        key = fingerprint(self.inputs[name])
+        key = self.service._values.identity(self.task.owned_inputs[name])
         with self.service._condition:
             record = self.service._accepted.get(key)
             if record is not None: self.service._accepted.move_to_end(key)
@@ -153,5 +174,8 @@ class CommandContext:
             self.checkpoint()
             previous = self.service.lookup_effect(effect_id)
             if previous is None or previous.status != "unknown": raise ExecutionFailure("effect.intent_already_settled")
+            from .effect_evidence import valid_intent_update
+            if not valid_intent_update(previous.intent, intent):
+                raise ExecutionFailure('effect.intent_update_conflict')
             self.service._save_effect(replace(previous, intent=intent))
             self.service._fact(self.run, "effect.intent_updated", self.task, effect_id=effect_id, effect_kind=previous.kind)

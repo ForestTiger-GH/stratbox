@@ -5,7 +5,8 @@ import json
 from stratbox.core.execution.service import ExecutionFailure
 from stratbox.shared.data.values import ImmutableMaterialRef, canonical_tree, fingerprint
 from ._settings import _get, _option
-from ._storage import _verify_member
+from ._storage import _provider_scope, _read_identity, _verify_member
+from stratbox.shared.identity import ByteIdentity
 
 
 def release_assemble(inputs, settings, context):
@@ -37,7 +38,16 @@ def release_publish(inputs, settings, context):
         _verify_member(member["reference"], context)
     data = json.dumps(canonical_tree(manifest), sort_keys=True, separators=(",", ":")).encode()
     expected = inputs.get("expected_token")
-    receipt = context.effect("publication.write", fingerprint((destination, expected, data)),
-        lambda: publish(destination, expected, data), resource=str(destination))
+    identity = ByteIdentity.of(data)
+    intent = {'destination': destination, 'expected_token': expected, 'identity': identity.sha256,
+        'provider_id': str(getattr(store, 'provider_id', type(store).__qualname__)),
+        'provider_scope': _provider_scope(store, destination)}
+    occurrence = _option(context, settings, 'publication_id', None)
+    if occurrence is not None and (not isinstance(occurrence, str) or not occurrence or len(occurrence) > 1024):
+        raise ExecutionFailure('publication.occurrence_identity_invalid')
+    receipt = context.effect("publication.write", fingerprint(('publication.write', intent, occurrence)),
+        lambda: publish(destination, expected, data), resource=str(destination), intent=intent)
     if receipt.status != "confirmed": raise ExecutionFailure("publication.unknown", outcome="unknown")
+    if _read_identity(store, destination, identity, checkpoint=context.checkpoint) != identity:
+        raise ExecutionFailure('publication.current_postcondition_changed')
     return {"receipt": receipt}

@@ -74,9 +74,6 @@ def canonical_tree(value):
         return {"tuple": [canonical_tree(item) for item in value]}
     if isinstance(value, (set, frozenset)):
         return {"set": sorted((canonical_tree(item) for item in value), key=lambda item: json.dumps(item, sort_keys=True))}
-    custom = getattr(value, "fingerprint", None)
-    if isinstance(custom, str):
-        return {"competent_identity": custom, "type": type(value).__module__ + ":" + type(value).__qualname__}
     if is_dataclass(value):
         return {"type": type(value).__module__ + ":" + type(value).__qualname__,
                 "fields": {item.name: canonical_tree(getattr(value, item.name)) for item in fields(value)}}
@@ -84,7 +81,8 @@ def canonical_tree(value):
 
 
 def fingerprint(value):
-    return sha256(json.dumps(canonical_tree(value), sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
+    from .value_identity import exact_fingerprint
+    return exact_fingerprint(value)
 
 
 def _codec_types():

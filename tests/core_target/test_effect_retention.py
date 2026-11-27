@@ -47,8 +47,8 @@ def test_unknown_effect_cannot_be_archived_or_forgotten_after_restart(tmp_path):
 
 def test_terminal_archive_moves_body_and_retains_complete_exact_receipt(tmp_path):
     state = FileEffectState(tmp_path)
-    state.begin(claim())
-    state.put(confirmed(value={'ack': 'received', 'evidence': b'actual receipt'}))
+    current, _ = state.begin(claim())
+    state.put(replace(current, status='confirmed', value={'ack': 'received', 'evidence': b'actual receipt'}))
     before = state.get('effect')
     assert state.archive(['effect']) == ('effect',)
     with sqlite3.connect(tmp_path / 'effects.sqlite') as db:
@@ -64,12 +64,12 @@ def test_terminal_archive_moves_body_and_retains_complete_exact_receipt(tmp_path
 
 def test_archived_rejected_effect_can_be_atomically_retried_with_new_evidence(tmp_path):
     state = FileEffectState(tmp_path)
-    state.begin(claim())
-    state.put(replace(claim(), status='rejected', finding='storage.create_rejected'))
+    current, _ = state.begin(claim())
+    state.put(replace(current, status='rejected', finding='storage.create_rejected'))
     state.archive(['effect'])
     old_files = set((tmp_path / 'archive').rglob('*'))
-    retry = replace(claim(), intent={'source': ('exact', 2)})
-    assert state.begin(retry) == (retry, True)
+    retry, owned = state.begin(claim())
+    assert owned and retry.claim_id != current.claim_id and retry.revision > current.revision
     state.put(replace(retry, status='confirmed', value={'ack': 'second attempt'}))
     state.archive(['effect'])
     assert set((tmp_path / 'archive').rglob('*')) > old_files
@@ -103,19 +103,18 @@ def test_confirmation_is_monotonic_and_identity_conflicts_are_rejected(tmp_path)
         state.put(confirmed(value={'different': True}))
     with pytest.raises(ValueError, match='identity_conflict'):
         state.begin(replace(claim(), resource='other destination'))
-    assert state.get('effect') == confirmed()
+    assert replace(state.get('effect'), revision=0, claim_id=None) == confirmed()
 
 
 def test_intent_enrichment_is_durable_and_rejected_retry_requires_atomic_claim(tmp_path):
     state = FileEffectState(tmp_path)
-    state.begin(claim())
-    enriched = replace(claim(), intent={'source': ('exact', 1), 'observed_bytes': b'bytes'})
-    state.put(enriched)
+    current, _ = state.begin(claim())
+    enriched = state.put(replace(current, intent={'source': ('exact', 1), 'observed_bytes': b'bytes'}))
     assert FileEffectState(tmp_path).get('effect') == enriched
     state.put(replace(enriched, status='rejected'))
     with pytest.raises(ValueError, match='atomic_begin_required'):
         state.put(claim())
-    assert state.begin(claim())[1]
+    assert state.begin(replace(claim(), intent=enriched.intent))[1]
 
 
 def test_archive_validates_all_selected_states_before_moving_terminal_bodies(tmp_path):
@@ -129,11 +128,11 @@ def test_archive_validates_all_selected_states_before_moving_terminal_bodies(tmp
 
 def test_cold_write_failure_keeps_complete_hot_body_and_all_identity_rows(tmp_path, monkeypatch):
     state = FileEffectState(tmp_path)
-    state.put(confirmed())
+    original = state.put(confirmed())
     monkeypatch.setattr(state.store, 'create_immutable', lambda *args: (_ for _ in ()).throw(OSError('cold storage unavailable')))
     with pytest.raises(OSError, match='cold storage unavailable'):
         state.archive(['effect'])
-    assert FileEffectState(tmp_path).get('effect') == confirmed()
+    assert FileEffectState(tmp_path).get('effect') == original
     assert state.page(archived=False)[0]['effect_id'] == 'effect'
 
 
@@ -175,11 +174,11 @@ def test_hot_count_quota_pins_unknown_and_terminal_archive_releases_capacity(tmp
     first = FileEffectState(tmp_path, max_hot_receipts=2)
     second = FileEffectState(tmp_path, max_hot_receipts=2)
     first.begin(claim('unknown'))
-    first.begin(claim('terminal'))
+    terminal, _ = first.begin(claim('terminal'))
     with pytest.raises(RuntimeError, match='hot_capacity_exhausted'):
         second.begin(claim('blocked'))
     assert second.get('blocked') is None
-    first.put(confirmed('terminal'))
+    first.put(replace(terminal, status='confirmed', value={'ack': 'received'}))
     first.archive(['terminal'])
     assert second.begin(claim('new'))[1]
     assert first.get('unknown').status == 'unknown'
@@ -188,12 +187,12 @@ def test_hot_count_quota_pins_unknown_and_terminal_archive_releases_capacity(tmp
 
 
 def test_hot_byte_quota_checks_intent_enrichment_and_survives_restart(tmp_path):
-    state = FileEffectState(tmp_path, max_hot_bytes=1000)
+    state = FileEffectState(tmp_path, max_hot_bytes=1000, max_receipt_bytes=800)
     state.begin(claim())
     original = state.get('effect')
-    with pytest.raises(RuntimeError, match='hot_capacity_exhausted'):
-        state.put(replace(original, intent={'large': b'x' * 2000}))
-    restarted = FileEffectState(tmp_path, max_hot_bytes=1000)
+    with pytest.raises(ValueError, match='receipt_size_limit'):
+        state.put(replace(original, intent={**original.intent, 'large': b'x' * 2000}))
+    restarted = FileEffectState(tmp_path, max_hot_bytes=1000, max_receipt_bytes=800)
     assert restarted.get('effect') == original
     assert restarted.usage()['hot_receipts'] == 1
     assert restarted.usage()['hot_bytes'] < 1000
@@ -267,12 +266,12 @@ def test_effect_lookup_cache_is_bounded_while_archived_receipts_remain_authorita
     state.archive([f'confirmed-{index:02d}' for index in range(20)])
     with ExecutionService(providers={'effect_state': state}, settings=ExecutionSettings(effect_capacity=3)) as service:
         for index in range(20):
-            assert service.lookup_effect(f'confirmed-{index:02d}') == confirmed(f'confirmed-{index:02d}')
+            assert service.lookup_effect(f'confirmed-{index:02d}') == state.get(f'confirmed-{index:02d}')
             assert len(service._effects) <= 3
         assert tuple(service._effects) == ('confirmed-17', 'confirmed-18', 'confirmed-19')
-        assert service.lookup_effect('confirmed-00') == confirmed('confirmed-00')
+        assert service.lookup_effect('confirmed-00') == state.get('confirmed-00')
         assert len(service._effects) == 3 and 'confirmed-17' not in service._effects
-    assert state.get('confirmed-00') == confirmed('confirmed-00')
+    assert replace(state.get('confirmed-00'), revision=0, claim_id=None) == confirmed('confirmed-00')
 
 
 def test_unknown_receipts_pin_cache_and_terminal_lookup_can_return_uncached(tmp_path):
@@ -283,6 +282,6 @@ def test_unknown_receipts_pin_cache_and_terminal_lookup_can_return_uncached(tmp_
     with ExecutionService(providers={'effect_state': state}, settings=ExecutionSettings(effect_capacity=3)) as service:
         for index in range(3): assert service.lookup_effect(f'unknown-{index}').status == 'unknown'
         for _ in range(3):
-            assert service.lookup_effect('effect') == confirmed()
+            assert service.lookup_effect('effect') == state.get('effect')
             assert len(service._effects) == 3 and 'effect' not in service._effects
             assert all(receipt.status == 'unknown' for receipt in service._effects.values())

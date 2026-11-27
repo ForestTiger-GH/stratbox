@@ -77,6 +77,13 @@ def test_missing_alternative_reference_cannot_restore_as_complete_history():
         replace(ledger, revisions=(replace(ledger.revisions[0], alternative_candidates=()),))
 
 
+def test_an_originless_empty_ledger_cannot_claim_vacuous_certificate_authority():
+    original, _ = history()
+    with pytest.raises(ValueError, match="member_required"):
+        replace(original.history_membership, members=(), rows=(), candidates=(), active_scope=(),
+            revisions=(), eligible_candidates=())
+
+
 def test_member_witness_cannot_be_borrowed_from_another_equal_coordinate():
     original, _ = history()
     ledger = original.history_membership

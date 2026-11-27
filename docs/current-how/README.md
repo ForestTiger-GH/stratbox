@@ -8,4 +8,8 @@ Use [shared contracts](shared-semantic-contracts.md), [portable data](logical-da
 
 [Selective processing and restart](selective-processing-and-restart.md) covers external source membership, publication and observation selectors, portable histories, conditional original retention, bounded source-state projection and the finite collector example.
 
+[Persistent operation and verified recovery](persistent-operating-profile.md) covers the owned local profile, request preflight, hot/cold retirement, settlement reserves, coordinated recovery packages and fenced restoration.
+
+[Core 0.27 qualification](core-0-27-qualification.md) defines the tested operating scope, workload measurements and remaining platform and scientific qualifications.
+
 The dated public application and deployment analyses retain their explicit external baselines: [Windows application](windows-application.md), [activation boundary](appdock-activation-host-attachment-boundary.md), and [problem reporting](appdock-public-problem-contracts.md). They establish their own bounded evidence and do not substitute for validation of an installed host.

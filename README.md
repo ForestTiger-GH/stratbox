@@ -27,6 +27,7 @@ with StrategyBox() as box:
 - [Direct calls, prepared plans and result lifetime](docs/current-how/capability-session.md)
 - [Independent typed processing stages](docs/current-how/standard-data-stages.md)
 - [Selective processing, retained state and a finite collector](docs/current-how/selective-processing-and-restart.md)
+- [Persistent operation, readiness and verified recovery](docs/current-how/persistent-operating-profile.md)
 - [Static domain catalogs and scientific coverage](docs/current-how/independent-domain-data-routes.md)
 - [Installation and local verification](docs/how/install-and-run-core.md)
 - [Maintained analytical knowledge](docs/README.md)

@@ -312,6 +312,8 @@ class FileJournal(_Retention):
     def _before_mutation(self):
         if self._closed:
             raise RuntimeError("journal.closed")
+        if (self.directory / 'writer-closed.json').exists():
+            raise RuntimeError('journal.writer_namespace_closed')
         if self._writer is not None:
             return
         stream = (self.directory / "writer.lock").open("a+b")
@@ -383,6 +385,10 @@ class FileJournal(_Retention):
             if (fact.sequence - 1) % self.segment_size == 0:
                 _fsync_directory(self.directory)
             self._tail = fact.sequence
+            # Persist an independent high-watermark before acknowledging the
+            # append. A later missing final segment must not look like a valid
+            # older stream merely because no consumer had checkpointed yet.
+            self._save_checkpoint()
             return fact
 
     def _facts_after(self, after):
@@ -394,6 +400,57 @@ class FileJournal(_Retention):
             for fact in self._read_segment(path):
                 if after < fact.sequence <= self._tail:
                     yield fact
+
+    def recovery_metadata(self):
+        """Describe the finite replay cut owned by this single writer."""
+        with self._lock:
+            return {'provider_id': 'journal.files', 'checkpoint': self.checkpoint(),
+                    'directory': str(self.directory.resolve()), 'segment_size': self.segment_size,
+                    'max_record_bytes': self.max_record_bytes}
+
+    def export_checkpoint(self, destination, *, max_bytes=None, max_files=None, max_file_bytes=None):
+        """Copy the exact retained suffix and cursors while holding writer ownership."""
+        from stratbox.core.storage.readable import copy_stream
+        import shutil
+        if any(value is not None and (type(value) is not int or value < 1)
+               for value in (max_bytes, max_files, max_file_bytes)):
+            raise ValueError('journal.checkpoint_limit_invalid')
+        destination = Path(destination).resolve()
+        if destination.exists() or destination.is_relative_to(self.directory.resolve()):
+            raise ValueError('journal.checkpoint_destination_invalid')
+        with self._lock:
+            self._before_mutation()
+            self._save_checkpoint()
+            def paths():
+                for name in ('stream-id', 'retention.json'):
+                    yield self.directory / name
+                for segment in range(self._floor // self.segment_size, (self._tail - 1) // self.segment_size + 1):
+                    path = self._segment(segment)
+                    if path is None:
+                        raise ValueError('journal.coverage_gap')
+                    yield path
+            count = total = 0
+            for path in paths():
+                count += 1
+                size = path.stat().st_size
+                total += size
+                if (max_files is not None and count > max_files
+                        or max_bytes is not None and total > max_bytes
+                        or max_file_bytes is not None and size > max_file_bytes):
+                    raise ValueError('journal.checkpoint_size_limit')
+            destination.mkdir(parents=True)
+            try:
+                for path in paths():
+                    target_path = destination / path.relative_to(self.directory)
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+                    with path.open('rb') as source, target_path.open('xb') as target:
+                        copy_stream(source, target, limit=path.stat().st_size)
+                        target.flush(); os.fsync(target.fileno())
+                _fsync_directory(destination)
+                return str(destination)
+            except BaseException:
+                shutil.rmtree(destination)
+                raise
 
     def read_page(self, after=0, limit=1000, *, run_id=None, scan_limit=10000):
         with self._lock:

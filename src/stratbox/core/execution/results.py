@@ -21,7 +21,7 @@ class RunResult:
     def __init__(self, service, run, outcome, outputs, diagnostics, scopes, retention_charge):
         self._service, self._run = service, run
         self.run_id, self.outcome = run.run_id, outcome
-        self._outputs, self.scopes = _isolate(dict(outputs)), MappingProxyType(dict(scopes))
+        self._outputs, self.scopes = dict(outputs), MappingProxyType(dict(scopes))
         self.outputs = _OutputView(self)
         self._closed = False
         self._retention_charge = retention_charge
@@ -38,8 +38,9 @@ class RunResult:
         self.effects=MappingProxyType(effects)
         self.diagnostics=tuple(dict.fromkeys((*diagnostics,*run.diagnostics)))
         self.resources = MappingProxyType(dict(run.meter.usage()))
-        self._accepted_keys = _value_keys(outputs.values())
-        service.staging.pin(self._outputs, "result:" + self.run_id)
+        self._accepted_keys = service._values.keys(outputs.values())
+        service.staging.pin(service._values.references(self._outputs), "result:" + self.run_id)
+        service._values.pin_graph(self._outputs, "result:" + self.run_id)
 
     def output(self, name="value"):
         if self._closed:
@@ -55,6 +56,7 @@ class RunResult:
                 self._service._retained_bytes -= self._retention_charge
                 self._outputs = {}
                 self._service.staging.release("result:" + self.run_id)
+                self._service._values.release("result:" + self.run_id)
                 for task in self._run.tasks.values():
                     task.outputs.clear()
                     task.accepted_keys.clear()

@@ -233,12 +233,10 @@ def material_receive(inputs, settings, context):
     """Retain a streaming acquisition under the same declared effect authority."""
     from .artifacts import artifact_commit
     acquired = material_fetch(inputs,settings,_PlacementContext(context,'staged'))
-    if isinstance(acquired['material'],ImmutableMaterialRef):
-        reference = acquired['material']
-        receipt = context.service.lookup_effect(reference.effect_id)
-    else:
-        retained = artifact_commit({'material':acquired['material'],'destination':inputs['destination']},settings,context)
-        reference,receipt = retained['reference'],retained['receipt']
+    # A retained 304 supplies bytes for the current request. It does not fulfill
+    # a different destination merely because its earlier retention succeeded.
+    retained = artifact_commit({'material':acquired['material'],'destination':inputs['destination']},settings,context)
+    reference,receipt = retained['reference'],retained['receipt']
     return {'reference':reference,'evidence':acquired['evidence'],'receipt':receipt,'request':acquired['request']}
 
 

@@ -84,9 +84,13 @@ def test_renderer_reads_only_prepared_view_and_retention_bound_is_enforced(mater
         result=box.invoke(identifier,target="cbr.statistics.table",inputs=inputs,parameters={"format":"csv"})
         assert result.outcome=="succeeded" and result.output(output).data
     with StrategyBox(settings=ExecutionSettings(max_retained_bytes=1)) as box:
-        result=box.invoke(identifier,target="cbr.statistics.table",inputs=inputs,parameters={"format":"csv"})
-        assert result.outcome=="failed" and "value.retention_capacity_exhausted" in result.diagnostics
-        assert not result.outputs and not result.effects
+        # Private input ownership is admitted before any execution. A budget
+        # smaller than the input is rejected at that boundary, with no run or
+        # effect accepted and no partially retained input left behind.
+        with pytest.raises(ValueError,match="value.retention_capacity_exhausted"):
+            box.invoke(identifier,target="cbr.statistics.table",inputs=inputs,parameters={"format":"csv"})
+        assert box.session.quiescent and not box.session.journal.read()
+        assert box.session.value_statistics()['resident_bytes']==0
 
 
 def test_physical_evidence_encoding_checks_cancellation_before_work(materials):

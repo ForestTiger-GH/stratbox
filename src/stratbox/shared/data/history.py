@@ -296,6 +296,8 @@ class HistoryMembership:
         for name in ("active_scope", "grain", "eligible_candidates"):
             object.__setattr__(self, name, _tokens(getattr(self, name), "history.scope_invalid", limit=10000000))
         limits = self.limits
+        if not self.members:
+            raise ValueError("history.member_required")
         if len(self.members) > limits.max_members:
             raise ValueError("history.member_limit")
         if len(self.candidates) > limits.max_candidates:

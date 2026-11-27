@@ -14,7 +14,8 @@ from stratbox.shared.data.values import Material, ImmutableMaterialRef
 
 
 INT = PortContract('integer', int)
-TUPLE = PortContract('result_collection', tuple)
+TUPLE = PortContract('result_collection', tuple,
+    outcomes=frozenset({'succeeded', 'partial', 'failed', 'unknown', 'cancelled'}))
 NO_REUSE = ReuseContract(deterministic=False, shareable=False, completed=False)
 ENTERED, RELEASE = Event(), Event()
 CALLS = []

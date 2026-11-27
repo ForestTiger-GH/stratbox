@@ -155,7 +155,9 @@ def test_persisted_cursor_rejects_a_replaced_journal_stream(tmp_path):
     assert len(state.pending('source'))==1
 
 
-def test_default_subscription_excludes_notification_wrapper_feedback(tmp_path):
+@pytest.mark.parametrize('depth', (1, 2, 3))
+@pytest.mark.parametrize('required', (True, False))
+def test_default_subscription_excludes_notification_wrapper_feedback(tmp_path, depth, required):
     from stratbox.capabilities.catalog import standard_catalog
     from stratbox.capabilities.model import CommandDefinition, OperationDefinition, PortContract, MethodRef, Call, GraphBody, InputRef, OutputRef
     from stratbox.core.notifications import MemoryNotificationState
@@ -163,12 +165,20 @@ def test_default_subscription_excludes_notification_wrapper_feedback(tmp_path):
         outputs={'receipt':PortContract('receipt')},method=MethodRef('stratbox.core.commands.notifications:notification_deliver'),
         effects=frozenset({'notification.deliver'}),required_providers=frozenset({'notification'}))
     operation=OperationDefinition('operation.custom.handoff',inputs=command.inputs,outputs=command.outputs,
-        body=GraphBody((Call('send',command.id,{'intent':InputRef('intent')}),),{'receipt':OutputRef('send','receipt')}))
+        body=GraphBody((Call('send',command.id,{'intent':InputRef('intent')}, required=required),),
+                       {'receipt':OutputRef('send','receipt')}))
+    definitions = [command, operation]
+    for level in range(1, depth):
+        operation = OperationDefinition('operation.custom.handoff_' + str(level),
+            inputs=command.inputs, outputs=command.outputs,
+            body=GraphBody((Call('wrapped', operation.id, {'intent': InputRef('intent')}, required=required),),
+                           {'receipt': OutputRef('wrapped', 'receipt')}))
+        definitions.append(operation)
     class Channel:
         scope_id="fixture.notifications.channel"
         def deliver(self,intent):return {'status':'confirmed'}
     state=MemoryNotificationState()
-    with StrategyBox(catalog=standard_catalog().with_definitions(command,operation),providers={'notification':Channel()}) as box:
+    with StrategyBox(catalog=standard_catalog().with_definitions(*definitions),providers={'notification':Channel()}) as box:
         result=box.invoke(operation.id,inputs={'intent':{'id':'notice','route':'channel','payload':{}}})
         assert result.outcome=='succeeded',result.diagnostics
         facts=box.session.journal.read(run_id=result.run_id)

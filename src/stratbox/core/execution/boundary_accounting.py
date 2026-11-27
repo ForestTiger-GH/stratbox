@@ -58,7 +58,7 @@ def account_outputs(meter, outputs, *, cells_before, output_owner):
     output_cells = _cells(outputs)
     charged = meter.used("cells") - cells_before
     if output_cells > charged:
-        meter.charge("cells", output_cells - charged)
+        meter.charge("cells", output_cells - charged, completed=True)
     # Completed representations still consume the byte boundary after a deadline.
     # Descriptor RAM and the bytes behind a staged carrier are separate resources.
     meter.charge("output_bytes", _size(outputs), completed=True)

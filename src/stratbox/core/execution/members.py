@@ -5,7 +5,9 @@ from stratbox.shared.data.selection import MemberOutcome
 from stratbox.shared.data.values import ImmutableMaterialRef, SnapshotRef, fingerprint
 
 
-def member_key(value, ordinal):
+def member_key(value, ordinal, identity=None):
+    if identity is not None:
+        return identity
     from stratbox.core.storage.readable import carrier
     physical = carrier(value)
     metadata = getattr(physical,'metadata',{})
@@ -39,7 +41,7 @@ def dependency_members(run, item):
     return tuple(found[key] for key in sorted(found))
 
 
-def outcome(value, ordinal, status, children=(), result=None, *, effect_state=None):
+def outcome(value, ordinal, status, children=(), result=None, *, effect_state=None, identity=None):
     from stratbox.core.observability.projections.source_state import output_stage
     references, stages, diagnostics = [], [], []
     def retain(item):
@@ -61,10 +63,11 @@ def outcome(value, ordinal, status, children=(), result=None, *, effect_state=No
         if command:
             for name, output in child.outputs.items():
                 stage = output_stage(command.id,name)
-                if stage:
+                use = child.output_uses.get(name)
+                if stage and use is not None and use.disposition == 'accepted' and use.role != 'diagnostic':
                     stages.append(stage)
                 retain(output)
     unique = {fingerprint(reference):reference for reference in references}
     effect_state = 'unknown' if any(child.state == 'unknown' for child in children) else effect_state
-    return MemberOutcome(member_key(value,ordinal),ordinal,status,
+    return MemberOutcome(member_key(value,ordinal,identity),ordinal,status,
         tuple(dict.fromkeys(stages)),tuple(unique.values()),tuple(dict.fromkeys(diagnostics)),effect_state)

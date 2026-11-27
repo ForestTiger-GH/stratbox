@@ -183,13 +183,15 @@ def test_unknown_named_write_reconciles_after_stage_lifetime_ends(tmp_path, chan
         assessed = box.invoke("command.artifact.reconcile", inputs={"effect": receipt})
         assert output(assessed, "assessment").complete == (change == "unchanged")
         if change == "missing":
-            recovered = box.invoke("command.artifact.reconcile", inputs={"effect": receipt},
-                parameters={"retry_missing": True})
-            assert output(recovered, "assessment").complete
+            recovered = box.invoke("command.artifact.materialize", inputs={
+                'material': receipt.intent.retained_ancestor, 'destination': receipt.intent.destination},
+                parameters={'delivery_id': 'explicit-repair-occurrence'})
+            repaired = output(recovered, 'receipt')
+            assert repaired.effect_id != receipt.effect_id
+            assert box.session.lookup_effect(receipt.effect_id).status == 'unknown'
             assert target.read_bytes() == expected
         elif change == "conflict":
-            blocked = box.invoke("command.artifact.reconcile", inputs={"effect": receipt},
-                parameters={"retry_missing": True})
+            blocked = box.invoke("command.artifact.reconcile", inputs={"effect": receipt})
             assert not output(blocked, "assessment").complete
             assert target.read_bytes() == b"intervening bytes"
 
@@ -199,8 +201,7 @@ def test_missing_named_output_without_surviving_source_stays_unresolved(tmp_path
     (tmp_path / "files" / "report.zip").unlink()
     with StrategyBox(providers={"filestore": LocalFileStore(tmp_path / "files"),
                                 "effect_state": FileEffectState(tmp_path / "effects")}) as box:
-        assessed = box.invoke("command.artifact.reconcile", inputs={"effect": receipt},
-            parameters={"retry_missing": True})
+        assessed = box.invoke("command.artifact.reconcile", inputs={"effect": receipt})
         assert not output(assessed, "assessment").complete
         assert not (tmp_path / "files" / "report.zip").exists()
 
@@ -271,7 +272,7 @@ def test_confirmed_named_delivery_does_not_claim_a_later_missing_path(tmp_path):
         delivered = box.invoke("command.artifact.materialize", inputs={"material": Material(b"bytes"), "destination": "named"})
         receipt = output(delivered, "receipt")
         (tmp_path / "named").unlink()
-        assessed = box.invoke("command.artifact.reconcile", inputs={"effect": receipt}, parameters={"retry_missing": True})
+        assessed = box.invoke("command.artifact.reconcile", inputs={"effect": receipt})
         assert not output(assessed, "assessment").complete
         assert not (tmp_path / "named").exists()
 

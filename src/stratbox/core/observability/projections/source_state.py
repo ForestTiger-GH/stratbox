@@ -67,7 +67,9 @@ def project_page(page):
         observation = _observation(data if fact.kind == 'source.observed' else data.get('observation'), fact)
         if observation is not None:
             records.append(observation)
-        if fact.kind != 'output.accepted' or not data.get('accepted_value_id') or not data.get('value_identity'):
+        if (fact.kind != 'output.accepted' or data.get('output_disposition', 'accepted') != 'accepted'
+                or data.get('output_role') == 'diagnostic'
+                or not data.get('accepted_value_id') or not data.get('value_identity')):
             continue
         capability_id = data.get('capability_id') or fact.command_id or ''
         acquisition_id = data.get('acquisition_evidence_id')
@@ -96,12 +98,14 @@ def project_page(page):
         basis = tuple(data.get('processing_basis', ()))
         if any(not isinstance(value, str) or not value for value in basis):
             continue
+        dependencies = tuple(dict.fromkeys((*data.get('certificate_dependencies', ()),
+            *(data.get('certificate_ids', ()) if capability_id == 'command.observations.validate' else ()))))
         for key in keys:
             records.append(RetainedOutput(key, data['accepted_value_id'], data['value_identity'], stage,
                 capability_id, basis, fact.occurred_at, fact.sequence, reference if persistent else None, persistent,
                 data.get('assessment') if isinstance(data.get('assessment'), Assessment) else None,
                 data.get('selection_identity'), data.get('observation_ref'), uses, tuple(data.get('effect_ids', ())),
-                data.get('destination_identity'), tuple(data.get('certificate_ids', ())) if capability_id == 'command.observations.validate' else (),
+                data.get('destination_identity'), dependencies,
                 reference.identity if isinstance(reference, SnapshotRef) else data.get('represents_value_identity'),
                 output_name=fact.output_name or data.get('output_name')))
     return tuple(records), tuple(authority), tuple(links)

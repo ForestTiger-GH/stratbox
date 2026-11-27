@@ -91,7 +91,7 @@ def test_unsuccessful_reports_are_visible_and_dependencies_stay_blocked(outcome)
         with box.invoke(operation.id) as result:
             assert result.outcome == outcome
             assert result.output('report') == ('checked',)
-            assert result.scopes['root'] == 'failed'
+            assert result.scopes['root'] == outcome
             assert CALLS == ['complete']
             facts = box.session.journal.read(run_id=result.run_id)
             reports = [fact for fact in facts if fact.kind == 'output.reported']
@@ -177,7 +177,7 @@ def test_cancellation_keeps_only_declared_reports_and_releases_regular_stage_out
             assert cancelled.outcome == 'cancelled'
             assert tuple(cancelled.outputs) == ('report',)
             assert cancelled.output('report') == ('finished physical work',)
-            assert cancelled.scopes['root'] == 'failed'
+            assert cancelled.scopes['root'] == 'cancelled'
             facts = box.session.journal.read(run_id=cancelled.run_id)
             reports = [fact for fact in facts if fact.kind == 'output.reported']
             assert len(reports) == 1 and reports[0].data['outcome'] == 'cancelled'

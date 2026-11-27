@@ -57,6 +57,19 @@ def artifact_commit(inputs, settings, context):
     scope = _provider_scope(store, path)
     accepted = context.accepted_input("material")
     effect_id = fingerprint(("storage.write", scope, path, identity))
+    repair_id = _option(context, settings, 'repair_id', None)
+    if repair_id is not None:
+        if not isinstance(repair_id, str) or not repair_id or len(repair_id) > 1024:
+            raise ExecutionFailure('storage.repair_identity_invalid')
+        previous = context.service.lookup_effect(effect_id)
+        if (previous is None or previous.status != 'confirmed' or previous.kind != 'storage.write'
+                or not isinstance(previous.intent, ImmutableMaterialRef)
+                or previous.intent.identity != identity or previous.intent.location != path
+                or previous.intent.provider_scope != scope):
+            raise ExecutionFailure('storage.confirmed_repair_basis_required')
+        # An availability repair is a new physical occurrence. The old receipt
+        # stays a historical confirmation even if its former bytes disappeared.
+        effect_id = fingerprint(('storage.repair', effect_id, repair_id))
     if getattr(context, "budget", None):
         context.budget.account_output(effect_id, identity)
     metadata = {**properties["metadata"], "media_type": getattr(material, "media_type", "application/octet-stream"),
@@ -89,7 +102,11 @@ def artifact_commit(inputs, settings, context):
         raise ExecutionFailure("storage.retention_receipt_conflict")
     # The durable receipt keeps its original accepted provenance when a later
     # logical caller reuses the same physical storage obligation.
-    if _read_identity(store, path, identity, checkpoint=context.checkpoint) != identity:
+    try:
+        available = _read_identity(store, path, identity, checkpoint=context.checkpoint) == identity
+    except (OSError, ValueError):
+        available = False
+    if not available:
         raise ExecutionFailure("storage.retained_postcondition_changed")
     return {"reference": receipt.value, "receipt": receipt}
 
@@ -113,7 +130,7 @@ def _verified_ancestor(reference, identity, context):
     return reference
 
 
-def _copy_named(value, intent, context, *, update_intent=None, source_opener=None):
+def _copy_named(value, intent, context, *, update_intent=None, source_opener=None, effect_id=None):
     store = context.provider("filestore")
     validate = getattr(store, "validate_named_destination", None)
     if callable(validate):
@@ -165,6 +182,8 @@ def _copy_named(value, intent, context, *, update_intent=None, source_opener=Non
         created = stage.commit("immutable" if intent.policy == "create_only" else "replace_expected_revision", revision)
     if not isinstance(created, bool):
         raise ExecutionFailure("storage.commit_protocol_invalid")
+    if not created and intent.policy == 'replace_if_matches':
+        raise MutationRejected('Conditional replacement rejected', code='storage.destination_conflict')
     try:
         actual = _read_identity(store, intent.destination, intent.identity, checkpoint=context.checkpoint)
     except (OSError, ValueError) as error:
@@ -175,9 +194,16 @@ def _copy_named(value, intent, context, *, update_intent=None, source_opener=Non
         if not created:
             raise MutationRejected("Destination contains other bytes", code="storage.destination_conflict")
         raise ExecutionFailure("storage.named_readback_mismatch")
-    return NamedMaterialReceipt(intent.destination, intent.identity, intent.provider_scope,
+    receipt = NamedMaterialReceipt(intent.destination, intent.identity, intent.provider_scope,
         guarantee=("atomic_create" if intent.policy == "create_only" else "compare_and_replace_under_directory_guard")
                   if created else "verified_existing_postcondition")
+    record = getattr(store, 'record_named_transition', None)
+    if intent.policy == 'replace_if_matches' and effect_id is not None and callable(record):
+        try:
+            record(effect_id, intent, receipt)
+        except Exception as error:
+            raise OSError('Conditional replacement acknowledgement is unavailable') from error
+    return receipt
 
 
 def artifact_materialize(inputs, settings, context):
@@ -211,7 +237,7 @@ def artifact_materialize(inputs, settings, context):
         context.budget.account_output(effect_id, material.identity)
     receipt = context.effect("storage.write", effect_id,
         lambda: _copy_named(value, intent, context,
-            update_intent=lambda enriched: context.update_effect_intent(effect_id, enriched)),
+            update_intent=lambda enriched: context.update_effect_intent(effect_id, enriched), effect_id=effect_id),
         resource=destination, intent=intent)
     _settled(receipt)
     if _read_identity(store, destination, material.identity, checkpoint=context.checkpoint) != material.identity:
@@ -231,10 +257,10 @@ def _named_observation(effect_id, intent, context):
                 return None
         except (OSError, ValueError):
             return None
-    if intent.operation == "copy":
+    if intent.operation == "copy" and intent.policy == 'create_only':
         return NamedMaterialReceipt(intent.destination, intent.identity, intent.provider_scope,
                                     guarantee="verified_current_postcondition")
-    if not _missing(store, intent.source):
+    if intent.operation in {'move', 'delete'} and not _missing(store, intent.source):
         return None
     if intent.prerequisites:
         from .maintenance import _verify_prerequisites
@@ -278,18 +304,8 @@ def artifact_reconcile(inputs, settings, context):
         return None
 
     observed = lookup(effect_id)
-    if observed is None and known.status != "confirmed" and _option(context, settings, "retry_missing", False):
-        if (isinstance(expected, NamedEffectIntent) and expected.operation == "copy"
-                and expected.policy == "create_only" and expected.provider_scope == _provider_scope(provider, expected.destination)
-                and _missing(provider, expected.destination) and expected.retained_ancestor is not None):
-            ancestor = _verified_ancestor(expected.retained_ancestor, expected.identity, context)
-            if getattr(context, "budget", None):
-                context.budget.account_output(effect_id, expected.identity)
-            recovered = context.effect("storage.write", effect_id,
-                lambda: _copy_named(ancestor, expected, context),
-                reconcile=lambda _: _copy_named(ancestor, expected, context),
-                resource=known.resource, intent=expected)
-            observed = recovered.value if recovered.status == "confirmed" else None
+    if _option(context, settings, 'retry_missing', False):
+        raise ExecutionFailure('storage.explicit_repair_occurrence_required')
     if observed is not None:
         recovered = context.service.reconcile_effect(effect_id, lambda _: observed, context=context)
         complete = recovered.status == "confirmed"

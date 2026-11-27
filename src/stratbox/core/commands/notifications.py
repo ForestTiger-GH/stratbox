@@ -75,20 +75,9 @@ def notification_deliver(inputs, settings, context):
                 raise ExecutionFailure('notification.pending_intent_missing')
         elif fingerprint(authoritative)!=fingerprint(sealed):
             raise ExecutionFailure('notification.intent_content_conflict')
-    def deliver():
-        acknowledgement = provider.deliver(intent)
-        status = acknowledgement.get("status", acknowledgement.get("confirmation")) if isinstance(acknowledgement, Mapping) else getattr(acknowledgement, "status", getattr(acknowledgement, "confirmation", None))
-        if status in {"rejected", "failed"}:
-            from stratbox.core.storage.filestore import MutationRejected
-            raise MutationRejected("The channel rejected the notification", code="notification.delivery_rejected")
-        if status not in {"confirmed", "accepted", "delivered"}:
-            raise ExecutionFailure("notification.acknowledgement_missing", outcome="unknown")
-        named_id=acknowledgement.get('effect_id',acknowledgement.get('intent_id')) if isinstance(acknowledgement,Mapping) else getattr(acknowledgement,'effect_id',getattr(acknowledgement,'intent_id',None))
-        named_kind=acknowledgement.get('effect_kind',acknowledgement.get('kind')) if isinstance(acknowledgement,Mapping) else getattr(acknowledgement,'effect_kind',getattr(acknowledgement,'kind',None))
-        if named_id is not None and named_id!=intent['id'] or named_kind is not None and named_kind!='notification.deliver':
-            raise ExecutionFailure('notification.acknowledgement_conflict',outcome='unknown')
-        return acknowledgement
-    receipt = context.effect("notification.deliver", intent["id"], deliver,
+    # Direct acknowledgement, retry lookup and explicit reconciliation enter
+    # the same typed admission boundary in the effect coordinator.
+    receipt = context.effect("notification.deliver", intent["id"], lambda: provider.deliver(sealed),
         reconcile=lambda previous: provider.lookup(previous.effect_id) if hasattr(provider, "lookup") else None,
         resource=channel_scope,intent=sealed)
     if receipt.status != "confirmed":
@@ -99,7 +88,7 @@ def notification_deliver(inputs, settings, context):
             subscription, intent["id"]))
         def acknowledge():
             result = state.acknowledge(subscription, intent["id"], receipt)
-            return {"status": "confirmed", "effect_id": acknowledgement_id, **result}
+            return {"status": "confirmed", "effect_id": acknowledgement_id, 'acknowledgement': result}
         acknowledged = context.effect("notification.state", acknowledgement_id, acknowledge,
             reconcile=lambda previous: acknowledge(), resource=subscription)
         if acknowledged.status != "confirmed":

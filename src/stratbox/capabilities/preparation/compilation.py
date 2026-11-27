@@ -172,9 +172,13 @@ class Compiler:
                 outs['material'] = replace(outs['material'],value_type=(Material,IdentifiedMaterial))
         for name in definition.required_parameters:
             if name not in effective: raise ValueError('command.parameter_required:' + name)
+        semantics = getattr(record, 'semantics', None)
+        readiness = semantics.get('readiness') if isinstance(semantics, Mapping) else None
+        limitations = (str(readiness),) if readiness and readiness not in {'ready', 'reviewed'} else ()
         return BoundCommand(definition.id,method,settings,ins,outs,effective,definition.resources,definition.effects,
                             providers,definition.reuse,requirements,definition.acceptance,
-                            optional_providers=optional_providers-providers,target=target)
+                            optional_providers=optional_providers-providers,target=target,
+                            scientific_limitations=limitations)
 
     def validate_inputs(self, contracts, values):
         unknown=set(values)-contracts.keys()
@@ -255,7 +259,8 @@ class Compiler:
                 cut.setdefault(reference.step,{})[reference.port]=values[name]
         checks=set(body.required_checks)|set(definition.acceptance.required_checks)
         effects=set(body.required_effects)|set(definition.acceptance.required_effects)
-        roots=checks|effects|set(body.required_completions)
+        obligations=checks|effects|set(body.required_completions)
+        roots=set(obligations)
         for name in selected: roots |= _author_refs(body.outputs[name])
         needed=set()
         active=set()
@@ -282,6 +287,7 @@ class Compiler:
             if not progress: raise ValueError('graph.cycle')
         results.update(cut)
         initial_tasks=len(self.tasks); initial_scopes=len(self.scopes)
+        local_tasks, local_scopes = [], []
         for name in ordered:
             step=steps[name]; path=prefix+'/'+name
             resolve=lambda v:self.resolve(v,values,parameters,results,target)
@@ -329,7 +335,8 @@ class Compiler:
                 item_guards={index:tuple(sorted(_guards(item),key=lambda g:(g.scope_id,g.port))) for index,item in enumerate(items)}
                 self.tasks.append(CollectTask(path,_unwrap(items),tuple(sorted(_refs(items)|_refs(resolve(step.condition)))),prefix,required and step.required,
                     _unwrap(resolve(step.condition)),tuple(sorted(_guards(resolve(step.condition)),key=lambda g:(g.scope_id,g.port))),
-                    optional_items=step.optional_items,min_items=step.min_items,item_guards=item_guards))
+                    optional_items=step.optional_items,min_items=step.min_items,item_guards=item_guards,
+                    completion=step.completion))
                 results[name]={'items':ValueRef(path,'items'),'outcomes':ValueRef(path,'outcomes')}
                 self.ports[(path,'items')]=PortContract('result_collection',tuple)
                 self.ports[(path,'outcomes')]=PortContract('unit_outcomes',tuple)
@@ -384,9 +391,16 @@ class Compiler:
                 self.tasks.append(RepeatTask(path,template,_unwrap(initial),step.state_input,step.state_output,step.stop,limit,tuple(sorted(deps|_refs(resolve(step.condition)))),prefix,required and step.required,_unwrap(resolve(step.condition)),tuple(sorted(_guards(initial),key=lambda g:(g.scope_id,g.port)))))
                 results[name]={step.state_output:ValueRef(path,'state')};self.ports[(path,'state')]=PortContract('inference_state')
             else: raise TypeError('graph.unsupported_node')
+            # Optionality belongs to this member's relationship with its
+            # parent. Its own completion obligations survive that relationship.
+            if step.required or name in obligations:
+                if isinstance(step, Call) and self.catalog.get(step.capability_id).kind != 'command':
+                    local_scopes.append(path)
+                else:
+                    local_tasks.append(path)
         outputs={name:self.resolve(body.outputs[name],values,parameters,results,target) for name in selected}
-        tasks=tuple(t.task_id for t in self.tasks[initial_tasks:] if t.required)
-        children=tuple(s.scope_id for s in self.scopes[initial_scopes:] if s.parent_id==prefix and s.required)
+        tasks=tuple(local_tasks)
+        children=tuple(local_scopes)
         def roots_tasks(names):
             return tuple(sorted(set().union(*(_refs(v) for name in names for v in results.get(name,{}).values()))))
         self.scopes.append(PreparedScope(prefix,definition.id,definition.kind,parent,_unwrap(outputs),
@@ -414,7 +428,8 @@ def prepare(capability_id, *, inputs=None, parameters=None, target=None, outputs
         build_identity=implementation_identity()
     compiler=Compiler(catalog,domains,build_identity)
     result=compiler.compile(capability_id,dict(inputs or {}),dict(parameters or {}),target,outputs,'root')
-    return compiler.finish(capability_id,result,target)
+    from ..plan.validation import validate_plan
+    return validate_plan(compiler.finish(capability_id,result,target))
 
 
 def prepare_request(request, **kwargs):

@@ -5,7 +5,7 @@ from types import MappingProxyType
 import sys
 from types import FunctionType, BuiltinFunctionType, MethodType, MemberDescriptorType
 
-from .owned_values import _isolate
+from .owned_values import _isolate, copy_memo
 
 
 class AdmissionRejected(ValueError):
@@ -20,7 +20,7 @@ class PlanFootprint:
     bytes: int
 
 
-def inspect_plan(plan, *, max_nodes, max_bytes, max_objects=1000000, max_depth=128):
+def inspect_plan(plan, *, max_nodes, max_bytes, max_objects=1000000, max_depth=128, owned_descriptor=None):
     """Count the whole retained object graph, stopping before allocating a copy.
 
     Shared immutable referents count once within a plan. Scientific arrays get a
@@ -42,6 +42,11 @@ def inspect_plan(plan, *, max_nodes, max_bytes, max_objects=1000000, max_depth=1
         if key in seen: return
         seen.add(key); objects += 1
         if objects > max_objects: raise AdmissionRejected("admission.plan_objects")
+        if owned_descriptor is not None:
+            descriptor = owned_descriptor(value)
+            if descriptor is not None and not descriptor.expressions:
+                charge(64)
+                return
         if isinstance(value,type): charge(64); return
         if isinstance(value,(FunctionType,BuiltinFunctionType,MethodType)):
             raise AdmissionRejected("admission.opaque_callable")
@@ -103,9 +108,9 @@ def replace_record(record, **updates):
     return copied
 
 
-def snapshot_plan(plan):
+def snapshot_plan(plan, *, max_bytes=None):
     """Detach queued literals without reconstructing or resolving definitions."""
-    memo = {}
+    memo = copy_memo(max_bytes) if max_bytes is not None else {}
     def snapshot(value):
         if id(value) in memo: return memo[id(value)]
         if isinstance(value,type): return value
@@ -114,7 +119,7 @@ def snapshot_plan(plan):
             for item in fields(value): object.__setattr__(copied,item.name,snapshot(getattr(value,item.name)))
             return copied
         if isinstance(value,Mapping):
-            copied = MappingProxyType({key:snapshot(item) for key,item in value.items()})
+            copied = MappingProxyType({snapshot(key):snapshot(item) for key,item in value.items()})
             memo[id(value)] = copied; return copied
         if isinstance(value,(tuple,list)):
             copied = tuple(snapshot(item) for item in value); memo[id(value)] = copied; return copied

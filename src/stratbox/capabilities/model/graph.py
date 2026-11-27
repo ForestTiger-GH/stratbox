@@ -97,12 +97,15 @@ class CollectCall:
     condition: Condition | None = None
     optional_items: frozenset[int] = frozenset()
     min_items: int = 0
+    completion: str = 'all_selected'
 
     def __post_init__(self):
         object.__setattr__(self, 'items', freeze(tuple(self.items), _typed=True))
         object.__setattr__(self, 'optional_items', frozenset(self.optional_items))
         if type(self.min_items) is not int or not 0<=self.min_items<=len(self.items):
             raise ValueError('graph.invalid_collection_minimum')
+        if self.completion not in {'all_selected', 'eligible_subset', 'diagnostic'}:
+            raise ValueError('graph.invalid_collection_completion')
         if any(type(index) is not int or not 0<=index<len(self.items) for index in self.optional_items):
             raise ValueError('graph.invalid_optional_member')
 

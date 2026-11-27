@@ -25,6 +25,15 @@ from stratbox.core.limits import BudgetMeter
 from stratbox.shared.identity import ByteIdentity
 
 
+def _sync_directory(directory):
+    if os.name != 'nt':
+        descriptor = os.open(directory, os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0))
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+
+
 class _LocalStage:
     def __init__(self, stream: BinaryIO, staging: Path, destination: Path, store: LocalFileStore):
         self.stream = stream
@@ -72,6 +81,7 @@ class _LocalStage:
             os.replace(self.staging, target)
         else:
             raise MutationRejected("Unsupported write mode")
+        _sync_directory(target.parent)
         return True
 
 
@@ -251,14 +261,20 @@ class LocalFileStore(FileStore):
 
     def rmtree(self, path: str) -> None:
         target = self.checked_file_path(path)
-        if any(re.fullmatch(r"[a-f0-9]{64}", item.name) for item in target.rglob("*")):
-            raise MutationRejected("Directory contains retained content", code="storage.immutable_member")
+        for item in target.rglob('*'):
+            if item.name == DIRECTORY_GUARD_NAME or item.name == '.stratbox-transitions':
+                raise MutationRejected('Directory contains provider coordination or transition evidence',
+                    code='storage.provider_state_protected')
+            if re.fullmatch(r'[a-f0-9]{64}', item.name):
+                raise MutationRejected("Directory contains retained content", code="storage.immutable_member")
         shutil.rmtree(target)
 
     def rename(self, src: str, dst: str) -> None:
         src_p = self.checked_file_path(src)
         dst_p = self.checked_file_path(dst)
         self._mutable(src_p); self._mutable(dst_p)
+        if src_p.is_dir():
+            raise MutationRejected('Explicit file mutation requires a regular file', code='storage.regular_file_required')
         dst_p.parent.mkdir(parents=True, exist_ok=True)
         src_p.rename(dst_p)
 
@@ -301,16 +317,17 @@ class LocalFileStore(FileStore):
         directory = self.checked_file_path(path)
         if not directory.is_dir():
             raise MutationRejected("Directory is unavailable")
+        from stratbox.core.storage.ownership_lock import held_anchor
         lock = directory / DIRECTORY_GUARD_NAME
         try:
-            fd = os.open(lock, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            guard = held_anchor(lock)
+            guard.__enter__()
         except OSError as error:
-            raise MutationRejected("Directory guard is unavailable") from error
+            raise MutationRejected("Directory guard is busy or unavailable", code="storage.directory_guard_busy") from error
         try:
-            os.close(fd)
             yield
         finally:
-            lock.unlink(missing_ok=True)
+            guard.__exit__(None, None, None)
 
     @staticmethod
     def _revision(info: os.stat_result) -> str:
@@ -372,6 +389,7 @@ class LocalFileStore(FileStore):
             return False
         source = self.checked_file_path(expected.path)
         source.unlink()
+        _sync_directory(source.parent)
         if os.path.lexists(source):
             raise OSError("File removal could not be confirmed")
         return True
@@ -403,6 +421,7 @@ class LocalFileStore(FileStore):
         ) or (new.st_dev, new.st_ino) != (old.st_dev, old.st_ino):
             raise OSError("Move could not be confirmed")
         source.unlink()
+        _sync_directory(source.parent)
         if (
             os.path.lexists(source)
             or self.inspect_file(target).identity != expected.identity
@@ -413,14 +432,42 @@ class LocalFileStore(FileStore):
     def _named_transition_path(self, effect_id, intent):
         if not isinstance(effect_id, str) or re.fullmatch(r"[a-f0-9]{64}", effect_id) is None:
             raise MutationRejected("Qualified effect identity is required", code="storage.transition_identity_invalid")
-        source = self.checked_file_path(intent.source)
-        return source.parent / ".stratbox-transitions" / effect_id[:2] / effect_id[2:4] / (effect_id + ".json")
+        anchor = self.checked_file_path(intent.destination if intent.operation == 'copy' else intent.source)
+        return anchor.parent / ".stratbox-transitions" / effect_id[:2] / effect_id[2:4] / (effect_id + ".json")
 
     def _named_intent_scope(self, intent):
         from stratbox.shared.data.values import fingerprint
         scope = lambda path: fingerprint((str(self.provider_id), str(self.storage_scope(path))))
         return (intent.provider_scope == scope(intent.destination)
-                and intent.source_provider_scope == scope(intent.source))
+                and (intent.source is None and intent.source_provider_scope is None
+                     or intent.source is not None and intent.source_provider_scope == scope(intent.source)))
+
+    def record_named_transition(self, effect_id, intent, receipt):
+        """Retain an exact conditional-copy observation after guarded commit.
+
+        This local evidence write is separate from the physical transition.
+        A crash in between remains unknown and cannot be inferred from bytes.
+        """
+        import json
+        from stratbox.shared.data.materials import NamedEffectIntent, NamedMaterialReceipt
+        from stratbox.shared.data.values import canonical_tree
+        if (not isinstance(intent, NamedEffectIntent) or intent.operation != 'copy'
+                or intent.policy != 'replace_if_matches' or not intent.expected_destination_revision
+                or not self._named_intent_scope(intent) or not isinstance(receipt, NamedMaterialReceipt)
+                or (receipt.operation, receipt.destination, receipt.identity, receipt.provider_scope,
+                    receipt.status, receipt.guarantee) != ('copy', intent.destination, intent.identity,
+                    intent.provider_scope, 'confirmed', 'compare_and_replace_under_directory_guard')):
+            raise ValueError('storage.transition_evidence_conflict')
+        path = self._named_transition_path(effect_id, intent)
+        raw = json.dumps({'effect_id': effect_id, 'intent': canonical_tree(intent),
+            'receipt': canonical_tree(receipt)}, sort_keys=True, separators=(',', ':')).encode()
+        if len(raw) > 1024 * 1024:
+            raise ValueError('storage.transition_metadata_limit')
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self.create_if_absent(str(path), raw)
+        with path.open('rb') as stream:
+            if stream.read(1024 * 1024 + 1) != raw:
+                raise ValueError('storage.transition_evidence_conflict')
 
     def apply_named_mutation(self, effect_id, intent, *, checkpoint=lambda: None):
         """Conditionally move/delete and retain a bounded provider observation.
@@ -491,10 +538,12 @@ class LocalFileStore(FileStore):
                 or restore_tree(data["intent"]) != intent):
             raise ValueError("storage.transition_evidence_conflict")
         receipt = restore_tree(data["receipt"])
+        guarantee = ('compare_and_replace_under_directory_guard' if intent.operation == 'copy'
+                     else 'guarded_conditional_transition')
         if (not isinstance(receipt, NamedMaterialReceipt) or receipt.operation != intent.operation
                 or receipt.destination != intent.destination or receipt.identity != intent.identity
                 or receipt.provider_scope != intent.provider_scope or receipt.status != "confirmed"
-                or receipt.guarantee != "guarded_conditional_transition"):
+                or receipt.guarantee != guarantee):
             raise ValueError("storage.transition_evidence_conflict")
         return receipt
 

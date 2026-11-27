@@ -1,5 +1,6 @@
 """Admission owns bounded immutable plans before publishing any accepted run."""
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from threading import Event
 
 import pandas as pd
@@ -146,7 +147,8 @@ def test_dynamic_slice_limit_inserts_no_partial_children():
     template=plan(task(value=TemplateInput('item'),task_id='first'),task(value=1,task_id='second'))
     mapped=MapTask('map',template,(1,),item_output='value')
     with ExecutionService(settings=ExecutionSettings(max_plan_nodes=6)) as service:
-        handle=service.submit(plan(mapped));result=handle.result(2)
+        prepared=replace(plan(mapped),outputs={'items':ValueRef('map','items')})
+        handle=service.submit(prepared);result=handle.result(2)
         assert result.outcome=='failed'
         assert any('admission.plan_nodes' in item for item in result.diagnostics)
         assert tuple(handle.snapshot()['tasks'])==('map',)
@@ -156,9 +158,9 @@ def test_close_during_snapshot_never_publishes_partial_admission(monkeypatch):
     import stratbox.core.execution.service as module
     started,release=Event(),Event()
     original=module.snapshot_plan
-    def delayed(value):
+    def delayed(value, **kwargs):
         started.set();assert release.wait(2)
-        return original(value)
+        return original(value, **kwargs)
     with ExecutionService(settings=ExecutionSettings(max_pending_runs=1)) as service,ThreadPoolExecutor(1) as pool:
         monkeypatch.setattr(module,'snapshot_plan',delayed)
         pending=pool.submit(service.submit,plan(task()))

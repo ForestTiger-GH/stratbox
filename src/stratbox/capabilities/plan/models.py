@@ -47,6 +47,7 @@ class BoundCommand:
     acceptance: AcceptanceContract = field(default_factory=AcceptanceContract)
     optional_providers: frozenset[str] = frozenset()
     target: object = None
+    scientific_limitations: tuple[str, ...] = ()
 
     def __post_init__(self):
         for name in ('settings','inputs','outputs','parameters','resources'):
@@ -54,6 +55,9 @@ class BoundCommand:
         for name in ('effects', 'required_providers', 'optional_providers'):
             object.__setattr__(self, name, frozenset(getattr(self, name)))
         object.__setattr__(self, 'source_requirements', tuple(self.source_requirements))
+        object.__setattr__(self, 'scientific_limitations', tuple(self.scientific_limitations))
+        if any(not isinstance(code, str) or not code for code in self.scientific_limitations):
+            raise ValueError('plan.invalid_scientific_limitation')
 
     @property
     def command_id(self): return self.id
@@ -143,6 +147,7 @@ class CollectTask:
     optional_items: frozenset[int] = frozenset()
     min_items: int = 0
     item_guards: Mapping[int, tuple[OutputGuard, ...]] = field(default_factory=dict)
+    completion: str = 'all_selected'
     kind = 'collect'
 
     def __post_init__(self):
@@ -152,6 +157,8 @@ class CollectTask:
         object.__setattr__(self, 'item_guards', freeze(self.item_guards, _typed=True))
         if type(self.min_items) is not int or not 0 <= self.min_items <= len(self.items):
             raise ValueError('plan.invalid_collection_minimum')
+        if self.completion not in {'all_selected', 'eligible_subset', 'diagnostic'}:
+            raise ValueError('plan.invalid_collection_completion')
         if any(type(i) is not int or not 0 <= i < len(self.items) for i in self.optional_items):
             raise ValueError('plan.invalid_optional_member')
         _freeze_controls(self)

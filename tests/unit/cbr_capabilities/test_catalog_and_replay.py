@@ -99,7 +99,10 @@ def test_published_134_803_geometry_has_explicit_measurement_without_invented_fi
         encoded=checked(box.invoke("command.value.encode",inputs={"value":dataset},target=SeriesTarget(source)),"representation")
         assert checked(box.invoke("command.value.decode",inputs={"representation":encoded},target=SeriesTarget(source)),"value")==dataset
         result=box.invoke("command.calculate.formula",inputs={"dataset":dataset},target=CalculationTarget("cbr.forms.f"+code+".model"))
-        assert result.outcome=="failed" and any("requires_publisher_evidence" in str(item) for item in result.diagnostics)
+        assert result.outcome=="failed" and any(
+            "scientific.binding_unavailable:requires_publisher_financial_model" in str(item)
+            for item in result.diagnostics)
+        assert not result.outputs
 
 
 def test_product_failure_keeps_accepted_source_dataset_and_prepared_view():

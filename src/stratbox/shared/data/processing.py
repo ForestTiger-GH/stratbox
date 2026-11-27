@@ -109,14 +109,16 @@ def processing_input_identity(value, *, max_nodes=5000000, max_depth=64):
     return fingerprint(normalized(value))
 
 
-def processing_basis(inputs, *, capability_id, method, settings, parameters, build_identity):
+def processing_basis(inputs, *, capability_id, method, settings, parameters, build_identity,
+                     _input_identity=processing_input_identity):
     """Return the same three-part basis emitted for a bound command result."""
     locator = getattr(method, 'locator', method)
     if not all(isinstance(value, str) and value for value in (capability_id, locator, build_identity)):
         raise ValueError('processing.bound_command_required')
     if not isinstance(inputs, Mapping) or not isinstance(parameters, Mapping):
         raise ValueError('processing.named_inputs_required')
-    return (processing_input_identity(inputs),
+    return (fingerprint(('named_processing_inputs', tuple(sorted(
+                (name, _input_identity(value)) for name, value in inputs.items())))),
             fingerprint((capability_id, locator, settings, parameters)), build_identity)
 
 
@@ -251,6 +253,8 @@ class SourceStateSnapshot:
     truncated: bool = False
     next_after: tuple[int, str] | None = None
     starts_after: tuple[int, str] | None = None
+    view: str = 'current'
+    history_retained_after: int = 0
 
     def __post_init__(self):
         object.__setattr__(self, 'keys', tuple(self.keys))
@@ -260,11 +264,15 @@ class SourceStateSnapshot:
             raise ValueError('source_state.snapshot_limit')
         if type(self.minimum_applied_through) is not int or self.minimum_applied_through < 0:
             raise ValueError('source_state.horizon_invalid')
+        if (self.view not in {'current', 'history'} or type(self.history_retained_after) is not int
+                or not 0 <= self.history_retained_after <= self.checkpoint.applied_through):
+            raise ValueError('source_state.history_horizon_invalid')
 
     @property
     def complete(self):
         return (self.checkpoint.coverage_complete and not self.truncated and self.starts_after is None
-                and self.checkpoint.applied_through >= self.minimum_applied_through)
+                and self.checkpoint.applied_through >= self.minimum_applied_through
+                and (self.view == 'current' or self.history_retained_after == 0))
 
     def for_source(self, source_id):
         from dataclasses import replace

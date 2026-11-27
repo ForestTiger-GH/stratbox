@@ -5,30 +5,11 @@ import json
 import os
 from pathlib import Path
 import shutil
+from .ownership_lock import lock_stream as _lock, unlock_stream as _unlock
 
 _MARKER = 'stratbox-session.json'
 _LOCK = 'stratbox-session.lock'
 _KIND = 'stratbox.private.staged-values'
-
-
-def _lock(stream):
-    stream.seek(0)
-    if os.name == 'nt':
-        import msvcrt
-        msvcrt.locking(stream.fileno(),msvcrt.LK_NBLCK,1)
-    else:
-        import fcntl
-        fcntl.flock(stream.fileno(),fcntl.LOCK_EX | fcntl.LOCK_NB)
-
-
-def _unlock(stream):
-    stream.seek(0)
-    if os.name == 'nt':
-        import msvcrt
-        msvcrt.locking(stream.fileno(),msvcrt.LK_UNLCK,1)
-    else:
-        import fcntl
-        fcntl.flock(stream.fileno(),fcntl.LOCK_UN)
 
 
 class StagingOwnership:

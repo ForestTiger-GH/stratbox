@@ -18,19 +18,21 @@ def _unique(values):
     return tuple(dict.fromkeys(values))
 
 
-def accepted_record(service, run, task, name, value, inputs, *, value_identity, basis):
+def accepted_record(service, run, task, name, value, inputs, *, value_identity, basis, accepted_index=None):
     from .owned_values import input_values
     command = task.spec.command
-    inherited, trusted = [], []
+    accepted_index = service._accepted if accepted_index is None else accepted_index
+    inherited, trusted, dependencies = [], [], set()
     for item in input_values(inputs.values()):
         try:
-            key = fingerprint(item)
+            key = service._values.identity(item)
         except (ValueError, TypeError):
             continue
-        previous = service._accepted.get(key)
+        previous = accepted_index.get(key)
         if previous:
             inherited.extend(previous['source_uses'])
             trusted.extend(previous.get('trusted_source_uses', ()))
+            dependencies.update(previous.get('certificate_dependencies', ()))
         else:
             inherited.extend(getattr(item,'source_uses',()))
     uses = list(getattr(value, 'source_uses', ()))
@@ -41,7 +43,7 @@ def accepted_record(service, run, task, name, value, inputs, *, value_identity, 
             material_identity=value.identity), 'material', value.claim.attribution))
         if command.id == 'command.material.identify':
             evidence = inputs.get('evidence')
-            provenance = service._accepted.get(fingerprint(evidence)) if evidence is not None else None
+            provenance = accepted_index.get(service._values.identity(evidence)) if evidence is not None else None
             acquired = provenance and provenance.get('produced_by') in {
                 'command.material.fetch', 'command.material.receive', 'command.material.read'}
             competent = command.method.locator != 'stratbox.core.commands.materials:material_identify'
@@ -77,6 +79,10 @@ def accepted_record(service, run, task, name, value, inputs, *, value_identity, 
     if len(uses) > 10000 or len(trusted) > 10000:
         raise ValueError('value.source_metadata_limit')
     certificates = tuple(getattr(value, 'validation_certificates', ()))
+    from stratbox.shared.data.values import SourceDataset
+    if isinstance(value, SourceDataset):
+        from stratbox.shared.data.history import history_certificate_dependencies
+        dependencies.update(history_certificate_dependencies(value))
     if command.id == 'command.observations.validate' and certificates:
         from stratbox.shared.data.history import verify_history_certificates
         inherited_certificates = {fingerprint(c) for item in inputs.values()
@@ -86,7 +92,7 @@ def accepted_record(service, run, task, name, value, inputs, *, value_identity, 
             if certificate_id not in inherited_certificates:
                 return True
             if any(certificate_id in record.get('validation_certificates', ())
-                   for record in service._accepted.values()):
+                   for record in accepted_index.values()):
                 return True
             checker = getattr(service.providers.get('source_state'), 'has_validation_certificate', None)
             return bool(checker and checker(certificate_id))
@@ -97,6 +103,7 @@ def accepted_record(service, run, task, name, value, inputs, *, value_identity, 
             'basis': basis, 'source_uses': uses, 'trusted_source_uses': trusted,
             'trusted_source_use_ids': tuple(fingerprint(use) for use in trusted),
             'produced_by': command.id,
+            'certificate_dependencies': tuple(sorted(dependencies)),
             'validation_certificates': tuple(fingerprint(c) for c in certificates)
                 if command.id == 'command.observations.validate' else ()}
 
@@ -157,6 +164,7 @@ def accepted_fact(record, value, *, inputs, outputs):
         'processing_basis':record['basis'], 'source_uses':record['source_uses'],
         'trusted_source_uses':record['trusted_source_uses'],
         'certificate_ids':record['validation_certificates'], 'assessment':assessment,
+        'certificate_dependencies':record.get('certificate_dependencies', ()),
         'retained_reference':reference, 'persistent':reference is not None,
         'effect_ids':effect_ids, 'source_id':source_id, 'issue_id':issue_id, 'asset_id':asset_id,
         'selection_identity':fingerprint(inputs['query']) if 'query' in inputs else None}

@@ -90,7 +90,7 @@ class MemorySourceState:
                 outputs.append(detached(resolved))
             observations = tuple(detached(value) for _, _, value in chosen if isinstance(value, SourceObservation))
             return SourceStateSnapshot(keys, checkpoint, tuple(outputs), observations, minimum_applied_through, truncated,
-                chosen[-1][:2] if truncated else None, tuple(after) if after is not None else None)
+                chosen[-1][:2] if truncated else None, tuple(after) if after is not None else None, view)
 
     def has_validation_certificate(self, identity):
         with self._lock:

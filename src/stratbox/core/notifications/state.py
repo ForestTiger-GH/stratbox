@@ -237,6 +237,46 @@ class FileNotificationState:
             cursor = db.execute('DELETE FROM intents WHERE subscription=? AND id=?', (subscription_id, intent_id))
             return {'removed': bool(cursor.rowcount), 'intent_id': intent_id}
 
+    def recovery_metadata(self):
+        """Subscription cuts and pending counts without loading intent bodies."""
+        with self._lock, self._connect() as db:
+            rows = db.execute('SELECT id,cursor,stream,initial_after FROM subscriptions ORDER BY id LIMIT 10001').fetchall()
+            if len(rows) > 10000:
+                raise NotificationRejected('notification.recovery_subscription_limit')
+            return {'provider_id': self.provider_id, 'scope_id': self.scope_id,
+                    'database': str(self._database.resolve()),
+                    'subscriptions': tuple({'subscription_id': row[0], 'sequence': row[1],
+                                            'stream_id': row[2], 'initial_after': row[3]} for row in rows),
+                    'pending_count': db.execute('SELECT count(*) FROM intents').fetchone()[0],
+                    'capacity': self.capacity, 'history_limit': self.history_limit}
+
+    def export_checkpoint(self, destination, *, max_bytes=None):
+        """Export cursor and outbox in the same SQLite snapshot."""
+        if max_bytes is not None and (type(max_bytes) is not int or max_bytes < 1):
+            raise NotificationRejected('notification.checkpoint_limit_invalid')
+        destination = Path(destination).resolve()
+        if destination.exists() or destination == self._database.resolve():
+            raise NotificationRejected('notification.checkpoint_destination_exists')
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        with self._lock, self._connect() as source:
+            page_size = source.execute('PRAGMA page_size').fetchone()[0]
+            def check_size(_status, _remaining, total):
+                if max_bytes is not None and total * page_size > max_bytes:
+                    raise NotificationRejected('notification.checkpoint_size_limit')
+            check_size(None, None, source.execute('PRAGMA page_count').fetchone()[0])
+            target = sqlite3.connect(destination)
+            try:
+                source.backup(target, pages=64, progress=check_size)
+                if target.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
+                    raise NotificationRejected('notification.checkpoint_integrity')
+            except BaseException:
+                target.close()
+                destination.unlink(missing_ok=True)
+                raise
+            finally:
+                target.close()
+        return str(destination)
+
 
 def _page_limits(after_sequence, limit):
     if type(after_sequence) is not int or after_sequence < 0 or type(limit) is not int or not 0 < limit <= 10000:

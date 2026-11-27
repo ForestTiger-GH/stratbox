@@ -175,7 +175,7 @@ def _perform(intent, effect_id, context):
         from .artifacts import _copy_named
         return _copy_named(None, enriched, context,
             source_opener=lambda: _open_copy_source(store, intent.source, context),
-            update_intent=lambda updated: context.update_effect_intent(effect_id, updated))
+            update_intent=lambda updated: context.update_effect_intent(effect_id, updated), effect_id=effect_id)
     apply = getattr(store, "apply_named_mutation", None)
     if callable(apply):
         return apply(effect_id, enriched, checkpoint=context.checkpoint)
